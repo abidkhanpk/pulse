@@ -38,6 +38,7 @@ enum OccurrenceStatus {
 enum WorkMode {
   ONSITE
   REMOTE
+  LEAVE
 }
 
 enum LogStatus {
