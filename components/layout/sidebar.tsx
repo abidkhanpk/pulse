@@ -2,6 +2,7 @@ import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { PermissionKey } from "@/lib/permissions";
+import { signOutAction } from "./actions";
 import {
   LayoutDashboard,
   Armchair,
@@ -71,13 +72,7 @@ export function Sidebar({ actor, pathname }: { actor: SessionActorLike; pathname
           <p className="truncate text-sm font-medium text-slate-800">{actor.name}</p>
           <p className="truncate text-xs text-slate-500">{actor.email}</p>
         </div>
-        <form
-          action={async () => {
-            "use server";
-            const { signOut } = await import("@/auth");
-            await signOut({ redirectTo: "/login" });
-          }}
-        >
+        <form action={signOutAction}>
           <button
             type="submit"
             className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
