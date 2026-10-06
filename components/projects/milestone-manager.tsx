@@ -4,7 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label, Select, FieldError } from "@/components/ui/input";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
-import { Card, CardHeader, CardTitle, CardContent, Badge } from "@/components/ui/card";
+import { Card, CardContent, Badge } from "@/components/ui/card";
 import { createMilestone, updateMilestone, deleteMilestone } from "@/app/(app)/projects/actions";
 
 interface Milestone {

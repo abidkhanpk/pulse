@@ -30,6 +30,8 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
 
+  // Reset the form every time the dialog opens (or a different todo is selected).
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional form reset on open */
   React.useEffect(() => {
     if (open) {
       setTitle(todo?.title ?? "");
@@ -42,6 +44,7 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
       setError(null);
     }
   }, [open, todo, defaultStatus]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

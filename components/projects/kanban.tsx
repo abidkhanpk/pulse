@@ -110,7 +110,6 @@ function Column({
 }
 
 export function KanbanBoard({
-  projectId,
   initialTodos,
   onTodoClick,
   onNewTodo,
@@ -124,6 +123,8 @@ export function KanbanBoard({
   const [activeTodo, setActiveTodo] = React.useState<KanbanTodo | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
+  // Sync when the server data refreshes (e.g. after a dialog save).
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional prop-to-state sync on refresh
   React.useEffect(() => setTodos(initialTodos), [initialTodos]);
 
   const byStatus = React.useCallback(

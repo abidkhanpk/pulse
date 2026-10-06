@@ -11,6 +11,7 @@ import {
   Users,
   BarChart3,
   FlaskConical,
+  ShieldCheck,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -30,6 +31,7 @@ const NAV: { href: string; label: string; icon: typeof LayoutDashboard; perm: Pe
   { href: "/check-in", label: "Check-in", icon: BarChart3, perm: null },
   { href: "/reports", label: "Reports", icon: BarChart3, perm: "attendance.view_reports" },
   { href: "/labs", label: "Labs", icon: FlaskConical, perm: "labs.manage" },
+  { href: "/audit", label: "Audit", icon: ShieldCheck, perm: "audit.view" },
   { href: "/settings", label: "Settings", icon: Settings, perm: "org.manage" },
 ];
 

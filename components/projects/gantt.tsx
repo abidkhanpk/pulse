@@ -38,6 +38,26 @@ export function GanttChart({ items }: { items: GanttItem[] }) {
     return { minDay: min - 7 * DAY_MS, maxDay: max + 7 * DAY_MS };
   }, [dated]);
 
+  const totalDays = Math.round((maxDay - minDay) / DAY_MS) + 1;
+  const dayWidth = Math.max(28, Math.min(48, Math.floor(1100 / Math.min(totalDays, 40))));
+
+  // month ticks + today line (computed in one memo; hooks stay above the early return)
+  const { ticks, todayLeft } = React.useMemo(() => {
+    const list: { label: string; left: number }[] = [];
+    const d = new Date(minDay);
+    d.setUTCDate(1);
+    while (d.getTime() <= maxDay) {
+      const left = ((d.getTime() - minDay) / DAY_MS) * dayWidth;
+      list.push({
+        label: d.toLocaleDateString("en-PK", { month: "short", year: "2-digit", timeZone: "Asia/Karachi" }),
+        left,
+      });
+      d.setUTCMonth(d.getUTCMonth() + 1);
+    }
+    // eslint-disable-next-line react-hooks/purity -- "today" is intentionally read once per render
+    return { ticks: list, todayLeft: ((Date.now() - minDay) / DAY_MS) * dayWidth };
+  }, [minDay, maxDay, dayWidth]);
+
   if (dated.length === 0) {
     return (
       <EmptyState
@@ -46,26 +66,6 @@ export function GanttChart({ items }: { items: GanttItem[] }) {
       />
     );
   }
-
-  const totalDays = Math.round((maxDay - minDay) / DAY_MS) + 1;
-  const dayWidth = Math.max(28, Math.min(48, Math.floor(1100 / Math.min(totalDays, 40))));
-
-  // month ticks
-  const ticks: { label: string; left: number }[] = [];
-  {
-    const d = new Date(minDay);
-    d.setUTCDate(1);
-    while (d.getTime() <= maxDay) {
-      const left = ((d.getTime() - minDay) / DAY_MS) * dayWidth;
-      ticks.push({
-        label: d.toLocaleDateString("en-PK", { month: "short", year: "2-digit", timeZone: "Asia/Karachi" }),
-        left,
-      });
-      d.setUTCMonth(d.getUTCMonth() + 1);
-    }
-  }
-
-  const todayLeft = ((Date.now() - minDay) / DAY_MS) * dayWidth;
 
   const barColor = (i: GanttItem) =>
     i.kind === "milestone"

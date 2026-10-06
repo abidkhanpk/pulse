@@ -100,8 +100,9 @@ pg_restore -c -d pulse_dev /backups/pulse-YYYY-MM-DD.dump
 - **Extend a recurring booking:** Desks → click the booking → edit → change "valid until".
 - **Add a user:** People → Add person (admin: anyone; lab incharge: own labs only).
 - **Reset a password:** People → person → set a new password (admin/incharge).
-- **Deactivate a user:** People → person → status → Inactive (sessions end immediately —
-  the app uses database sessions).
+- **Deactivate a user:** People → person → status → Inactive (access ends immediately —
+  the app uses JWT sessions and rechecks the active flag against the database on every
+  protected request).
 
 ## 8. Troubleshooting
 

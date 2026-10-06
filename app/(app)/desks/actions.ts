@@ -266,7 +266,7 @@ export async function listOccurrences({ from, to, labId }: OccurrenceRange) {
       date: { gte: fromDate, lte: toDate },
       status: "SCHEDULED",
       ...(labId
-        ? { desk: { labId } }
+        ? { OR: [{ desk: { labId } }, { booking: { user: { labId } } }] }
         : labIds
           ? { OR: [{ desk: { labId: { in: labIds } } }, { booking: { user: { labId: { in: labIds } } } }] }
           : {}),

@@ -141,10 +141,16 @@ export async function monthlyReport({ year, month, labId, userId }: ReportFilter
 
   const monthStart = new Date(Date.UTC(year, month - 1, 1));
   const monthEnd = new Date(Date.UTC(year, month, 0)); // last day
+  // Don't count future days as absent for the current month.
+  const todayIso = toISODate(todayPKT());
+  const capIso = `${year}-${String(month).padStart(2, "0")}`;
+  const isCurrentMonth = todayIso.slice(0, 7) === capIso;
   const weekdays: Date[] = [];
   for (let d = new Date(monthStart); d <= monthEnd; d.setUTCDate(d.getUTCDate() + 1)) {
     const dow = d.getUTCDay();
-    if (dow !== 0 && dow !== 6) weekdays.push(new Date(d));
+    if (dow === 0 || dow === 6) continue;
+    if (isCurrentMonth && toISODate(d) > todayIso) continue;
+    weekdays.push(new Date(d));
   }
 
   const users = await prisma.user.findMany({
