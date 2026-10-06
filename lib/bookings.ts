@@ -257,3 +257,13 @@ export async function updateBookingRule(bookingId: string, rule: BookingRuleInpu
     return booking;
   });
 }
+
+/** ISO date (YYYY-MM-DD) of the Monday of the current PKT week. */
+export function thisWeekMonday(): string {
+  const today = todayPKT();
+  const dow = today.getUTCDay();
+  const delta = (dow + 6) % 7;
+  const monday = new Date(today);
+  monday.setUTCDate(monday.getUTCDate() - delta);
+  return toISODate(monday);
+}

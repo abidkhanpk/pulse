@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth-helpers";
 import { can, scopeFilter, type PermissionKey } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { todayPKT, toISODate } from "@/lib/bookings";
+import type { ReportRow } from "@/lib/report-csv";
 import type { ActionResult } from "../labs/actions";
 
 function deny(perm: PermissionKey) {
@@ -121,19 +122,6 @@ export interface ReportFilters {
   userId?: string;
 }
 
-export interface ReportRow {
-  userId: string;
-  name: string;
-  email: string;
-  labName: string;
-  present: number;
-  remote: number;
-  leave: number;
-  absent: number; // weekdays with no record and tracking on
-  avgHours: number | null;
-  expectedDays: number; // weekdays in month (tracking on)
-}
-
 export async function monthlyReport({ year, month, labId, userId }: ReportFilters): Promise<ReportRow[]> {
   const actor = await requireUser();
   if (!can(actor, "attendance.view_reports")) return [];
@@ -245,12 +233,4 @@ export async function personAttendance(userId: string, from: string, to: string)
   });
 }
 
-export function reportToCsv(rows: ReportRow[], year: number, month: number): string {
-  const header = "Name,Email,Lab,Present,Remote,Leave,Absent,Avg hours/day,Expected weekdays";
-  const lines = rows.map((r) =>
-    [r.name, r.email, r.labName, r.present, r.remote, r.leave, r.absent, r.avgHours ?? "", r.expectedDays]
-      .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-      .join(",")
-  );
-  return [`# Attendance report ${year}-${String(month).padStart(2, "0")}`, header, ...lines].join("\n");
-}
+export type { ReportRow };

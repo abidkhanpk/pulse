@@ -6,7 +6,8 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
-import { monthlyReport, reportPeople, reportToCsv, type ReportRow } from "@/app/(app)/check-in/actions";
+import { monthlyReport, reportPeople } from "@/app/(app)/check-in/actions";
+import { reportToCsv, type ReportRow } from "@/lib/report-csv";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",

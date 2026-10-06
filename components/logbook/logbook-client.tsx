@@ -17,8 +17,8 @@ import {
   listEntries,
   reviewQueue,
   weeklyDigest,
-  thisWeekMonday,
 } from "@/app/(app)/logbook/actions";
+import { thisWeekMonday } from "@/lib/bookings";
 
 interface Entry {
   id: string;

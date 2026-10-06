@@ -266,12 +266,3 @@ export async function weeklyDigest(weekStart: string): Promise<DigestDay[]> {
   }
   return days;
 }
-
-export function thisWeekMonday(): string {
-  const today = todayPKT();
-  const dow = today.getUTCDay();
-  const delta = (dow + 6) % 7;
-  const monday = new Date(today);
-  monday.setUTCDate(monday.getUTCDate() - delta);
-  return toISODate(monday);
-}
