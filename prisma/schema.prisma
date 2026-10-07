@@ -187,6 +187,8 @@ model Lab {
   projects  Project[]
   members   User[]        @relation("HomeLab")
   incharges LabIncharge[]
+  floorplanImage FloorplanImage?
+  floorplanShapes FloorplanShape[]
 }
 
 model LabIncharge {
@@ -207,10 +209,44 @@ model Desk {
   label       String
   status      DeskStatus @default(ACTIVE)
   notes       String?
+  // Floorplan position as % of image dimensions (null = not placed).
+  xPct        Float?
+  yPct        Float?
   bookings    Booking[]
   occurrences BookingOccurrence[]
 
   @@unique([labId, label])
+}
+
+// One layout image per lab, stored as bytes so it works on read-only hosts.
+model FloorplanImage {
+  id        String   @id @default(cuid())
+  labId     String   @unique
+  lab       Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+  data      Bytes
+  mimeType  String
+  width     Int?
+  height    Int?
+  updatedAt DateTime @updatedAt
+}
+
+enum FloorplanShapeKind {
+  WALL
+  ZONE
+}
+
+// Walls and zones drawn on a lab's floorplan (rectangles, % coordinates).
+model FloorplanShape {
+  id     String             @id @default(cuid())
+  labId  String
+  lab    Lab                @relation(fields: [labId], references: [id], onDelete: Cascade)
+  kind   FloorplanShapeKind
+  xPct   Float
+  yPct   Float
+  wPct   Float
+  hPct   Float
+  label  String?
+  color  String?
 }
 
 // ─── Bookings ───

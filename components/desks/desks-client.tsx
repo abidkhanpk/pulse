@@ -3,10 +3,13 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Select, Label } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/misc";
 import { WeekGrid, type Occurrence } from "./week-grid";
 import { DayTimeline } from "./day-timeline";
 import { MonthGrid } from "./month-grid";
+import { FloorplanView } from "./floorplan-view";
+import { FloorplanEditor } from "./floorplan-editor";
 import { DesksManager } from "./desks-manager";
 
 interface Desk {
@@ -42,6 +45,7 @@ export function DesksClient({
   const searchParams = useSearchParams();
   const [view, setView] = React.useState("week");
   const [managerOpen, setManagerOpen] = React.useState(false);
+  const [editingLayout, setEditingLayout] = React.useState(false);
 
   const labId = searchParams.get("lab") ?? "";
 
@@ -74,15 +78,23 @@ export function DesksClient({
         </div>
       </div>
 
-      <Tabs
-        tabs={[
-          { id: "week", label: "Week view" },
-          { id: "month", label: "Month view" },
-          { id: "day", label: "Day timeline" },
-        ]}
-        active={view}
-        onChange={setView}
-      />
+      <div className="flex flex-wrap items-center gap-2">
+        <Tabs
+          tabs={[
+            { id: "week", label: "Week view" },
+            { id: "month", label: "Month view" },
+            { id: "day", label: "Day timeline" },
+            { id: "layout", label: "Layout" },
+          ]}
+          active={view}
+          onChange={setView}
+        />
+        {view === "layout" && canManageDesks && (
+          <Button size="sm" variant="outline" onClick={() => setEditingLayout((v) => !v)} className="ml-auto">
+            {editingLayout ? "Done editing" : "Edit layout"}
+          </Button>
+        )}
+      </div>
 
       {view === "week" ? (
         <WeekGrid
@@ -106,6 +118,20 @@ export function DesksClient({
           labId={labId}
           canManage={canManage}
         />
+      ) : view === "layout" ? (
+        editingLayout && labId && canManageDesks ? (
+          <FloorplanEditor
+            key={`edit-${labId}`}
+            labId={labId}
+            labName={labs.find((l) => l.id === labId)?.name ?? ""}
+          />
+        ) : labId ? (
+          <FloorplanView key={`view-${labId}`} labId={labId} labName={labs.find((l) => l.id === labId)?.name ?? ""} />
+        ) : (
+          <p className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+            Pick a lab above to see its floorplan layout.
+          </p>
+        )
       ) : (
         <DayTimeline
           desks={desks}

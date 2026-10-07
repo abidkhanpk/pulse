@@ -381,3 +381,190 @@ export async function deskLabOverview(): Promise<DeskLabOverview[]> {
     })
   );
 }
+
+// ─── Floorplan ───
+
+const floorplanUploadSchema = z.object({
+  labId: z.string().min(1),
+  dataUrl: z.string().min(1).max(8_000_000), // ~6MB image
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
+});
+
+/**
+ * Upload (or replace) a lab's floorplan image. One image per lab —
+ * uploading replaces the previous one.
+ */
+export async function uploadFloorplan(input: z.infer<typeof floorplanUploadSchema>): Promise<ActionResult> {
+  const actor = await requireUser();
+  const parsed = floorplanUploadSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid image." };
+  if (!can(actor, "desks.manage", parsed.data.labId)) return { ok: false, error: "You don't have permission (desks.manage)." };
+  const m = /^data:(image\/(png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(parsed.data.dataUrl);
+  if (!m) return { ok: false, error: "Image must be PNG, JPEG or WebP." };
+  const buf = Buffer.from(m[3], "base64");
+  if (buf.length > 6 * 1024 * 1024) return { ok: false, error: "Image is too large (max 6 MB)." };
+  await prisma.floorplanImage.upsert({
+    where: { labId: parsed.data.labId },
+    update: { data: buf, mimeType: m[1], width: parsed.data.width ?? null, height: parsed.data.height ?? null },
+    create: {
+      labId: parsed.data.labId,
+      data: buf,
+      mimeType: m[1],
+      width: parsed.data.width ?? null,
+      height: parsed.data.height ?? null,
+    },
+  });
+  await logAudit(actor.id, "lab.floorplan_uploaded", "Lab", parsed.data.labId, { mimeType: m[1] });
+  revalidatePath("/desks");
+  return { ok: true };
+}
+
+export async function deleteFloorplan(labId: string): Promise<ActionResult> {
+  const actor = await requireUser();
+  if (!can(actor, "desks.manage", labId)) return { ok: false, error: "You don't have permission (desks.manage)." };
+  await prisma.floorplanImage.deleteMany({ where: { labId } });
+  await logAudit(actor.id, "lab.floorplan_deleted", "Lab", labId, {});
+  revalidatePath("/desks");
+  return { ok: true };
+}
+
+export async function floorplanMeta(labId: string) {
+  const actor = await requireUser();
+  if (!can(actor, "desks.manage", labId)) return null;
+  const img = await prisma.floorplanImage.findUnique({
+    where: { labId },
+    select: { id: true, mimeType: true, width: true, height: true, updatedAt: true },
+  });
+  return img;
+}
+
+const positionsSchema = z.object({
+  labId: z.string().min(1),
+  positions: z.array(z.object({ id: z.string().min(1), xPct: z.number().min(0).max(100), yPct: z.number().min(0).max(100) })),
+});
+
+/** Persist station positions on the floorplan canvas. */
+export async function saveDeskPositions(input: z.infer<typeof positionsSchema>): Promise<ActionResult> {
+  const actor = await requireUser();
+  const parsed = positionsSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid positions." };
+  if (!can(actor, "desks.manage", parsed.data.labId)) return { ok: false, error: "You don't have permission (desks.manage)." };
+  await prisma.$transaction(
+    parsed.data.positions.map((p) =>
+      prisma.desk.updateMany({ where: { id: p.id, labId: parsed.data.labId }, data: { xPct: p.xPct, yPct: p.yPct } })
+    )
+  );
+  await logAudit(actor.id, "lab.floorplan_layout", "Lab", parsed.data.labId, { count: parsed.data.positions.length });
+  revalidatePath("/desks");
+  return { ok: true };
+}
+
+const shapesSchema = z.object({
+  labId: z.string().min(1),
+  shapes: z.array(
+    z.object({
+      kind: z.enum(["WALL", "ZONE"]),
+      xPct: z.number().min(0).max(100),
+      yPct: z.number().min(0).max(100),
+      wPct: z.number().min(0.5).max(100),
+      hPct: z.number().min(0.5).max(100),
+      label: z.string().max(60).nullable().optional(),
+      color: z.string().max(20).nullable().optional(),
+    })
+  ),
+});
+
+/** Replace all walls/zones on a lab's floorplan. */
+export async function saveFloorplanShapes(input: z.infer<typeof shapesSchema>): Promise<ActionResult> {
+  const actor = await requireUser();
+  const parsed = shapesSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid shapes." };
+  if (!can(actor, "desks.manage", parsed.data.labId)) return { ok: false, error: "You don't have permission (desks.manage)." };
+  await prisma.$transaction(async (tx) => {
+    await tx.floorplanShape.deleteMany({ where: { labId: parsed.data.labId } });
+    if (parsed.data.shapes.length) {
+      await tx.floorplanShape.createMany({
+        data: parsed.data.shapes.map((sh) => ({
+          labId: parsed.data.labId,
+          kind: sh.kind,
+          xPct: sh.xPct,
+          yPct: sh.yPct,
+          wPct: sh.wPct,
+          hPct: sh.hPct,
+          label: sh.label?.trim() || null,
+          color: sh.color || null,
+        })),
+      });
+    }
+  });
+  revalidatePath("/desks");
+  return { ok: true };
+}
+
+/** Full floorplan payload for the editor / layout view. */
+export async function getFloorplan(labId: string) {
+  const actor = await requireUser();
+  if (!can(actor, "bookings.view_all", labId) && !can(actor, "desks.manage", labId)) {
+    // Regular members can still see the layout for their own lab via booking view.
+    const me = await prisma.user.findUnique({ where: { id: actor.id }, select: { labId: true } });
+    if (me?.labId !== labId) return null;
+  }
+  const [img, desks, shapes] = await Promise.all([
+    prisma.floorplanImage.findUnique({ where: { labId }, select: { id: true, updatedAt: true } }),
+    prisma.desk.findMany({
+      where: { labId },
+      select: { id: true, label: true, status: true, xPct: true, yPct: true },
+      orderBy: { label: "asc" },
+    }),
+    prisma.floorplanShape.findMany({ where: { labId } }),
+  ]);
+  return {
+    hasImage: !!img,
+    imageUrl: img ? `/api/floorplan/${labId}?v=${img.updatedAt.getTime()}` : null,
+    desks,
+    shapes: shapes.map((sh) => ({
+      id: sh.id,
+      kind: sh.kind,
+      xPct: sh.xPct,
+      yPct: sh.yPct,
+      wPct: sh.wPct,
+      hPct: sh.hPct,
+      label: sh.label,
+      color: sh.color,
+    })),
+  };
+}
+
+/** Live per-desk occupancy for the layout view. */
+export async function layoutOccupancy(labId: string) {
+  const actor = await requireUser();
+  const me = await prisma.user.findUnique({ where: { id: actor.id }, select: { labId: true } });
+  const allowed = me?.labId === labId || can(actor, "bookings.view_all", labId);
+  if (!allowed) return [];
+  const now = new Date();
+  const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const occs = await prisma.bookingOccurrence.findMany({
+    where: { status: "SCHEDULED", date: dayStart, desk: { labId } },
+    select: {
+      deskId: true,
+      startsAt: true,
+      endsAt: true,
+      booking: { select: { user: { select: { name: true } }, title: true } },
+    },
+  });
+  return occs.map((o) => {
+    const s = o.startsAt.getTime();
+    const e = o.endsAt.getTime();
+    const n = now.getTime();
+    return {
+      deskId: o.deskId,
+      occupiedNow: s <= n && e > n,
+      upcoming: s > n,
+      personName: o.booking.user.name,
+      title: o.booking.title,
+      timeStart: o.startsAt.toISOString(),
+      timeEnd: o.endsAt.toISOString(),
+    };
+  });
+}
