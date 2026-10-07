@@ -535,11 +535,11 @@ export function MilestoneOverview({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="mo-start">Start date (optional)</Label>
-              <Input id="mo-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              <Input id="mo-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-44" />
             </div>
             <div>
               <Label htmlFor="mo-due">Due date (optional)</Label>
-              <Input id="mo-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              <Input id="mo-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-44" />
             </div>
           </div>
           <p className="rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-700">
