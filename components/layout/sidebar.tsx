@@ -1,5 +1,8 @@
+"use client";
+
 import * as React from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { PermissionKey } from "@/lib/permissions";
 import { signOutAction } from "./actions";
@@ -48,8 +51,11 @@ export function Sidebar({ actor, pathname }: { actor: SessionActorLike; pathname
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
       <div className="flex h-16 items-center border-b border-slate-100 px-5">
-        <Link href="/dashboard" className="text-xl font-bold tracking-tight text-slate-900">
-          Pulse
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-sm font-bold text-white shadow-[0_2px_8px_rgba(79,70,229,0.4)]">
+            P
+          </span>
+          <span className="text-xl font-bold tracking-tight text-slate-900">Pulse</span>
         </Link>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
@@ -61,14 +67,19 @@ export function Sidebar({ actor, pathname }: { actor: SessionActorLike; pathname
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                active
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150",
+                active ? "text-indigo-700" : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
               )}
             >
-              <Icon className="h-4 w-4" />
-              {item.label}
+              {active && (
+                <motion.span
+                  layoutId="sidebar-active"
+                  className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-50 to-violet-50 ring-1 ring-indigo-100"
+                  transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                />
+              )}
+              <Icon className="relative z-10 h-[18px] w-[18px]" />
+              <span className="relative z-10">{item.label}</span>
             </Link>
           );
         })}

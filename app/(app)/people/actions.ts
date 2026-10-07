@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/auth-helpers";
 import { can, scopeFilter, hasPermission, type PermissionKey } from "@/lib/permissions";
 import type { SessionActor } from "@/lib/auth-helpers";
 import { logAudit } from "@/lib/audit";
+import { todayPKT } from "@/lib/bookings";
 import type { ActionResult } from "../labs/actions";
 
 function deny(perm: PermissionKey) {
@@ -184,4 +185,43 @@ export async function resetPassword(input: z.infer<typeof passwordSchema>): Prom
   await prisma.user.update({ where: { id: parsed.data.id }, data: { passwordHash: await hash(parsed.data.password, 10) } });
   await logAudit(actor.id, "user.password_reset", "User", parsed.data.id, {});
   return { ok: true };
+}
+
+export interface PeopleLabOverview {
+  labId: string;
+  labName: string;
+  headcount: number;
+  activeCount: number;
+  checkedInToday: number;
+  inchargeNames: string[];
+}
+
+/** Per-lab people stats for the admin overview. */
+export async function peopleLabOverview(): Promise<PeopleLabOverview[]> {
+  const actor = await requireUser();
+  if (actor.role.scope !== "GLOBAL") return [];
+  const today = todayPKT();
+  const labs = await prisma.lab.findMany({
+    orderBy: { name: "asc" },
+    include: { incharges: { include: { user: { select: { name: true } } } } },
+  });
+  return Promise.all(
+    labs.map(async (lab) => {
+      const [headcount, activeCount, checkedInToday] = await Promise.all([
+        prisma.user.count({ where: { labId: lab.id } }),
+        prisma.user.count({ where: { labId: lab.id, status: "ACTIVE" } }),
+        prisma.attendanceRecord.count({
+          where: { date: today, checkIn: { not: null }, user: { labId: lab.id } },
+        }),
+      ]);
+      return {
+        labId: lab.id,
+        labName: lab.name,
+        headcount,
+        activeCount,
+        checkedInToday,
+        inchargeNames: lab.incharges.map((i) => i.user.name),
+      };
+    })
+  );
 }

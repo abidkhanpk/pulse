@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-helpers";
 import { can, scopeFilter, type PermissionKey } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
+import { todayPKT } from "@/lib/bookings";
 import type { ActionResult } from "../labs/actions";
 
 function deny(perm: PermissionKey) {
@@ -403,4 +404,44 @@ export async function projectLogbook(projectId: string) {
     orderBy: { date: "desc" },
     take: 100,
   });
+}
+
+export interface ProjectLabOverview {
+  labId: string;
+  labName: string;
+  projectCount: number;
+  activeCount: number;
+  todoCount: number;
+  overdueCount: number;
+  memberCount: number;
+}
+
+/** Per-lab project stats for the admin overview. */
+export async function projectLabOverview(): Promise<ProjectLabOverview[]> {
+  const actor = await requireUser();
+  if (actor.role.scope !== "GLOBAL") return [];
+  const today = todayPKT();
+  const labs = await prisma.lab.findMany({ orderBy: { name: "asc" } });
+  return Promise.all(
+    labs.map(async (lab) => {
+      const [projectCount, activeCount, todoCount, overdueCount, memberCount] = await Promise.all([
+        prisma.project.count({ where: { labId: lab.id } }),
+        prisma.project.count({ where: { labId: lab.id, status: "ACTIVE" } }),
+        prisma.todo.count({ where: { project: { labId: lab.id } } }),
+        prisma.todo.count({
+          where: { project: { labId: lab.id }, status: { not: "DONE" }, endDate: { lt: today } },
+        }),
+        prisma.projectMember.count({ where: { project: { labId: lab.id } } }),
+      ]);
+      return {
+        labId: lab.id,
+        labName: lab.name,
+        projectCount,
+        activeCount,
+        todoCount,
+        overdueCount,
+        memberCount,
+      };
+    })
+  );
 }

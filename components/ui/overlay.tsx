@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 
@@ -27,61 +28,90 @@ function useOverlay(open: boolean, onClose: () => void) {
   }, [open, onClose]);
 }
 
+function Backdrop({ onClose }: { onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]"
+      onClick={onClose}
+      aria-hidden
+    />
+  );
+}
+
 export function Dialog({ open, onClose, children, className }: OverlayProps) {
   useOverlay(open, onClose);
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} aria-hidden />
-      <div
-        role="dialog"
-        aria-modal
-        className={cn(
-          "relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl",
-          className
-        )}
-      >
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-        >
-          <X className="h-5 w-5" />
-        </button>
-        {children}
-      </div>
-    </div>
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <Backdrop onClose={onClose} />
+          <motion.div
+            role="dialog"
+            aria-modal
+            initial={{ opacity: 0, scale: 0.96, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 8 }}
+            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+            className={cn(
+              "relative w-full max-w-lg rounded-2xl bg-white p-6",
+              "shadow-[0_24px_64px_rgba(15,23,42,0.18)]",
+              className
+            )}
+          >
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            {children}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
 
 export function DialogTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn("pr-8 text-lg font-semibold text-slate-900", className)} {...props} />;
+  return <h2 className={cn("pr-8 text-lg font-semibold tracking-tight text-slate-900", className)} {...props} />;
 }
 
 export function Sheet({ open, onClose, children, className }: OverlayProps) {
   useOverlay(open, onClose);
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} aria-hidden />
-      <div
-        role="dialog"
-        aria-modal
-        className={cn(
-          "absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-xl",
-          className
-        )}
-      >
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute right-4 top-4 z-10 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-        >
-          <X className="h-5 w-5" />
-        </button>
-        {children}
-      </div>
-    </div>
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-50">
+          <Backdrop onClose={onClose} />
+          <motion.div
+            role="dialog"
+            aria-modal
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 320, damping: 34 }}
+            className={cn(
+              "absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl",
+              className
+            )}
+          >
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="absolute right-4 top-4 z-10 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            {children}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -90,7 +120,7 @@ export function SheetHeader({ className, ...props }: React.HTMLAttributes<HTMLDi
 }
 
 export function SheetTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn("pr-8 text-lg font-semibold text-slate-900", className)} {...props} />;
+  return <h2 className={cn("pr-8 text-lg font-semibold tracking-tight text-slate-900", className)} {...props} />;
 }
 
 export function SheetBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

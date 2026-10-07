@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar, MobileNav, type SessionActorLike } from "./sidebar";
 
 export function AppShell({
@@ -30,7 +31,19 @@ export function AppShell({
             <span className="text-sm font-medium text-slate-700">{actor.name}</span>
           </div>
         </header>
-        <main className="flex-1 p-4 pb-20 md:p-6 md:pb-6">{children}</main>
+        <main className="flex-1 p-4 pb-20 md:p-6 md:pb-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </main>
       </div>
       <MobileNav actor={actor} pathname={pathname} />
     </div>

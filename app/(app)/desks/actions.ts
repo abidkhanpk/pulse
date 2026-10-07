@@ -8,6 +8,8 @@ import { can, scopeFilter, type PermissionKey } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import {
   createBooking,
+  todayPKT,
+  toISODate,
   updateBookingRule,
   cancelOccurrence,
   cancelFutureOccurrences,
@@ -341,4 +343,41 @@ export async function bookableProjects(labId?: string) {
     orderBy: { name: "asc" },
     take: 200,
   });
+}
+
+export interface DeskLabOverview {
+  labId: string;
+  labName: string;
+  deskCount: number;
+  occupiedNow: number;
+  bookingsToday: number;
+}
+
+/** Per-lab desk stats for the admin overview. */
+export async function deskLabOverview(): Promise<DeskLabOverview[]> {
+  const actor = await requireUser();
+  if (actor.role.scope !== "GLOBAL") return [];
+  const today = todayPKT();
+  const now = new Date();
+  const labs = await prisma.lab.findMany({ orderBy: { name: "asc" } });
+  return Promise.all(
+    labs.map(async (lab) => {
+      const [deskCount, occupiedNow, bookingsToday] = await Promise.all([
+        prisma.desk.count({ where: { labId: lab.id, status: "ACTIVE" } }),
+        prisma.bookingOccurrence.count({
+          where: {
+            status: "SCHEDULED",
+            deskId: { not: null },
+            startsAt: { lte: now },
+            endsAt: { gt: now },
+            desk: { labId: lab.id },
+          },
+        }),
+        prisma.bookingOccurrence.count({
+          where: { date: today, status: "SCHEDULED", desk: { labId: lab.id } },
+        }),
+      ]);
+      return { labId: lab.id, labName: lab.name, deskCount, occupiedNow, bookingsToday };
+    })
+  );
 }

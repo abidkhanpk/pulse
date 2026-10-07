@@ -1,8 +1,11 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { requirePermission } from "@/lib/auth-helpers";
 import { hasPermission } from "@/lib/permissions";
-import { listDesks, listOccurrences, bookablePeopleAll, bookableProjects } from "./actions";
+import { listDesks, listOccurrences, bookablePeopleAll, bookableProjects, deskLabOverview } from "./actions";
 import { myLabs } from "../labs/actions";
 import { DesksClient } from "@/components/desks/desks-client";
+import { DesksOverview } from "@/components/overview/desks-overview";
 import { todayPKT, toISODate } from "@/lib/bookings";
 
 function mondayOf(iso: string): string {
@@ -27,6 +30,13 @@ export default async function DesksPage({
   const actor = await requirePermission("bookings.view_all");
   const params = await searchParams;
   const labId = params.lab || undefined;
+  const isAdmin = actor.role.scope === "GLOBAL";
+
+  // Admins start at the lab overview; drill into ?lab=<id> for detail.
+  if (isAdmin && !labId) {
+    const overview = await deskLabOverview();
+    return <DesksOverview overview={overview} />;
+  }
 
   const today = toISODate(todayPKT());
   const weekStart = mondayOf(today);
@@ -40,7 +50,16 @@ export default async function DesksPage({
   ]);
 
   return (
-    <DesksClient
+    <div className="space-y-4">
+      {isAdmin && labId && (
+        <Link
+          href="/desks"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-indigo-600"
+        >
+          <ArrowLeft className="h-4 w-4" /> All labs
+        </Link>
+      )}
+      <DesksClient
       labs={labs}
       desks={desks.map((d) => ({ ...d, notes: d.notes ?? null }))}
       people={people}
@@ -59,5 +78,6 @@ export default async function DesksPage({
       canManage={hasPermission(actor, "bookings.manage")}
       canManageDesks={hasPermission(actor, "desks.manage")}
     />
+    </div>
   );
 }
