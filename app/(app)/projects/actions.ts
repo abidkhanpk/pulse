@@ -612,3 +612,19 @@ export async function initKanbanOrder(
   revalidatePath(`/projects/${projectId}`);
   return { ok: true };
 }
+
+/** Quick status change (e.g. from the overview status pill). Preserves all other fields. */
+export async function setTodoStatus(id: string, status: "TODO" | "IN_PROGRESS" | "DONE"): Promise<ActionResult> {
+  const actor = await requireUser();
+  const existing = await prisma.todo.findUnique({
+    where: { id },
+    include: { project: { select: { labId: true } } },
+  });
+  if (!existing) return { ok: false, error: "Todo not found." };
+  const manager = can(actor, "projects.manage", existing.project.labId);
+  if (!manager && existing.assigneeId !== actor.id) return deny("projects.manage");
+  await prisma.todo.update({ where: { id }, data: { status } });
+  await logAudit(actor.id, "todo.status_changed", "Todo", id, { status });
+  revalidatePath(`/projects/${existing.projectId}`);
+  return { ok: true };
+}

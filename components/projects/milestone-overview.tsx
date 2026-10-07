@@ -2,11 +2,10 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Plus, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, Plus, Pencil, Trash2, CalendarDays, MoreVertical, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label, Select, FieldError } from "@/components/ui/input";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
-import { Badge } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/misc";
 import {
   createMilestone,
@@ -14,6 +13,8 @@ import {
   deleteMilestone,
   milestoneDependencyCandidates,
   setMilestoneDependencies,
+  setTodoStatus,
+  deleteTodo,
 } from "@/app/(app)/projects/actions";
 import { DependencyPicker, type DependencyCandidate } from "./dependency-picker";
 
@@ -43,111 +44,212 @@ function dateKey(t: OverviewTodo): string {
 
 function fmt(d: string | null): string {
   if (!d) return "—";
-  return d.slice(0, 10);
+  const [y, m, day] = d.slice(0, 10).split("-");
+  return `${m}/${day}/${y}`;
 }
 
-function TodoRow({ todo, onClick }: { todo: OverviewTodo; onClick: () => void }) {
+const STATUS_PILL: Record<string, string> = {
+  TODO: "bg-blue-600 hover:bg-blue-700",
+  IN_PROGRESS: "bg-amber-500 hover:bg-amber-600",
+  DONE: "bg-emerald-600 hover:bg-emerald-700",
+};
+
+function TodoRow({
+  todo,
+  projectName,
+  onOpen,
+  onChanged,
+}: {
+  todo: OverviewTodo;
+  projectName: string;
+  onOpen: () => void;
+  onChanged: () => void;
+}) {
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
   const blockers = todo.prerequisites.filter((p) => p.dependsOn.status !== "DONE");
+
+  async function quickStatus(s: string) {
+    if (s === todo.status) return;
+    setSaving(true);
+    const res = await setTodoStatus(todo.id, s as "TODO" | "IN_PROGRESS" | "DONE");
+    setSaving(false);
+    if (!res.ok) alert(res.error);
+    else onChanged();
+  }
+
+  async function onDelete() {
+    setMenuOpen(false);
+    if (!confirm(`Delete todo "${todo.title}"?`)) return;
+    const res = await deleteTodo(todo.id);
+    if (!res.ok) alert(res.error);
+    else onChanged();
+  }
+
   return (
-    <button
-      onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-xl border border-slate-100 bg-white px-4 py-2.5 text-left shadow-sm transition hover:border-indigo-200 hover:shadow"
-    >
-      <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">{todo.title}</span>
-      {blockers.length > 0 && todo.status !== "DONE" && (
-        <Badge color="warning" className="shrink-0 text-[10px]" title={`Waiting on: ${blockers.map((b) => b.dependsOn.title).join(", ")}`}>
-          Blocked
-        </Badge>
-      )}
-      <span className="hidden shrink-0 text-xs text-slate-400 sm:block" title="Start → End">
-        {fmt(todo.startDate)} → {fmt(todo.endDate)}
-      </span>
-      <Badge
-        color={todo.status === "DONE" ? "success" : todo.status === "IN_PROGRESS" ? "info" : "default"}
-        className="shrink-0"
-      >
-        {todo.status.replace("_", " ")}
-      </Badge>
-      {todo.assignee && <Avatar name={todo.assignee.name} className="h-6 w-6 shrink-0 text-[10px]" />}
-    </button>
+    <div className="relative">
+      {/* elbow connector from the tree spine */}
+      <div className="absolute -left-5 top-1/2 h-px w-5 bg-slate-300" />
+      <div className="flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 shadow-[0_1px_3px_rgba(15,40,70,0.08)] ring-1 ring-slate-100 transition hover:ring-indigo-200">
+        <Flag className="h-4 w-4 shrink-0 text-slate-300" />
+        <button onClick={onOpen} className="min-w-0 flex-1 text-left" title={todo.startDate || todo.endDate ? `${fmt(todo.startDate)} → ${fmt(todo.endDate)}` : "No dates — click to add"}>
+          <span className="block text-[10px] leading-tight text-slate-400">{projectName}</span>
+          <span className={`block truncate text-sm font-semibold text-[#1d3f66] ${todo.status === "DONE" ? "line-through opacity-60" : ""}`}>
+            {todo.title}
+          </span>
+        </button>
+        {blockers.length > 0 && todo.status !== "DONE" && (
+          <span
+            className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+            title={`Waiting on: ${blockers.map((b) => b.dependsOn.title).join(", ")}`}
+          >
+            Blocked
+          </span>
+        )}
+        {todo.assignee && <Avatar name={todo.assignee.name} className="h-6 w-6 shrink-0 text-[10px]" />}
+        <span className="flex shrink-0 items-center gap-1 text-xs text-slate-400" title={todo.startDate ? `Start ${fmt(todo.startDate)}` : "No start date"}>
+          <CalendarDays className="h-3.5 w-3.5" />
+          {fmt(todo.endDate)}
+        </span>
+        <select
+          value={todo.status}
+          disabled={saving}
+          onChange={(e) => quickStatus(e.target.value)}
+          className={`shrink-0 cursor-pointer appearance-none rounded-full px-3 py-1 pr-7 text-xs font-semibold text-white outline-none transition ${STATUS_PILL[todo.status] ?? STATUS_PILL.TODO}`}
+          style={{
+            backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='white' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>")`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "right 0.6rem center",
+          }}
+          title="Change status"
+        >
+          <option value="TODO">New</option>
+          <option value="IN_PROGRESS">In progress</option>
+          <option value="DONE">Done</option>
+        </select>
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            title="More actions"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 z-20 w-32 overflow-hidden rounded-lg bg-white py-1 shadow-lg ring-1 ring-slate-200">
+                <button onClick={() => { setMenuOpen(false); onOpen(); }} className="block w-full px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50">
+                  Open
+                </button>
+                <button onClick={onDelete} className="block w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50">
+                  Delete
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
 function MilestoneCard({
   milestone,
+  projectName,
   todos,
   expanded,
   onToggle,
-  onTodoClick,
+  onTodoOpen,
+  onAddTodo,
   onEdit,
   onDelete,
   canManage,
+  onChanged,
 }: {
   milestone: OverviewMilestone;
+  projectName: string;
   todos: OverviewTodo[];
   expanded: boolean;
   onToggle: () => void;
-  onTodoClick: (t: OverviewTodo) => void;
+  onTodoOpen: (t: OverviewTodo) => void;
+  onAddTodo: () => void;
   onEdit: () => void;
   onDelete: () => void;
   canManage: boolean;
+  onChanged: () => void;
 }) {
   const done = todos.filter((t) => t.status === "DONE").length;
-  const pct = todos.length === 0 ? 0 : Math.round((done / todos.length) * 100);
+  const pct = todos.length === 0 ? 0 : (done / todos.length) * 100;
   const starts = todos.map((t) => t.startDate ?? t.endDate).filter(Boolean) as string[];
   const ends = todos.map((t) => t.endDate ?? t.startDate).filter(Boolean) as string[];
-  const startLabel = starts.length ? starts.sort()[0].slice(0, 10) : null;
-  const endCandidates = [...ends];
-  if (milestone.dueDate) endCandidates.push(milestone.dueDate.slice(0, 10));
-  const endLabel = endCandidates.length ? endCandidates.sort().pop()! : null;
+  if (milestone.dueDate) ends.push(milestone.dueDate.slice(0, 10));
+  const startLabel = starts.length ? fmt(starts.sort()[0]) : null;
+  const endLabel = ends.length ? fmt(ends.sort().pop()!) : null;
+  const isPseudo = milestone.id === "__none__";
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center gap-3 px-4 pt-3">
-        <button
-          onClick={onToggle}
-          className="flex min-w-0 flex-1 items-center gap-2 text-left"
-          aria-expanded={expanded}
-        >
-          <motion.span animate={{ rotate: expanded ? 0 : -90 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}>
-            <ChevronDown className="h-4 w-4 text-slate-400" />
-          </motion.span>
-          <span className="truncate text-[15px] font-semibold text-slate-900">{milestone.title}</span>
-        </button>
-        {milestone.dueDate && (
-          <span className="shrink-0 text-xs text-slate-400">Due By: {milestone.dueDate.slice(0, 10)}</span>
-        )}
-        <span className="shrink-0 text-xs font-medium text-slate-500">{pct}% Complete</span>
-        {canManage && (
-          <span className="flex shrink-0 gap-1">
-            <Button variant="ghost" size="sm" onClick={onEdit} title="Edit milestone">
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="ghost" size="sm" className="text-red-600" onClick={onDelete} title="Delete milestone">
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </span>
-        )}
-      </div>
-      {/* Progress bar with start/end dates at its ends */}
-      <div className="flex items-center gap-2 px-4 pt-2">
-        <span className="w-20 shrink-0 text-right text-[11px] text-slate-400">{startLabel ?? "—"}</span>
-        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-          <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600"
-            initial={false}
-            animate={{ width: `${pct}%` }}
-            transition={{ type: "spring", stiffness: 120, damping: 20 }}
-          />
+    <div>
+      {/* Milestone header card */}
+      <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(15,40,70,0.08)] ring-1 ring-slate-100">
+        <div className="flex items-start gap-3 px-4 pt-3">
+          <button
+            onClick={onToggle}
+            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-indigo-300 hover:text-indigo-600"
+            aria-expanded={expanded}
+            title={expanded ? "Collapse" : "Expand"}
+          >
+            <motion.span animate={{ rotate: expanded ? 0 : -90 }} transition={{ type: "spring", stiffness: 400, damping: 30 }} className="flex">
+              <ChevronDown className="h-4 w-4" />
+            </motion.span>
+          </button>
+          <button onClick={onToggle} className="min-w-0 flex-1 text-left">
+            <span className="block text-[10px] leading-tight text-slate-400">{projectName}</span>
+            <span className="block truncate text-[15px] font-bold text-[#1d3f66]">{milestone.title}</span>
+          </button>
+          {!isPseudo && (
+            <span className="hidden shrink-0 pt-4 text-xs text-slate-400 sm:block">
+              Due By: {milestone.dueDate ? fmt(milestone.dueDate) : "—"}
+            </span>
+          )}
+          <span className="shrink-0 pt-4 text-xs font-medium text-slate-500">{pct.toFixed(2)}% Complete</span>
+          {canManage && !isPseudo && (
+            <span className="flex shrink-0 gap-0.5 pt-3">
+              <Button variant="ghost" size="sm" onClick={onEdit} title="Edit milestone" className="!px-2">
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onDelete} title="Delete milestone" className="!px-2 text-red-600">
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </span>
+          )}
         </div>
-        <span className="w-20 shrink-0 text-[11px] text-slate-400">{endLabel ?? "—"}</span>
+        {/* Progress bar */}
+        <div className="px-4 pb-3 pt-2">
+          <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+            <motion.div
+              className="h-full rounded-full bg-[#1e4a7a]"
+              initial={false}
+              animate={{ width: `${pct}%` }}
+              transition={{ type: "spring", stiffness: 120, damping: 20 }}
+            />
+          </div>
+          <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+            <span>{startLabel ?? "—"}</span>
+            <span>
+              {done}/{todos.length} done
+              {milestone.prerequisites.length > 0 && (
+                <> · Depends on: {milestone.prerequisites.map((p) => p.dependsOn.title).join(", ")}</>
+              )}
+            </span>
+            <span>{endLabel ?? "—"}</span>
+          </div>
+        </div>
+        {/* navy bottom accent */}
+        <div className="h-1 bg-[#1e4a7a]" />
       </div>
-      <div className="px-4 pb-1 pt-1 text-xs text-slate-400">
-        {done}/{todos.length} todos done
-        {milestone.prerequisites.length > 0 && (
-          <span> · Depends on: {milestone.prerequisites.map((p) => p.dependsOn.title).join(", ")}</span>
-        )}
-      </div>
+
+      {/* Expandable todo tree */}
       <AnimatePresence initial={false}>
         {expanded && (
           <motion.div
@@ -157,12 +259,32 @@ function MilestoneCard({
             transition={{ duration: 0.22 }}
             className="overflow-hidden"
           >
-            <div className="space-y-1.5 border-t border-slate-100 bg-slate-50/60 px-4 py-3">
-              {todos.length === 0 ? (
-                <p className="py-2 text-center text-xs text-slate-400">No todos in this milestone yet.</p>
-              ) : (
-                todos.map((t) => <TodoRow key={t.id} todo={t} onClick={() => onTodoClick(t)} />)
-              )}
+            <div className="relative ml-7 mt-1">
+              {/* vertical tree spine */}
+              <div className="absolute bottom-5 left-0 top-3 w-px bg-slate-300" />
+              <div className="space-y-2 py-1 pl-5">
+                {todos.length === 0 ? (
+                  <p className="py-2 text-xs text-slate-400">No todos here yet.</p>
+                ) : (
+                  todos.map((t) => (
+                    <TodoRow
+                      key={t.id}
+                      todo={t}
+                      projectName={projectName}
+                      onOpen={() => onTodoOpen(t)}
+                      onChanged={onChanged}
+                    />
+                  ))
+                )}
+                {canManage && !isPseudo && (
+                  <button
+                    onClick={onAddTodo}
+                    className="flex items-center gap-1.5 px-1 py-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                  >
+                    <Plus className="h-3.5 w-3.5 rounded-full border border-current" /> Add Task
+                  </button>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
@@ -173,20 +295,24 @@ function MilestoneCard({
 
 export function MilestoneOverview({
   projectId,
+  projectName,
   milestones,
   todos,
   canManage,
   onChanged,
   onTodoClick,
+  onAddTodo,
 }: {
   projectId: string;
+  projectName: string;
   milestones: OverviewMilestone[];
   todos: OverviewTodo[];
   canManage: boolean;
   onChanged: () => void;
   onTodoClick: (t: OverviewTodo) => void;
+  onAddTodo: (milestoneId: string | null) => void;
 }) {
-  const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = React.useState<Set<string>>(() => new Set());
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<OverviewMilestone | null>(null);
   const [title, setTitle] = React.useState("");
@@ -220,6 +346,15 @@ export function MilestoneOverview({
     msWithKey.sort((a, b) => a.key.localeCompare(b.key));
     return { msWithKey, loose: sortTodos(loose) };
   }, [milestones, todos]);
+
+  // Expand the first milestone by default (like the screenshot).
+  /* eslint-disable react-hooks/set-state-in-effect -- expand first group on data load */
+  React.useEffect(() => {
+    if (expanded.size === 0 && groups.msWithKey.length > 0) {
+      setExpanded(new Set([groups.msWithKey[0].m.id]));
+    }
+  }, [groups, expanded.size]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function toggle(id: string) {
     setExpanded((prev) => {
@@ -289,8 +424,8 @@ export function MilestoneOverview({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 rounded-2xl bg-[#edf2f5] p-4">
+      <div className="flex items-center justify-between px-1">
         <h3 className="text-sm font-semibold text-slate-700">Milestones & todos</h3>
         {canManage && (
           <Button size="sm" onClick={startCreate}>
@@ -300,7 +435,7 @@ export function MilestoneOverview({
       </div>
 
       {groups.msWithKey.length === 0 && groups.loose.length === 0 && (
-        <p className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">
+        <p className="rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-400">
           No milestones or todos yet. Add a milestone to group work into phases.
         </p>
       )}
@@ -309,26 +444,32 @@ export function MilestoneOverview({
         <MilestoneCard
           key={m.id}
           milestone={m}
+          projectName={projectName}
           todos={mt}
           expanded={expanded.has(m.id)}
           onToggle={() => toggle(m.id)}
-          onTodoClick={onTodoClick}
+          onTodoOpen={onTodoClick}
+          onAddTodo={() => onAddTodo(m.id)}
           onEdit={() => startEdit(m)}
           onDelete={() => onDelete(m)}
           canManage={canManage}
+          onChanged={onChanged}
         />
       ))}
 
       {groups.loose.length > 0 && (
         <MilestoneCard
           milestone={{ id: "__none__", title: "Without milestone", description: null, dueDate: null, status: "PLANNED", prerequisites: [] }}
+          projectName={projectName}
           todos={groups.loose}
           expanded={expanded.has("__none__")}
           onToggle={() => toggle("__none__")}
-          onTodoClick={onTodoClick}
+          onTodoOpen={onTodoClick}
+          onAddTodo={() => onAddTodo(null)}
           onEdit={() => {}}
           onDelete={() => {}}
           canManage={false}
+          onChanged={onChanged}
         />
       )}
 

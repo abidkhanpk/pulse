@@ -67,6 +67,7 @@ export function ProjectDetail({
     open: boolean;
     todo: TodoFull | null;
     defaultStatus: KanbanTodo["status"];
+    defaultMilestoneId?: string | null;
   }>({ open: false, todo: null, defaultStatus: "TODO" });
 
   const doneCount = project.todos.filter((t) => t.status === "DONE").length;
@@ -155,6 +156,7 @@ export function ProjectDetail({
           )}
           <MilestoneOverview
             projectId={project.id}
+            projectName={project.name}
             milestones={project.milestones}
             todos={project.todos.map((t) => ({
               id: t.id,
@@ -172,6 +174,9 @@ export function ProjectDetail({
               const full = project.todos.find((x) => x.id === t.id);
               if (full) setTodoDialog({ open: true, todo: full, defaultStatus: full.status });
             }}
+            onAddTodo={(milestoneId) =>
+              setTodoDialog({ open: true, todo: null, defaultStatus: "TODO", defaultMilestoneId: milestoneId })
+            }
           />
         </div>
       )}
@@ -256,6 +261,7 @@ export function ProjectDetail({
         projectId={project.id}
         todo={todoDialog.todo}
         defaultStatus={todoDialog.defaultStatus}
+        defaultMilestoneId={todoDialog.defaultMilestoneId ?? null}
         milestones={project.milestones}
         members={project.members.map((m) => ({ id: m.user.id, name: m.user.name }))}
         canManage={canManage}

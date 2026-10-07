@@ -22,12 +22,13 @@ interface Props {
   projectId: string;
   todo: TodoWithDeps | null;
   defaultStatus: KanbanTodo["status"];
+  defaultMilestoneId?: string | null;
   milestones: { id: string; title: string }[];
   members: { id: string; name: string }[];
   canManage: boolean;
 }
 
-export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultStatus, milestones, members, canManage }: Props) {
+export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultStatus, defaultMilestoneId, milestones, members, canManage }: Props) {
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [status, setStatus] = React.useState<KanbanTodo["status"]>("TODO");
@@ -47,7 +48,7 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
       setTitle(todo?.title ?? "");
       setDescription(todo?.description ?? "");
       setStatus(todo?.status ?? defaultStatus);
-      setMilestoneId(todo?.milestoneId ?? "");
+      setMilestoneId(todo?.milestoneId ?? defaultMilestoneId ?? "");
       setAssigneeId(todo?.assignee?.id ?? "");
       setStartDate(todo?.startDate ? todo.startDate.slice(0, 10) : "");
       setEndDate(todo?.endDate ? todo.endDate.slice(0, 10) : "");
@@ -56,7 +57,7 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
       setCandidates([]);
       if (todo) todoDependencyCandidates(todo.id).then(setCandidates);
     }
-  }, [open, todo, defaultStatus]);
+  }, [open, todo, defaultStatus, defaultMilestoneId]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   async function onSubmit(e: React.FormEvent) {
