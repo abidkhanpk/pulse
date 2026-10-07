@@ -6,6 +6,7 @@ import { Select, Label } from "@/components/ui/input";
 import { Tabs } from "@/components/ui/misc";
 import { WeekGrid, type Occurrence } from "./week-grid";
 import { DayTimeline } from "./day-timeline";
+import { MonthGrid } from "./month-grid";
 import { DesksManager } from "./desks-manager";
 
 interface Desk {
@@ -76,6 +77,7 @@ export function DesksClient({
       <Tabs
         tabs={[
           { id: "week", label: "Week view" },
+          { id: "month", label: "Month view" },
           { id: "day", label: "Day timeline" },
         ]}
         active={view}
@@ -93,6 +95,16 @@ export function DesksClient({
           canManage={canManage}
           canManageDesks={canManageDesks}
           onManageDesks={() => setManagerOpen(true)}
+        />
+      ) : view === "month" ? (
+        <MonthGrid
+          key={labId}
+          desks={desks}
+          people={people}
+          projects={projects}
+          today={today}
+          labId={labId}
+          canManage={canManage}
         />
       ) : (
         <DayTimeline
