@@ -55,11 +55,11 @@ function Stat({
         </span>
         {href && <ArrowRight className="h-4 w-4 text-slate-300 transition-transform duration-200 group-hover:translate-x-0.5" />}
       </div>
-      <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900">
+      <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
         <AnimatedNumber value={value} />
         {total !== undefined && <span className="text-lg font-medium text-slate-400"> / {total}</span>}
       </p>
-      <p className="mt-1 text-sm font-medium text-slate-600">{label}</p>
+      <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-300">{label}</p>
       {hint && <p className="text-xs text-slate-400">{hint}</p>}
     </Card>
   );
@@ -80,7 +80,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
           <h1 className="bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
             Dashboard
           </h1>
-          <p className="mt-1 text-sm text-slate-500">Today&apos;s overview of the lab.</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Today&apos;s overview of the lab.</p>
         </div>
       </FadeIn>
 
@@ -117,10 +117,10 @@ export function DashboardClient({ d }: { d: DashboardData }) {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 + i * 0.05, duration: 0.3 }}
                 >
-                  <Link href={`/projects/${t.projectId}`} className="block rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:-translate-y-px hover:border-indigo-200 hover:shadow-md">
+                  <Link href={`/projects/${t.projectId}`} className="block rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:-translate-y-px hover:border-indigo-200 hover:shadow-md dark:border-slate-800">
                     <div className="flex items-center gap-2">
-                      <span className="flex-1 truncate text-sm font-medium text-slate-800">{t.title}</span>
-                      <Badge color={t.status === "IN_PROGRESS" ? "info" : "default"}>{t.status.replace("_", " ")}</Badge>
+                      <span className="flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-200">{t.title}</span>
+                      <Badge color={t.status === "IN_PROGRESS" ? "info" : "default"}>{t.status.replace("_", "")}</Badge>
                     </div>
                     <p className="mt-0.5 text-xs text-slate-400">
                       {t.projectName}
@@ -152,9 +152,9 @@ export function DashboardClient({ d }: { d: DashboardData }) {
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.25 + i * 0.04, duration: 0.3 }}
-                    className="flex items-center gap-2 rounded-xl border border-slate-100 px-3 py-2.5 text-sm transition-shadow hover:shadow-sm"
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 px-3 py-2.5 text-sm transition-shadow hover:shadow-sm dark:border-slate-800"
                   >
-                    <span className="font-medium text-slate-800">{b.personName}</span>
+                    <span className="font-medium text-slate-800 dark:text-slate-200">{b.personName}</span>
                     <span className="text-slate-400">
                       {b.deskLabel ?? "Remote"} · {b.timeStart}–{b.timeEnd}
                     </span>

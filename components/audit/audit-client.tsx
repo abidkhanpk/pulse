@@ -112,13 +112,13 @@ export function AuditClient({
           <TBody>
             {rows.map((r) => (
               <TR key={r.id}>
-                <TD className="whitespace-nowrap text-xs text-slate-500">{r.createdAt}</TD>
+                <TD className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">{r.createdAt}</TD>
                 <TD>{r.actorName ?? <span className="text-slate-400">system</span>}</TD>
                 <TD><Badge color={ACTION_COLORS[r.action] ?? "default"}>{r.action}</Badge></TD>
                 <TD>{r.entityType ?? "—"}</TD>
                 <TD>
                   {r.details ? (
-                    <code className="block max-w-md truncate text-xs text-slate-500" title={r.details}>
+                    <code className="block max-w-md truncate text-xs text-slate-500 dark:text-slate-400" title={r.details}>
                       {r.details}
                     </code>
                   ) : (

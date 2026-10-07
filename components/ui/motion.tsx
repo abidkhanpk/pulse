@@ -107,7 +107,7 @@ export function Skeleton({ className }: { className?: string }) {
 /** Card skeleton for loading grids. */
 export function CardSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn("rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm", className)}>
+    <div className={cn("rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:bg-slate-900", className)}>
       <Skeleton className="h-5 w-2/3" />
       <Skeleton className="mt-3 h-3 w-full" />
       <Skeleton className="mt-2 h-3 w-4/5" />

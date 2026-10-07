@@ -16,8 +16,8 @@ export default async function LabsPage() {
         <p className="text-sm text-slate-400">
           {org?.name ?? "Organization"} <span className="mx-1">›</span> Labs
         </p>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Labs</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Labs</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           {canManage
             ? "Create, rename and manage labs and their incharges."
             : "Rename the labs you are incharge of."}

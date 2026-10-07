@@ -110,8 +110,8 @@ export function ProjectsClient({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Projects</h1>
-          <p className="text-sm text-slate-500">{projects.length} projects</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Projects</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{projects.length} projects</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Select value={searchParams.get("lab") ?? ""} onChange={(e) => changeFilter("lab", e.target.value)} className="w-44">
@@ -147,13 +147,13 @@ export function ProjectsClient({
                   <Link href={`/projects/${p.id}`} className="min-w-0 flex-1 hover:underline">
                     <CardTitle className="truncate">{p.name}</CardTitle>
                   </Link>
-                  <Badge color={STATUS_COLORS[p.status] ?? "default"}>{p.status.replace("_", " ")}</Badge>
+                  <Badge color={STATUS_COLORS[p.status] ?? "default"}>{p.status.replace("_", "")}</Badge>
                 </div>
                 <p className="text-xs text-slate-400">{p.lab.name}</p>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-2">
-                {p.description && <p className="line-clamp-2 text-sm text-slate-600">{p.description}</p>}
-                <div className="mt-auto flex items-center justify-between pt-2 text-xs text-slate-500">
+                {p.description && <p className="line-clamp-2 text-sm text-slate-600 dark:text-slate-300">{p.description}</p>}
+                <div className="mt-auto flex items-center justify-between pt-2 text-xs text-slate-500 dark:text-slate-400">
                   <span>{p._count.todos} todos · {p._count.members} members</span>
                   {p.endDate && <span>Due {p.endDate.slice(0, 10)}</span>}
                 </div>

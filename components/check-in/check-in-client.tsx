@@ -87,8 +87,8 @@ export function CheckInClient() {
   return (
     <div className="mx-auto max-w-lg space-y-4">
       <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Check-in</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Check-in</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           {new Date().toLocaleDateString("en-PK", {
             weekday: "long",
             day: "numeric",
@@ -96,7 +96,7 @@ export function CheckInClient() {
             timeZone: "Asia/Karachi",
           })}
         </p>
-        <p className="mt-1 font-mono text-3xl font-bold text-slate-800">{now}</p>
+        <p className="mt-1 font-mono text-3xl font-bold text-slate-800 dark:text-slate-200">{now}</p>
       </div>
 
       <Card>
@@ -106,12 +106,12 @@ export function CheckInClient() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-3 text-center">
-            <div className="rounded-lg bg-slate-50 p-3">
-              <p className="text-xs text-slate-500">Check-in</p>
+            <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
+              <p className="text-xs text-slate-500 dark:text-slate-400">Check-in</p>
               <p className="font-mono text-lg font-semibold">{fmtTime(record?.checkIn ?? null)}</p>
             </div>
-            <div className="rounded-lg bg-slate-50 p-3">
-              <p className="text-xs text-slate-500">Check-out</p>
+            <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
+              <p className="text-xs text-slate-500 dark:text-slate-400">Check-out</p>
               <p className="font-mono text-lg font-semibold">{fmtTime(record?.checkOut ?? null)}</p>
             </div>
           </div>
@@ -128,8 +128,8 @@ export function CheckInClient() {
                       onClick={() => setWorkMode(m)}
                       className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
                         workMode === m
-                          ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                          : "border-slate-300 text-slate-600 hover:bg-slate-50"
+                          ? "border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
+                          : "border-slate-300 text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                       }`}
                     >
                       {m === "ONSITE" ? "On-site" : m === "REMOTE" ? "Remote" : "Leave"}
@@ -149,7 +149,7 @@ export function CheckInClient() {
             </Button>
           )}
 
-          {done && <p className="text-center text-sm text-slate-500">You&apos;re done for today. Have a good evening.</p>}
+          {done && <p className="text-center text-sm text-slate-500 dark:text-slate-400">You&apos;re done for today. Have a good evening.</p>}
 
           <FieldError message={error ?? undefined} />
         </CardContent>

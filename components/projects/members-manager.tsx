@@ -61,10 +61,10 @@ export function MembersManager({
       </div>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         {members.map((m) => (
-          <div key={m.user.id} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+          <div key={m.user.id} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:bg-slate-900 dark:border-slate-700">
             <Avatar name={m.user.name} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-slate-900">{m.user.name}</p>
+              <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{m.user.name}</p>
               <p className="truncate text-xs text-slate-400">{m.user.email} · {m.role}</p>
             </div>
             <Button variant="ghost" size="sm" className="text-red-600" onClick={() => remove(m.user.id, m.user.name)}>

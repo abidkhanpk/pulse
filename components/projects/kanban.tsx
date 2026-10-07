@@ -65,15 +65,15 @@ function TodoCard({ todo, onClick }: { todo: KanbanTodo; onClick: () => void }) 
       {...attributes}
       {...listeners}
       onClick={onClick}
-      className="cursor-grab rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:border-indigo-300 active:cursor-grabbing"
+      className="cursor-grab rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:border-indigo-300 active:cursor-grabbing dark:bg-slate-900 dark:border-slate-700"
     >
-      <p className="text-sm font-medium text-slate-900">{todo.title}</p>
+      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{todo.title}</p>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         {todo.milestone && (
           <Badge color="info" className="text-[10px]">{todo.milestone.title}</Badge>
         )}
         {blockers.length > 0 && todo.status !== "DONE" && (
-          <Badge color="warning" className="text-[10px]" title={`Waiting on: ${blockers.map((b) => b.dependsOn.title).join(", ")}`}>
+          <Badge color="warning" className="text-[10px]" title={`Waiting on: ${blockers.map((b) => b.dependsOn.title).join(",")}`}>
             Blocked by {blockers.length}
           </Badge>
         )}
@@ -82,7 +82,7 @@ function TodoCard({ todo, onClick }: { todo: KanbanTodo; onClick: () => void }) 
         )}
         {todo.endDate && (
           <Badge color={isOverdue(todo) ? "danger" : "default"} className="text-[10px]">
-            {isOverdue(todo) ? "Overdue " : ""}{todo.endDate.slice(0, 10)}
+            {isOverdue(todo) ? "Overdue" : ""}{todo.endDate.slice(0, 10)}
           </Badge>
         )}
         {todo.assignee && (
@@ -108,11 +108,11 @@ function Column({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-80 shrink-0 flex-col rounded-xl border p-2 ${isOver ? "border-indigo-400 bg-indigo-50" : "border-slate-200 bg-slate-50"}`}
+      className={`flex w-80 shrink-0 flex-col rounded-xl border p-2 ${isOver ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950" : "border-slate-200 bg-slate-50 dark:bg-slate-800 dark:border-slate-700"}`}
     >
       <div className="flex items-center justify-between px-2 py-1.5">
-        <h3 className="text-sm font-semibold text-slate-700">{label}</h3>
-        <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">{todos.length}</span>
+        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{label}</h3>
+        <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">{todos.length}</span>
       </div>
       <SortableContext items={todos.map((t) => t.id)} strategy={verticalListSortingStrategy}>
         <div className="flex min-h-[120px] flex-col gap-2">
@@ -262,8 +262,8 @@ export function KanbanBoard({
         </div>
         <DragOverlay>
           {activeTodo && (
-            <div className="w-80 rounded-lg border border-indigo-300 bg-white p-3 shadow-lg">
-              <p className="text-sm font-medium text-slate-900">{activeTodo.title}</p>
+            <div className="w-80 rounded-lg border border-indigo-300 bg-white p-3 shadow-lg dark:bg-slate-900">
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{activeTodo.title}</p>
             </div>
           )}
         </DragOverlay>

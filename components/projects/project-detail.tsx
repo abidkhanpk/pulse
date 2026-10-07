@@ -110,12 +110,12 @@ export function ProjectDetail({
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">{project.name}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{project.name}</h1>
             <Badge color={project.status === "ACTIVE" ? "success" : project.status === "ON_HOLD" ? "warning" : "default"}>
-              {project.status.replace("_", " ")}
+              {project.status.replace("_", "")}
             </Badge>
           </div>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {project.lab.name}
             {project.lead ? ` · Lead: ${project.lead.name}` : ""}
             {project.startDate ? ` · ${project.startDate.slice(0, 10)}` : ""}
@@ -152,7 +152,7 @@ export function ProjectDetail({
           {project.description && (
             <Card>
               <CardHeader><CardTitle>About</CardTitle></CardHeader>
-              <CardContent><p className="whitespace-pre-wrap text-sm text-slate-700">{project.description}</p></CardContent>
+              <CardContent><p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{project.description}</p></CardContent>
             </Card>
           )}
           <MilestoneOverview
@@ -223,13 +223,13 @@ export function ProjectDetail({
           <CardContent className="space-y-2">
             {logEntries.length === 0 && <p className="text-sm text-slate-400">No logbook entries for this project yet.</p>}
             {logEntries.map((e) => (
-              <div key={e.id} className="rounded-lg border border-slate-100 px-3 py-2">
+              <div key={e.id} className="rounded-lg border border-slate-100 px-3 py-2 dark:border-slate-800">
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <span>{e.date}</span>
-                  <span className="font-medium text-slate-600">{e.user.name}</span>
+                  <span className="font-medium text-slate-600 dark:text-slate-300">{e.user.name}</span>
                   <Badge color={e.status === "REVIEWED" ? "success" : e.status === "SUBMITTED" ? "info" : "default"}>{e.status}</Badge>
                 </div>
-                <p className="mt-0.5 text-sm text-slate-800">{e.summary}</p>
+                <p className="mt-0.5 text-sm text-slate-800 dark:text-slate-200">{e.summary}</p>
               </div>
             ))}
           </CardContent>
@@ -245,8 +245,8 @@ export function ProjectDetail({
             ) : (
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 {project.members.map((m) => (
-                  <div key={m.user.id} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                    <p className="font-medium text-slate-900">{m.user.name}</p>
+                  <div key={m.user.id} className="rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700">
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{m.user.name}</p>
                     <p className="text-xs text-slate-400">{m.user.email}</p>
                   </div>
                 ))}

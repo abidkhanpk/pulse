@@ -56,8 +56,8 @@ export function DesksClient({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Desk booking</h1>
-          <p className="text-sm text-slate-500">Availability across labs — click an empty cell to book.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Desk booking</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Availability across labs — click an empty cell to book.</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Label htmlFor="lab-filter" className="!mb-0 text-sm">

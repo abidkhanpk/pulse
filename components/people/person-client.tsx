@@ -71,8 +71,8 @@ export function PersonClient({ person }: { person: Person }) {
         <CardContent className="flex flex-wrap items-center gap-4 !py-5">
           <Avatar name={person.name} className="h-12 w-12 text-base" />
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-bold text-slate-900">{person.name}</h1>
-            <p className="text-sm text-slate-500">{person.email}</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">{person.name}</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{person.email}</p>
           </div>
           <div className="flex gap-2">
             <Badge color={person.status === "ACTIVE" ? "success" : "danger"}>{person.status}</Badge>
@@ -88,12 +88,12 @@ export function PersonClient({ person }: { person: Person }) {
             <CardTitle>Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <p><span className="font-medium text-slate-700">Lab:</span> {person.lab?.name ?? "—"}</p>
-            <p><span className="font-medium text-slate-700">Join date:</span> {person.joinDate ? person.joinDate.slice(0, 10) : "—"}</p>
+            <p><span className="font-medium text-slate-700 dark:text-slate-300">Lab:</span> {person.lab?.name ?? "—"}</p>
+            <p><span className="font-medium text-slate-700 dark:text-slate-300">Join date:</span> {person.joinDate ? person.joinDate.slice(0, 10) : "—"}</p>
             {person.inchargeOf.length > 0 && (
               <p>
-                <span className="font-medium text-slate-700">Incharge of:</span>{" "}
-                {person.inchargeOf.map((i) => i.lab.name).join(", ")}
+                <span className="font-medium text-slate-700 dark:text-slate-300">Incharge of:</span>{""}
+                {person.inchargeOf.map((i) => i.lab.name).join(",")}
               </p>
             )}
           </CardContent>

@@ -114,8 +114,8 @@ export function RolesClient({ roles }: { roles: Role[] }) {
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Roles</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Roles</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Granular permissions per role. System roles can be reset to defaults but not deleted.
           </p>
         </div>
@@ -138,7 +138,7 @@ export function RolesClient({ roles }: { roles: Role[] }) {
           {roles.map((r) => (
             <TR key={r.id}>
               <TD>
-                <div className="font-medium text-slate-900">
+                <div className="font-medium text-slate-900 dark:text-slate-100">
                   {r.name}
                   {r.isSystem && (
                     <Badge color="default" className="ml-2">
@@ -147,7 +147,7 @@ export function RolesClient({ roles }: { roles: Role[] }) {
                   )}
                 </div>
                 <div className="text-xs text-slate-400">{r.key}</div>
-                {r.description && <div className="text-xs text-slate-500">{r.description}</div>}
+                {r.description && <div className="text-xs text-slate-500 dark:text-slate-400">{r.description}</div>}
               </TD>
               <TD>
                 <Badge color={r.scope === "GLOBAL" ? "primary" : "info"}>{r.scope}</Badge>
@@ -224,12 +224,12 @@ export function RolesClient({ roles }: { roles: Role[] }) {
           </div>
           <div>
             <Label>Permissions</Label>
-            <div className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-2 dark:border-slate-700">
               {PERMISSIONS.map((p) => (
                 <label key={p.key} className="flex cursor-pointer items-start gap-2 text-sm">
                   <Checkbox checked={permissions.includes(p.key)} onChange={() => togglePerm(p.key)} className="mt-0.5" />
                   <span>
-                    <span className="font-medium text-slate-700">{p.label}</span>
+                    <span className="font-medium text-slate-700 dark:text-slate-300">{p.label}</span>
                     <span className="block text-xs text-slate-400">{p.description}</span>
                   </span>
                 </label>

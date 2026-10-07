@@ -97,7 +97,7 @@ export function DesksManager({
           </Button>
         </div>
         {formOpen ? (
-          <form onSubmit={onSubmit} className="space-y-3 rounded-lg border border-slate-200 p-4">
+          <form onSubmit={onSubmit} className="space-y-3 rounded-lg border border-slate-200 p-4 dark:border-slate-700">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Lab</Label>

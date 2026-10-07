@@ -9,8 +9,8 @@ export function ProjectsOverview({ overview }: { overview: ProjectLabOverview[] 
     <div className="space-y-5">
       <FadeIn>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Projects</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Projects</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Select a lab to see its projects in detail.
           </p>
         </div>

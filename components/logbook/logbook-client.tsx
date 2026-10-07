@@ -63,13 +63,13 @@ function EntryCard({
             <div className="flex flex-wrap items-center gap-2">
               <Badge color={STATUS_COLORS[entry.status] ?? "default"}>{entry.status}</Badge>
               <span className="text-xs text-slate-400">{entry.date}</span>
-              {!mine && <span className="text-xs font-medium text-slate-600">{entry.user.name}</span>}
+              {!mine && <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{entry.user.name}</span>}
               {entry.project && <span className="text-xs text-indigo-600">{entry.project.name}</span>}
             </div>
-            <p className="mt-1.5 font-medium text-slate-900">{entry.summary}</p>
-            {entry.details && <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{entry.details}</p>}
+            <p className="mt-1.5 font-medium text-slate-900 dark:text-slate-100">{entry.summary}</p>
+            {entry.details && <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">{entry.details}</p>}
             {entry.reviewComment && (
-              <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-300">
                 <span className="font-medium">Reviewer note:</span> {entry.reviewComment}
               </p>
             )}
@@ -263,8 +263,8 @@ export function LogbookClient({
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Logbook</h1>
-          <p className="text-sm text-slate-500">Daily record of project work.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Logbook</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Daily record of project work.</p>
         </div>
         <div className="ml-auto">
           <Button onClick={startCreate}>New entry</Button>
@@ -290,11 +290,11 @@ export function LogbookClient({
               {d.entries.length > 0 && (
                 <CardContent className="space-y-2">
                   {d.entries.map((e) => (
-                    <div key={e.id} className="rounded-lg border border-slate-100 px-3 py-2 text-sm">
-                      <span className="font-medium text-slate-800">{e.userName}</span>
+                    <div key={e.id} className="rounded-lg border border-slate-100 px-3 py-2 text-sm dark:border-slate-800">
+                      <span className="font-medium text-slate-800 dark:text-slate-200">{e.userName}</span>
                       {e.projectName && <span className="ml-2 text-xs text-indigo-600">{e.projectName}</span>}
                       <span className="ml-2"><Badge color={STATUS_COLORS[e.status] ?? "default"}>{e.status}</Badge></span>
-                      <p className="mt-0.5 text-slate-600">{e.summary}</p>
+                      <p className="mt-0.5 text-slate-600 dark:text-slate-300">{e.summary}</p>
                     </div>
                   ))}
                 </CardContent>

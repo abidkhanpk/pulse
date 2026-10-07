@@ -13,7 +13,7 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Settings</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Settings</h1>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {links.map((l) => (
@@ -23,12 +23,12 @@ export default async function SettingsPage() {
                 <CardTitle>{l.title}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-slate-500">{l.desc}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{l.desc}</p>
               </CardContent>
             </Card>
           </Link>
         ))}
-        {links.length === 0 && <p className="text-sm text-slate-500">No settings available for your role.</p>}
+        {links.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400">No settings available for your role.</p>}
       </div>
     </div>
   );

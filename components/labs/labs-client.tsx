@@ -210,13 +210,13 @@ export function LabsClient({
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {lab.description && <p className="text-sm text-slate-600">{lab.description}</p>}
-                <div className="flex gap-4 text-sm text-slate-500">
+                {lab.description && <p className="text-sm text-slate-600 dark:text-slate-300">{lab.description}</p>}
+                <div className="flex gap-4 text-sm text-slate-500 dark:text-slate-400">
                   <span>{lab._count.desks} desks</span>
                   <span>{lab._count.projects} projects</span>
                 </div>
                 <div>
-                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     Lab incharges
                   </p>
                   <div className="flex flex-wrap gap-1.5">
@@ -297,10 +297,10 @@ export function LabsClient({
             <DialogTitle>Incharges — {inchargeLab.name}</DialogTitle>
             <div className="mt-4 space-y-3">
               {inchargeLab.incharges.map((ic) => (
-                <div key={ic.user.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+                <div key={ic.user.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700">
                   <div>
-                    <p className="text-sm font-medium text-slate-800">{ic.user.name}</p>
-                    <p className="text-xs text-slate-500">{ic.user.email}</p>
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{ic.user.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{ic.user.email}</p>
                   </div>
                   <Button variant="ghost" size="sm" className="text-red-600" onClick={() => dropIncharge(inchargeLab.id, ic.user.id)}>
                     Remove
@@ -327,17 +327,17 @@ export function LabsClient({
 
       {/* Cascade delete confirmation */}
       <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
-        <DialogTitle className="text-red-700">Delete lab permanently?</DialogTitle>
+        <DialogTitle className="text-red-700 dark:text-red-300">Delete lab permanently?</DialogTitle>
         <div className="mt-4 space-y-3">
-          <p className="text-sm text-slate-600">
-            <span className="font-semibold text-slate-900">{deleteTarget?.name}</span> and{" "}
-            <span className="font-semibold text-red-700">everything under it</span> will be
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            <span className="font-semibold text-slate-900 dark:text-slate-100">{deleteTarget?.name}</span> and{""}
+            <span className="font-semibold text-red-700 dark:text-red-300">everything under it</span> will be
             permanently deleted. This cannot be undone.
           </p>
           {!deletePreview ? (
             <p className="text-sm text-slate-400">Counting records…</p>
           ) : (
-            <div className="grid grid-cols-2 gap-2 rounded-xl bg-red-50 p-4 ring-1 ring-red-100">
+            <div className="grid grid-cols-2 gap-2 rounded-xl bg-red-50 p-4 ring-1 ring-red-100 dark:bg-red-950">
               {[
                 ["Users", deletePreview.users],
                 ["Projects", deletePreview.projects],
@@ -348,8 +348,8 @@ export function LabsClient({
                 ["Attendance records", deletePreview.attendanceRecords],
               ].map(([label, n]) => (
                 <div key={label as string} className="flex items-baseline justify-between text-sm">
-                  <span className="text-slate-600">{label}</span>
-                  <span className="font-bold text-slate-900">{n as number}</span>
+                  <span className="text-slate-600 dark:text-slate-300">{label}</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">{n as number}</span>
                 </div>
               ))}
             </div>

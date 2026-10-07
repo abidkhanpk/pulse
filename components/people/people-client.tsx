@@ -149,8 +149,8 @@ export function PeopleClient({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">People</h1>
-          <p className="text-sm text-slate-500">{people.length} people</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">People</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{people.length} people</p>
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Input
@@ -197,7 +197,7 @@ export function PeopleClient({
                   <Link href={`/people/${p.id}`} className="flex items-center gap-2 hover:underline">
                     <Avatar name={p.name} />
                     <span>
-                      <span className="block font-medium text-slate-900">{p.name}</span>
+                      <span className="block font-medium text-slate-900 dark:text-slate-100">{p.name}</span>
                       <span className="block text-xs text-slate-400">{p.email}</span>
                     </span>
                   </Link>

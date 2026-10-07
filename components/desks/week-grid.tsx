@@ -56,8 +56,8 @@ function fmtTime(iso: string): string {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  DESK: "bg-indigo-100 text-indigo-800 border-indigo-200",
-  REMOTE: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  DESK: "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800",
+  REMOTE: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300",
 };
 
 export function WeekGrid({
@@ -186,7 +186,7 @@ export function WeekGrid({
           This week
         </Button>
         <Button variant="outline" size="sm" onClick={() => shiftWeek(1)}>Next →</Button>
-        <span className="ml-2 text-sm font-medium text-slate-700">{weekLabel}</span>
+        <span className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">{weekLabel}</span>
         {loading && <span className="text-xs text-slate-400">Loading…</span>}
         <div className="ml-auto flex gap-2">
           {canManageDesks && (
@@ -202,18 +202,18 @@ export function WeekGrid({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white scroll-thin">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white scroll-thin dark:bg-slate-900 dark:border-slate-700">
         <table className="w-full min-w-[900px] border-collapse text-sm">
           <thead>
-            <tr className="bg-slate-50">
-              <th className="sticky left-0 z-10 w-40 border-b border-r border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-semibold text-slate-500">
+            <tr className="bg-slate-50 dark:bg-slate-800">
+              <th className="sticky left-0 z-10 w-40 border-b border-r border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
                 Desk
               </th>
               {days.map((d) => {
                 const dt = new Date(d + "T00:00:00Z");
                 const isToday = d === new Date().toISOString().slice(0, 10);
                 return (
-                  <th key={d} className={`border-b border-slate-200 px-2 py-2 text-center text-xs font-semibold ${isToday ? "bg-indigo-50 text-indigo-700" : "text-slate-500"}`}>
+                  <th key={d} className={`border-b border-slate-200 px-2 py-2 text-center text-xs font-semibold ${isToday ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300" : "text-slate-500 dark:text-slate-400"}`}>
                     <div>{dt.toLocaleDateString("en-PK", { weekday: "short", timeZone: "Asia/Karachi" })}</div>
                     <div className="text-base">{dt.toLocaleDateString("en-PK", { day: "numeric", timeZone: "Asia/Karachi" })}</div>
                   </th>
@@ -223,9 +223,9 @@ export function WeekGrid({
           </thead>
           <tbody>
             {desks.map((desk) => (
-              <tr key={desk.id} className="border-b border-slate-100 last:border-0">
-                <td className="sticky left-0 z-10 border-r border-slate-200 bg-white px-3 py-2">
-                  <div className="font-medium text-slate-800">{desk.label}</div>
+              <tr key={desk.id} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
+                <td className="sticky left-0 z-10 border-r border-slate-200 bg-white px-3 py-2 dark:bg-slate-900 dark:border-slate-700">
+                  <div className="font-medium text-slate-800 dark:text-slate-200">{desk.label}</div>
                   <div className="text-xs text-slate-400">{desk.lab.name}</div>
                   {desk.status === "MAINTENANCE" && <Badge color="warning">Maintenance</Badge>}
                 </td>
@@ -266,8 +266,8 @@ export function WeekGrid({
             ))}
             {/* Remote / WFH row */}
             <tr className="bg-emerald-50/40">
-              <td className="sticky left-0 z-10 border-r border-slate-200 bg-emerald-50/60 px-3 py-2">
-                <div className="font-medium text-emerald-800">Remote / WFH</div>
+              <td className="sticky left-0 z-10 border-r border-slate-200 bg-emerald-50/60 px-3 py-2 dark:border-slate-700">
+                <div className="font-medium text-emerald-800 dark:text-emerald-300">Remote / WFH</div>
                 <div className="text-xs text-emerald-600">no desk needed</div>
               </td>
               {days.map((day) => {

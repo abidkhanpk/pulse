@@ -78,16 +78,16 @@ export function DayTimeline({
         {loading && <span className="text-xs text-slate-400">Loading…</span>}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white scroll-thin">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white scroll-thin dark:bg-slate-900 dark:border-slate-700">
         <div className="min-w-[900px]">
           {/* hour header */}
-          <div className="flex border-b border-slate-200 bg-slate-50">
-            <div className="w-40 shrink-0 px-3 py-2 text-xs font-semibold text-slate-500">Desk</div>
+          <div className="flex border-b border-slate-200 bg-slate-50 dark:bg-slate-800 dark:border-slate-700">
+            <div className="w-40 shrink-0 px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400">Desk</div>
             <div className="relative flex-1">
               {hours.map((h) => (
                 <div
                   key={h}
-                  className="absolute top-0 bottom-0 border-l border-slate-200 px-1 py-2 text-[10px] text-slate-400"
+                  className="absolute top-0 bottom-0 border-l border-slate-200 px-1 py-2 text-[10px] text-slate-400 dark:border-slate-700"
                   style={{ left: `${((h * 60 - DAY_START_MIN) / totalMin) * 100}%` }}
                 >
                   {String(h).padStart(2, "0")}:00
@@ -102,16 +102,16 @@ export function DayTimeline({
               .filter((o) => o.deskId === desk.id)
               .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
             return (
-              <div key={desk.id} className="flex border-b border-slate-100 last:border-0">
-                <div className="w-40 shrink-0 border-r border-slate-200 px-3 py-2">
-                  <div className="text-sm font-medium text-slate-800">{desk.label}</div>
+              <div key={desk.id} className="flex border-b border-slate-100 last:border-0 dark:border-slate-800">
+                <div className="w-40 shrink-0 border-r border-slate-200 px-3 py-2 dark:border-slate-700">
+                  <div className="text-sm font-medium text-slate-800 dark:text-slate-200">{desk.label}</div>
                   {desk.status === "MAINTENANCE" && <Badge color="warning">Maintenance</Badge>}
                 </div>
                 <div className="relative flex-1" style={{ minHeight: 40 }}>
                   {hours.map((h) => (
                     <div
                       key={h}
-                      className="absolute top-0 bottom-0 border-l border-slate-100"
+                      className="absolute top-0 bottom-0 border-l border-slate-100 dark:border-slate-800"
                       style={{ left: `${((h * 60 - DAY_START_MIN) / totalMin) * 100}%` }}
                     />
                   ))}
@@ -124,12 +124,12 @@ export function DayTimeline({
                     return (
                       <div
                         key={o.id}
-                        className="absolute top-1.5 bottom-1.5 overflow-hidden rounded-md border border-indigo-200 bg-indigo-100 px-2 py-0.5 text-xs"
+                        className="absolute top-1.5 bottom-1.5 overflow-hidden rounded-md border border-indigo-200 bg-indigo-100 px-2 py-0.5 text-xs dark:bg-indigo-950 dark:border-indigo-800"
                         style={{ left: `${left}%`, width: `${width}%` }}
                         title={`${o.booking.user.name} — ${fmtRange(o)}${o.booking.title ? ` — ${o.booking.title}` : ""}`}
                       >
                         <span className="font-medium text-indigo-900">{o.booking.user.name}</span>
-                        <span className="ml-1 text-indigo-700">{fmtRange(o)}</span>
+                        <span className="ml-1 text-indigo-700 dark:text-indigo-300">{fmtRange(o)}</span>
                       </div>
                     );
                   })}
@@ -139,8 +139,8 @@ export function DayTimeline({
           })}
           {/* remote row */}
           <div className="flex bg-emerald-50/40">
-            <div className="w-40 shrink-0 border-r border-slate-200 px-3 py-2">
-              <div className="text-sm font-medium text-emerald-800">Remote / WFH</div>
+            <div className="w-40 shrink-0 border-r border-slate-200 px-3 py-2 dark:border-slate-700">
+              <div className="text-sm font-medium text-emerald-800 dark:text-emerald-300">Remote / WFH</div>
             </div>
             <div className="relative flex-1" style={{ minHeight: 40 }}>
               {occurrences
@@ -154,12 +154,12 @@ export function DayTimeline({
                   return (
                     <div
                       key={o.id}
-                      className="absolute top-1.5 bottom-1.5 overflow-hidden rounded-md border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-xs"
+                      className="absolute top-1.5 bottom-1.5 overflow-hidden rounded-md border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-xs dark:bg-emerald-950"
                       style={{ left: `${left}%`, width: `${width}%` }}
                       title={`${o.booking.user.name} — ${fmtRange(o)}`}
                     >
                       <span className="font-medium text-emerald-900">{o.booking.user.name}</span>
-                      <span className="ml-1 text-emerald-700">{fmtRange(o)}</span>
+                      <span className="ml-1 text-emerald-700 dark:text-emerald-300">{fmtRange(o)}</span>
                     </div>
                   );
                 })}

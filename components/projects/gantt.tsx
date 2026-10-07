@@ -332,15 +332,15 @@ export function GanttChart({
     <div className="space-y-3" ref={containerRef}>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1">
+        <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1 dark:bg-slate-900 dark:border-slate-700">
           <Button variant="ghost" size="sm" onClick={() => setDayWidth((w) => Math.max(10, (w ?? fitWidth) - 8))} title="Zoom out">−</Button>
           <Button variant="ghost" size="sm" onClick={() => setDayWidth(null)} title="Fit to screen">Fit</Button>
           <Button variant="ghost" size="sm" onClick={() => setDayWidth((w) => Math.min(72, (w ?? fitWidth) + 8))} title="Zoom in">+</Button>
         </div>
         <span className="text-xs text-slate-400">
-          Drag a bar&apos;s left/right edge to change its duration{saving ? " · saving…" : ""}
+          Drag a bar&apos;s left/right edge to change its duration{saving ? "· saving…" : ""}
         </span>
-        <div className="ml-auto flex flex-wrap gap-3 text-xs text-slate-500">
+        <div className="ml-auto flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
           <span className="flex items-center gap-1"><span className="h-2.5 w-6 rounded bg-amber-500/80" /> Milestone</span>
           <span className="flex items-center gap-1"><span className="h-2.5 w-6 rounded bg-indigo-500" /> In progress</span>
           <span className="flex items-center gap-1"><span className="h-2.5 w-6 rounded bg-slate-400" /> To do</span>
@@ -354,7 +354,7 @@ export function GanttChart({
 
       {/* Chart */}
       <div
-        className="overflow-auto rounded-xl border border-slate-200 bg-white scroll-thin"
+        className="overflow-auto rounded-xl border border-slate-200 bg-white scroll-thin dark:bg-slate-900 dark:border-slate-700"
         style={{ maxHeight: 560 }}
         onPointerMove={onDragMove}
         onPointerUp={onDragUp}
@@ -362,15 +362,15 @@ export function GanttChart({
       >
         <div style={{ width: LABEL_W + timelineW }}>
           {/* Calendar header */}
-          <div className="sticky top-0 z-20 flex bg-white shadow-[0_1px_0_0_#e2e8f0]">
-            <div className="shrink-0 border-r border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500" style={{ width: LABEL_W }}>
+          <div className="sticky top-0 z-20 flex bg-white shadow-[0_1px_0_0_#e2e8f0] dark:bg-slate-900">
+            <div className="shrink-0 border-r border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700" style={{ width: LABEL_W }}>
               <div style={{ height: HEADER_H - 16 }} className="flex items-end">Item</div>
             </div>
             <div className="relative" style={{ width: timelineW, height: HEADER_H }}>
               {monthCells.map((m, i) => (
                 <div
                   key={i}
-                  className="absolute top-0 border-l border-slate-300 px-1.5 pt-1 text-xs font-semibold text-slate-600"
+                  className="absolute top-0 border-l border-slate-300 px-1.5 pt-1 text-xs font-semibold text-slate-600 dark:text-slate-300"
                   style={{ left: m.left, width: m.width }}
                 >
                   <span className="whitespace-nowrap">{m.label}</span>
@@ -380,8 +380,8 @@ export function GanttChart({
                 <div
                   key={i}
                   className={`absolute bottom-0 border-l border-slate-100 text-center text-[10px] leading-4 ${
-                    d.weekend ? "bg-slate-100/70 text-slate-400" : "text-slate-500"
-                  } ${d.today ? "!bg-indigo-100 font-bold text-indigo-700" : ""}`}
+                    d.weekend ? "bg-slate-100/70 text-slate-400" : "text-slate-500 dark:text-slate-400"
+                  } ${d.today ? "!bg-indigo-100 font-bold text-indigo-700 dark:text-indigo-300" : ""}`}
                   style={{ left: d.left, width: dw, height: 24 }}
                   title={d.today ? "Today" : undefined}
                 >
@@ -398,17 +398,17 @@ export function GanttChart({
             if (row.kind === "milestone") {
               const { ms, spanStart, spanEnd } = row;
               return (
-                <div key={`ms-${ms.id}`} className="flex border-b border-slate-200 bg-amber-50/40">
-                  <div className="flex shrink-0 items-center gap-2 border-r border-slate-200 px-3" style={{ width: LABEL_W, height: ROW_H }}>
+                <div key={`ms-${ms.id}`} className="flex border-b border-slate-200 bg-amber-50/40 dark:border-slate-700">
+                  <div className="flex shrink-0 items-center gap-2 border-r border-slate-200 px-3 dark:border-slate-700" style={{ width: LABEL_W, height: ROW_H }}>
                     <span className="inline-block h-2.5 w-2.5 rotate-45 bg-amber-500" />
-                    <span className="truncate text-sm font-semibold text-slate-800" title={ms.title}>{ms.title}</span>
+                    <span className="truncate text-sm font-semibold text-slate-800 dark:text-slate-200" title={ms.title}>{ms.title}</span>
                     {ms.dueDate && ms.id !== "__none__" && (
                       <span className="ml-auto shrink-0 text-[11px] text-slate-400">due {ms.dueDate}</span>
                     )}
                   </div>
                   <div className="relative" style={{ width: timelineW, height: ROW_H }}>
                     {dayCells.map((d, i) => (
-                      <div key={i} className={`absolute inset-y-0 border-l border-slate-100 ${d.weekend ? "bg-slate-50" : ""}`} style={{ left: d.left, width: dw }} />
+                      <div key={i} className={`absolute inset-y-0 border-l border-slate-100 ${d.weekend ? "bg-slate-50 dark:bg-slate-800" : ""}`} style={{ left: d.left, width: dw }} />
                     ))}
                     {todayX !== null && <div className="absolute inset-y-0 z-10 w-px bg-red-400/70" style={{ left: todayX }} />}
                     {spanStart !== null && spanEnd !== null && (
@@ -439,23 +439,23 @@ export function GanttChart({
             return (
               <div key={t.id} className={`flex border-b border-slate-100 hover:bg-slate-50/60 ${pv ? "bg-indigo-50/40" : ""}`}>
                 <div
-                  className="flex shrink-0 cursor-pointer items-center gap-2 border-r border-slate-200 py-1 pl-8 pr-3"
+                  className="flex shrink-0 cursor-pointer items-center gap-2 border-r border-slate-200 py-1 pl-8 pr-3 dark:border-slate-700"
                   style={{ width: LABEL_W, minHeight: ROW_H }}
                   onClick={() => onTodoClick(t)}
                   title="Open todo"
                 >
-                  <span className="min-w-0 flex-1 truncate text-[13px] text-slate-700">
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-slate-700 dark:text-slate-300">
                     <span className={isDone ? "line-through text-slate-400" : ""}>{t.title}</span>
                   </span>
                   {t.assigneeName && (
                     <span className="shrink-0 text-[11px] text-slate-400" title={t.assigneeName}>
-                      {t.assigneeName.split(" ")[0]}
+                      {t.assigneeName.split("")[0]}
                     </span>
                   )}
                 </div>
                 <div className="relative" style={{ width: timelineW, height: ROW_H }}>
                   {dayCells.map((d, i) => (
-                    <div key={i} className={`absolute inset-y-0 border-l border-slate-100 ${d.weekend ? "bg-slate-50" : ""} ${d.today ? "bg-indigo-50/60" : ""}`} style={{ left: d.left, width: dw }} />
+                    <div key={i} className={`absolute inset-y-0 border-l border-slate-100 ${d.weekend ? "bg-slate-50 dark:bg-slate-800" : ""} ${d.today ? "bg-indigo-50/60" : ""}`} style={{ left: d.left, width: dw }} />
                   ))}
                   {todayX !== null && <div className="absolute inset-y-0 z-10 w-px bg-red-400/70" style={{ left: todayX }} />}
                   <div
@@ -510,7 +510,7 @@ export function GanttChart({
                 const d = `M ${l.x1} ${l.y1} h ${stub} V ${l.y2} H ${l.x2 - 2}`;
                 return (
                   <g key={l.key}>
-                    <title>{l.label}{l.conflict ? " — schedule conflict: starts before predecessor finishes" : ""}</title>
+                    <title>{l.label}{l.conflict ? "— schedule conflict: starts before predecessor finishes" : ""}</title>
                     <path
                       d={d}
                       fill="none"
@@ -531,12 +531,12 @@ export function GanttChart({
 
       {undated.length > 0 && (
         <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-4">
-          <p className="text-sm font-medium text-slate-600">
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
             Without dates ({undated.length}) — open a todo to add dates
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {undated.map((t) => (
-              <button key={t.id} onClick={() => onTodoClick(t)} className="rounded-full bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm ring-1 ring-slate-200 hover:ring-indigo-300">
+              <button key={t.id} onClick={() => onTodoClick(t)} className="rounded-full bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm ring-1 ring-slate-200 hover:ring-indigo-300 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700">
                 {t.title}
               </button>
             ))}

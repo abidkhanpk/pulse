@@ -5,9 +5,9 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
   return (
     <input
       className={cn(
-        "flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900",
-        "placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100",
-        "disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500",
+        "flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100",
+        "placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 dark:placeholder:text-slate-500",
+        "disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 dark:disabled:bg-slate-800/60 dark:disabled:text-slate-500",
         className
       )}
       {...props}
@@ -19,9 +19,9 @@ export function Textarea({ className, ...props }: React.TextareaHTMLAttributes<H
   return (
     <textarea
       className={cn(
-        "flex min-h-[80px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900",
-        "placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100",
-        "disabled:cursor-not-allowed disabled:bg-slate-50",
+        "flex min-h-[80px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100",
+        "placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 dark:placeholder:text-slate-500",
+        "disabled:cursor-not-allowed disabled:bg-slate-50 dark:disabled:bg-slate-800/60",
         className
       )}
       {...props}
@@ -32,7 +32,7 @@ export function Textarea({ className, ...props }: React.TextareaHTMLAttributes<H
 export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) {
   return (
     <label
-      className={cn("mb-1.5 block text-sm font-medium text-slate-700", className)}
+      className={cn("mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300", className)}
       {...props}
     />
   );
@@ -42,9 +42,9 @@ export function Select({ className, children, ...props }: React.SelectHTMLAttrib
   return (
     <select
       className={cn(
-        "flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900",
+        "flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100",
         "focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100",
-        "disabled:cursor-not-allowed disabled:bg-slate-50",
+        "disabled:cursor-not-allowed disabled:bg-slate-50 dark:disabled:bg-slate-800/60",
         className
       )}
       {...props}

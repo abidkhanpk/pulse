@@ -37,11 +37,11 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 dark:bg-slate-800">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:bg-slate-900 dark:border-slate-700">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Pulse</h1>
-          <p className="mt-1 text-sm text-slate-500">Lab management system</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Pulse</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Lab management system</p>
         </div>
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
@@ -80,7 +80,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <React.Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-100" />}>
+    <React.Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-100 dark:bg-slate-800" />}>
       <LoginForm />
     </React.Suspense>
   );

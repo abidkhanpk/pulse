@@ -9,8 +9,8 @@ export function PeopleOverview({ overview }: { overview: PeopleLabOverview[] }) 
     <div className="space-y-5">
       <FadeIn>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">People</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">People</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Select a lab to manage its people in detail.
           </p>
         </div>
@@ -24,7 +24,7 @@ export function PeopleOverview({ overview }: { overview: PeopleLabOverview[] }) 
             {
               label: "Incharges",
               value: o.inchargeNames.length,
-              hint: o.inchargeNames.slice(0, 2).join(", ") || undefined,
+              hint: o.inchargeNames.slice(0, 2).join(",") || undefined,
             },
           ];
           return (

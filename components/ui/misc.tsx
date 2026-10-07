@@ -12,7 +12,7 @@ interface TabsProps {
 
 export function Tabs({ tabs, active, onChange, className }: TabsProps) {
   return (
-    <div className={cn("flex gap-1 border-b border-slate-200", className)} role="tablist">
+    <div className={cn("flex gap-1 border-b border-slate-200 dark:border-slate-700", className)} role="tablist">
       {tabs.map((t) => (
         <button
           key={t.id}
@@ -22,13 +22,13 @@ export function Tabs({ tabs, active, onChange, className }: TabsProps) {
           className={cn(
             "-mb-px border-b-2 px-4 py-2.5 text-sm font-medium transition-colors",
             active === t.id
-              ? "border-indigo-600 text-indigo-700"
-              : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
+              ? "border-indigo-600 text-indigo-700 dark:border-indigo-400 dark:text-indigo-300"
+              : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-200"
           )}
         >
           {t.label}
           {t.badge !== undefined && t.badge > 0 && (
-            <span className="ml-1.5 rounded-full bg-indigo-100 px-1.5 py-0.5 text-xs font-semibold text-indigo-700">
+            <span className="ml-1.5 rounded-full bg-indigo-100 px-1.5 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
               {t.badge}
             </span>
           )}
@@ -40,7 +40,7 @@ export function Tabs({ tabs, active, onChange, className }: TabsProps) {
 
 export function Avatar({ name, className }: { name: string; className?: string }) {
   const initials = name
-    .split(" ")
+    .split("")
     .map((w) => w[0])
     .slice(0, 2)
     .join("")
@@ -50,7 +50,7 @@ export function Avatar({ name, className }: { name: string; className?: string }
       title={name}
       className={cn(
         "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-        "bg-indigo-100 text-xs font-semibold text-indigo-700",
+        "bg-indigo-100 text-xs font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300",
         className
       )}
     >
@@ -69,9 +69,9 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/50 px-6 py-12 text-center">
-      <p className="text-sm font-semibold text-slate-700">{title}</p>
-      <p className="mt-1 max-w-sm text-sm text-slate-500">{description}</p>
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/50 px-6 py-12 text-center dark:border-slate-600 dark:bg-slate-800/40">
+      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{title}</p>
+      <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">{description}</p>
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -89,9 +89,9 @@ export function StatCard({
   href?: string;
 }) {
   const inner = (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow">
-      <p className="text-sm font-medium text-slate-500">{label}</p>
-      <p className="mt-1 text-3xl font-bold text-slate-900">{value}</p>
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow dark:border-slate-700 dark:bg-slate-900">
+      <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">{value}</p>
       {hint && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
     </div>
   );

@@ -48,8 +48,8 @@ function fmtTime(iso: string): string {
 }
 
 const TYPE_STYLES: Record<string, string> = {
-  DESK: "bg-indigo-100 text-indigo-800 hover:bg-indigo-200",
-  REMOTE: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200",
+  DESK: "bg-indigo-100 text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-300",
+  REMOTE: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-300",
 };
 
 const MAX_CHIPS = 3;
@@ -188,7 +188,7 @@ export function MonthGrid({ desks, people, projects, today, labId, canManage }: 
           This month
         </Button>
         <Button variant="outline" size="sm" onClick={() => shift(1)}>Next →</Button>
-        <span className="ml-2 text-sm font-medium text-slate-700">{monthLabel}</span>
+        <span className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">{monthLabel}</span>
         {loading && <span className="text-xs text-slate-400">Loading…</span>}
         <div className="ml-auto">
           {canManage && (
@@ -199,11 +199,11 @@ export function MonthGrid({ desks, people, projects, today, labId, canManage }: 
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700">
         {/* Weekday header */}
-        <div className="grid grid-cols-7 bg-slate-50">
+        <div className="grid grid-cols-7 bg-slate-50 dark:bg-slate-800">
           {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-            <div key={d} className="border-b border-slate-200 px-2 py-2 text-center text-xs font-semibold text-slate-500">
+            <div key={d} className="border-b border-slate-200 px-2 py-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 dark:border-slate-700">
               {d}
             </div>
           ))}
@@ -223,7 +223,7 @@ export function MonthGrid({ desks, people, projects, today, labId, canManage }: 
                     : undefined
                 }
                 className={`min-h-[104px] border-b border-r border-slate-100 p-1.5 align-top transition [&:nth-child(7n)]:border-r-0 ${
-                  cell.inMonth ? "bg-white" : "bg-slate-50/60"
+                  cell.inMonth ? "bg-white dark:bg-slate-900" : "bg-slate-50/60"
                 } ${canManage ? "cursor-pointer hover:bg-indigo-50/40" : ""}`}
               >
                 <div className="mb-1 flex items-center justify-between">
@@ -232,7 +232,7 @@ export function MonthGrid({ desks, people, projects, today, labId, canManage }: 
                       cell.isToday
                         ? "bg-indigo-600 font-bold text-white"
                         : cell.inMonth
-                          ? "text-slate-700"
+                          ? "text-slate-700 dark:text-slate-300"
                           : "text-slate-300"
                     }`}
                   >
@@ -262,7 +262,7 @@ export function MonthGrid({ desks, people, projects, today, labId, canManage }: 
                         e.stopPropagation();
                         setDayList(cell.date);
                       }}
-                      className="block w-full rounded px-1.5 py-0.5 text-left text-[11px] font-medium text-slate-500 hover:bg-slate-100"
+                      className="block w-full rounded px-1.5 py-0.5 text-left text-[11px] font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                     >
                       +{extra} more
                     </button>
@@ -297,10 +297,10 @@ export function MonthGrid({ desks, people, projects, today, labId, canManage }: 
                     setDayList(null);
                     setSelected(o);
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg border border-slate-100 px-3 py-2 text-left text-sm hover:border-indigo-200 hover:bg-indigo-50/40"
+                  className="flex w-full items-center gap-2 rounded-lg border border-slate-100 px-3 py-2 text-left text-sm hover:border-indigo-200 hover:bg-indigo-50/40 dark:border-slate-800"
                 >
                   <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${o.booking.type === "DESK" ? "bg-indigo-500" : "bg-emerald-500"}`} />
-                  <span className="min-w-0 flex-1 truncate font-medium text-slate-800">{o.booking.user.name}</span>
+                  <span className="min-w-0 flex-1 truncate font-medium text-slate-800 dark:text-slate-200">{o.booking.user.name}</span>
                   <span className="shrink-0 text-xs text-slate-400">{o.desk ? o.desk.label : "WFH"}</span>
                   <span className="shrink-0 text-xs text-slate-400">
                     {fmtTime(o.startsAt)}–{fmtTime(o.endsAt)}

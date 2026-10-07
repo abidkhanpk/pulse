@@ -57,7 +57,7 @@ export function Dialog({ open, onClose, children, className }: OverlayProps) {
             exit={{ opacity: 0, scale: 0.97, y: 8 }}
             transition={{ type: "spring", stiffness: 380, damping: 32 }}
             className={cn(
-              "relative w-full max-w-lg rounded-2xl bg-white p-6",
+              "relative w-full max-w-lg rounded-2xl bg-white p-6 dark:bg-slate-900 dark:ring-1 dark:ring-slate-700",
               "shadow-[0_24px_64px_rgba(15,23,42,0.18)]",
               className
             )}
@@ -65,7 +65,7 @@ export function Dialog({ open, onClose, children, className }: OverlayProps) {
             <button
               onClick={onClose}
               aria-label="Close"
-              className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+              className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
             >
               <X className="h-5 w-5" />
             </button>
@@ -78,7 +78,7 @@ export function Dialog({ open, onClose, children, className }: OverlayProps) {
 }
 
 export function DialogTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn("pr-8 text-lg font-semibold tracking-tight text-slate-900", className)} {...props} />;
+  return <h2 className={cn("pr-8 text-lg font-semibold tracking-tight text-slate-900 dark:text-white", className)} {...props} />;
 }
 
 export function Sheet({ open, onClose, children, className }: OverlayProps) {
@@ -96,14 +96,14 @@ export function Sheet({ open, onClose, children, className }: OverlayProps) {
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 320, damping: 34 }}
             className={cn(
-              "absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl",
+              "absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl dark:bg-slate-900",
               className
             )}
           >
             <button
               onClick={onClose}
               aria-label="Close"
-              className="absolute right-4 top-4 z-10 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+              className="absolute right-4 top-4 z-10 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
             >
               <X className="h-5 w-5" />
             </button>
@@ -116,11 +116,11 @@ export function Sheet({ open, onClose, children, className }: OverlayProps) {
 }
 
 export function SheetHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("border-b border-slate-100 px-6 py-5", className)} {...props} />;
+  return <div className={cn("border-b border-slate-100 px-6 py-5 dark:border-slate-800", className)} {...props} />;
 }
 
 export function SheetTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn("pr-8 text-lg font-semibold tracking-tight text-slate-900", className)} {...props} />;
+  return <h2 className={cn("pr-8 text-lg font-semibold tracking-tight text-slate-900 dark:text-white", className)} {...props} />;
 }
 
 export function SheetBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
@@ -129,6 +129,6 @@ export function SheetBody({ className, ...props }: React.HTMLAttributes<HTMLDivE
 
 export function SheetFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("flex justify-end gap-2 border-t border-slate-100 px-6 py-4", className)} {...props} />
+    <div className={cn("flex justify-end gap-2 border-t border-slate-100 px-6 py-4 dark:border-slate-800", className)} {...props} />
   );
 }

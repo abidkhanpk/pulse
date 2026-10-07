@@ -39,15 +39,15 @@ export function LabOverviewCard({
               <FlaskConical className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <h3 className="truncate text-base font-semibold tracking-tight text-slate-900">{labName}</h3>
+              <h3 className="truncate text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">{labName}</h3>
             </div>
             <ChevronRight className="h-5 w-5 shrink-0 text-slate-300 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-indigo-500" />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {stats.map((s) => (
-              <div key={s.label} className="rounded-xl bg-slate-50 px-3 py-2.5">
-                <p className="text-lg font-bold tracking-tight text-slate-900">{s.value}</p>
-                <p className="text-xs text-slate-500">{s.label}</p>
+              <div key={s.label} className="rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-800">
+                <p className="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">{s.value}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{s.label}</p>
                 {s.hint && <p className="text-[11px] text-slate-400">{s.hint}</p>}
               </div>
             ))}

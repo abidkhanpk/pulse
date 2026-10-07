@@ -12,8 +12,8 @@ export default async function AuditPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Audit log</h1>
-        <p className="mt-1 text-sm text-slate-500">Who changed what, and when.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Audit log</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Who changed what, and when.</p>
       </div>
       <AuditClient initial={rows} actions={opts.ACTIONS} entityTypes={opts.ENTITY_TYPES} />
     </div>
