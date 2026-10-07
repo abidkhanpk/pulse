@@ -12,10 +12,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Pulse — Lab Management",
-  description: "MEDD lab management system: desk booking, projects, logbook, attendance",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { getAppName } = await import("@/lib/app-settings");
+  const appName = await getAppName();
+  return {
+    title: `${appName} — Lab Management`,
+    description: "MEDD lab management system: desk booking, projects, logbook, attendance",
+  };
+}
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

@@ -41,6 +41,19 @@ enum WorkMode {
   LEAVE
 }
 
+enum AttendanceMode {
+  SELF
+  MANUAL
+  NONE
+}
+
+enum Recurrence {
+  ONCE
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
 enum LogStatus {
   DRAFT
   SUBMITTED
@@ -98,6 +111,8 @@ model User {
   joinDate           DateTime?   @db.Date
   exitDate           DateTime?   @db.Date
   attendanceTracking Boolean     @default(true)
+  attendanceModeOverride AttendanceMode?
+  linkAttendanceToBooking Boolean @default(true)
   labId              String?
   lab                Lab?        @relation("HomeLab", fields: [labId], references: [id])
   createdAt          DateTime    @default(now())
@@ -114,6 +129,30 @@ model User {
   memberships     ProjectMember[]
   auditEvents     AuditLog[]
   inchargeOf      LabIncharge[]
+  workingDayExceptions WorkingDayException[]
+  markerForLabs   Lab[]              @relation("LabAttendanceMarker")
+}
+
+// Extra working days for a user (industrial visits, presentation days, …),
+// each optionally recurring. Combined with booking-linked days these define
+// the user's working days for attendance.
+model WorkingDayException {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date       DateTime   @db.Date
+  recurrence Recurrence @default(ONCE)
+  note       String?
+  createdAt  DateTime   @default(now())
+
+  @@index([userId, date])
+}
+
+// App-wide key/value settings editable by admin (app name, …).
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }
 
 // Auth.js v5 uses the Credentials provider with the JWT session strategy,
@@ -139,6 +178,10 @@ model Lab {
   description    String?      @db.Text
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+
+  attendanceMode     AttendanceMode @default(SELF)
+  attendanceMarkerId String?
+  attendanceMarker   User?          @relation("LabAttendanceMarker", fields: [attendanceMarkerId], references: [id], onDelete: SetNull)
 
   desks     Desk[]
   projects  Project[]

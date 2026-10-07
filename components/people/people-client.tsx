@@ -15,6 +15,8 @@ import {
   setUserStatus,
   resetPassword,
 } from "@/app/(app)/people/actions";
+import { ExtraDaysManager } from "./extra-days-manager";
+import { ATTENDANCE_MODES, type AttendanceMode } from "@/lib/attendance";
 
 interface Person {
   id: string;
@@ -22,6 +24,8 @@ interface Person {
   email: string;
   status: string;
   attendanceTracking: boolean;
+  attendanceModeOverride: AttendanceMode | null;
+  linkAttendanceToBooking: boolean;
   joinDate: string | null;
   role: { key: string; name: string };
   lab: { id: string; name: string } | null;
@@ -57,6 +61,9 @@ export function PeopleClient({
   const [labId, setLabId] = React.useState("");
   const [tracking, setTracking] = React.useState(true);
   const [joinDate, setJoinDate] = React.useState("");
+  const [overrideOn, setOverrideOn] = React.useState(false);
+  const [modeOverride, setModeOverride] = React.useState<AttendanceMode>("SELF");
+  const [linkBooking, setLinkBooking] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
 
@@ -69,6 +76,7 @@ export function PeopleClient({
     setRoleId(roles.find((r) => r.key === "INTERNEE")?.id ?? roles[0]?.id ?? "");
     setLabId(labs[0]?.id ?? "");
     setTracking(true); setJoinDate("");
+    setOverrideOn(false); setModeOverride("SELF"); setLinkBooking(true);
     setError(null);
     setFormOpen(true);
   }
@@ -80,6 +88,9 @@ export function PeopleClient({
     setLabId(p.lab?.id ?? "");
     setTracking(p.attendanceTracking);
     setJoinDate(p.joinDate ? p.joinDate.slice(0, 10) : "");
+    setOverrideOn(!!p.attendanceModeOverride);
+    setModeOverride(p.attendanceModeOverride ?? "SELF");
+    setLinkBooking(p.linkAttendanceToBooking);
     setError(null);
     setFormOpen(true);
   }
@@ -96,6 +107,8 @@ export function PeopleClient({
         labId: labId || null,
         attendanceTracking: tracking,
         joinDate: joinDate || null,
+        attendanceModeOverride: overrideOn ? modeOverride : null,
+        linkAttendanceToBooking: linkBooking,
         ...(editing ? {} : { password }),
       };
       const res = editing
@@ -272,6 +285,54 @@ export function PeopleClient({
               <Label htmlFor="p-track" className="!mb-0">Attendance tracking</Label>
             </div>
           </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-700 dark:bg-slate-800/40">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Attendance
+            </p>
+            <label className="flex cursor-pointer items-center gap-2">
+              <Checkbox
+                id="p-override"
+                checked={overrideOn}
+                onChange={(e) => setOverrideOn(e.target.checked)}
+              />
+              <Label htmlFor="p-override" className="!mb-0">
+                Override lab attendance mode for this person
+              </Label>
+            </label>
+            {overrideOn && (
+              <div className="mt-2 space-y-1.5">
+                {ATTENDANCE_MODES.map((m) => (
+                  <label key={m.id} className="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="radio"
+                      name="p-mode-override"
+                      checked={modeOverride === m.id}
+                      onChange={() => setModeOverride(m.id)}
+                      className="h-4 w-4 accent-indigo-600"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">
+                      {m.label} <span className="text-xs text-slate-400">— {m.hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <label className="mt-2 flex cursor-pointer items-center gap-2">
+              <Checkbox
+                id="p-linkbooking"
+                checked={linkBooking}
+                onChange={(e) => setLinkBooking(e.target.checked)}
+              />
+              <Label htmlFor="p-linkbooking" className="!mb-0">
+                Count desk-booking days as working days
+              </Label>
+            </label>
+            {editing && (
+              <div className="mt-2">
+                <ExtraDaysManager userId={editing.id} userName={editing.name} />
+              </div>
+            )}
+          </div>
           <FieldError message={error ?? undefined} />
           <div className="flex justify-end gap-2">
             <Button variant="outline" type="button" onClick={() => setFormOpen(false)}>Cancel</Button>
@@ -287,6 +348,54 @@ export function PeopleClient({
           <div>
             <Label htmlFor="pw-new">New password (min 8 chars)</Label>
             <Input id="pw-new" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-700 dark:bg-slate-800/40">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Attendance
+            </p>
+            <label className="flex cursor-pointer items-center gap-2">
+              <Checkbox
+                id="p-override"
+                checked={overrideOn}
+                onChange={(e) => setOverrideOn(e.target.checked)}
+              />
+              <Label htmlFor="p-override" className="!mb-0">
+                Override lab attendance mode for this person
+              </Label>
+            </label>
+            {overrideOn && (
+              <div className="mt-2 space-y-1.5">
+                {ATTENDANCE_MODES.map((m) => (
+                  <label key={m.id} className="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="radio"
+                      name="p-mode-override"
+                      checked={modeOverride === m.id}
+                      onChange={() => setModeOverride(m.id)}
+                      className="h-4 w-4 accent-indigo-600"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">
+                      {m.label} <span className="text-xs text-slate-400">— {m.hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <label className="mt-2 flex cursor-pointer items-center gap-2">
+              <Checkbox
+                id="p-linkbooking"
+                checked={linkBooking}
+                onChange={(e) => setLinkBooking(e.target.checked)}
+              />
+              <Label htmlFor="p-linkbooking" className="!mb-0">
+                Count desk-booking days as working days
+              </Label>
+            </label>
+            {editing && (
+              <div className="mt-2">
+                <ExtraDaysManager userId={editing.id} userName={editing.name} />
+              </div>
+            )}
           </div>
           <FieldError message={error ?? undefined} />
           <div className="flex justify-end gap-2">

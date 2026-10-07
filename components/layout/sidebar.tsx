@@ -58,14 +58,18 @@ const EXPANDED_W = 260;
 
 export function Sidebar({
   actor,
+  appName,
   pathname,
   pinned,
   onTogglePin,
+  showCheckIn,
 }: {
   actor: SessionActorLike;
+  appName: string;
   pathname: string;
   pinned: boolean;
   onTogglePin: () => void;
+  showCheckIn: boolean;
 }) {
   const [hovered, setHovered] = React.useState(false);
   const leaveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -97,12 +101,12 @@ export function Sidebar({
     >
       {/* Brand */}
       <div className={cn("flex h-16 shrink-0 items-center border-b border-white/10", expanded ? "px-5" : "justify-center px-2")}>
-        <Link href="/dashboard" className="flex items-center gap-2.5" title="Pulse">
+        <Link href="/dashboard" className="flex items-center gap-2.5" title={appName}>
           <motion.span
             whileHover={{ rotate: -8, scale: 1.06 }}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-base font-black text-white shadow-[0_4px_14px_rgba(99,102,241,0.5)]"
           >
-            P
+            {appName.charAt(0).toUpperCase()}
           </motion.span>
           {expanded && (
             <motion.span
@@ -110,7 +114,7 @@ export function Sidebar({
               animate={{ opacity: 1, x: 0 }}
               className="whitespace-nowrap text-xl font-extrabold tracking-tight text-white"
             >
-              Pulse
+              {appName}
             </motion.span>
           )}
         </Link>
@@ -185,8 +189,8 @@ export function Sidebar({
   );
 }
 
-export function MobileNav({ actor, pathname }: { actor: SessionActorLike; pathname: string }) {
-  const items = NAV.filter((n) => canSee(actor, n)).slice(0, 5);
+export function MobileNav({ actor, pathname, showCheckIn }: { actor: SessionActorLike; pathname: string; showCheckIn: boolean }) {
+  const items = NAV.filter((n) => canSee(actor, n) && (n.href !== "/check-in" || showCheckIn)).slice(0, 5);
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 md:hidden">
       {items.map((item) => {

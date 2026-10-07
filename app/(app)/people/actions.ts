@@ -86,6 +86,8 @@ const userSchema = z.object({
   labId: z.string().min(1).nullable(),
   attendanceTracking: z.boolean(),
   joinDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  attendanceModeOverride: z.enum(["SELF", "MANUAL", "NONE"]).nullable().optional(),
+  linkAttendanceToBooking: z.boolean().optional(),
 });
 
 async function checkUserScope(actor: Awaited<ReturnType<typeof requireUser>>, labId: string | null, roleId: string) {
@@ -118,6 +120,8 @@ export async function createUser(input: z.infer<typeof userSchema>): Promise<Act
       labId: parsed.data.labId,
       attendanceTracking: parsed.data.attendanceTracking,
       joinDate: parsed.data.joinDate ? new Date(parsed.data.joinDate) : null,
+      attendanceModeOverride: parsed.data.attendanceModeOverride ?? null,
+      linkAttendanceToBooking: parsed.data.linkAttendanceToBooking ?? true,
       status: "ACTIVE",
     },
   });
@@ -152,6 +156,8 @@ export async function updateUser(input: z.infer<typeof updateUserSchema>): Promi
       labId: parsed.data.labId,
       attendanceTracking: parsed.data.attendanceTracking,
       joinDate: parsed.data.joinDate ? new Date(parsed.data.joinDate) : null,
+      attendanceModeOverride: parsed.data.attendanceModeOverride ?? null,
+      linkAttendanceToBooking: parsed.data.linkAttendanceToBooking ?? true,
     },
   });
   await logAudit(actor.id, "user.updated", "User", parsed.data.id, { name: parsed.data.name });
@@ -224,4 +230,67 @@ export async function peopleLabOverview(): Promise<PeopleLabOverview[]> {
       };
     })
   );
+}
+
+// ─── Extra working days ───
+
+async function canManagePerson(userId: string) {
+  const actor = await requireUser();
+  const person = await prisma.user.findUnique({ where: { id: userId }, select: { labId: true } });
+  if (!person) return { ok: false as const, error: "Person not found." };
+  if (!can(actor, "users.manage")) return { ok: false as const, error: "You don't have permission (users.manage)." };
+  if (person.labId && !can(actor, "users.manage", person.labId))
+    return { ok: false as const, error: "You don't have permission (users.manage)." };
+  return { ok: true as const };
+}
+
+export async function listWorkingDayExceptions(userId: string) {
+  const check = await canManagePerson(userId);
+  if (!check.ok) return [];
+  return prisma.workingDayException.findMany({
+    where: { userId },
+    orderBy: { date: "asc" },
+  });
+}
+
+const extraDaySchema = z.object({
+  userId: z.string().min(1),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  recurrence: z.enum(["ONCE", "WEEKLY", "BIWEEKLY", "MONTHLY"]),
+  note: z.string().trim().max(120).optional().nullable(),
+});
+
+export async function addWorkingDayException(
+  input: z.infer<typeof extraDaySchema>
+): Promise<ActionResult> {
+  const check = await canManagePerson(input.userId);
+  if (!check.ok) return check;
+  const parsed = extraDaySchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid date." };
+  await prisma.workingDayException.create({
+    data: {
+      userId: parsed.data.userId,
+      date: new Date(parsed.data.date + "T00:00:00Z"),
+      recurrence: parsed.data.recurrence,
+      note: parsed.data.note?.trim() || null,
+    },
+  });
+  await logAudit((await requireUser()).id, "user.extra_day_added", "User", parsed.data.userId, {
+    date: parsed.data.date,
+    recurrence: parsed.data.recurrence,
+  });
+  revalidatePath("/people");
+  return { ok: true };
+}
+
+export async function deleteWorkingDayException(id: string): Promise<ActionResult> {
+  const actor = await requireUser();
+  const ex = await prisma.workingDayException.findUnique({ where: { id }, select: { userId: true } });
+  if (!ex) return { ok: false, error: "Not found." };
+  const check = await canManagePerson(ex.userId);
+  if (!check.ok) return check;
+  await prisma.workingDayException.delete({ where: { id } });
+  await logAudit(actor.id, "user.extra_day_removed", "User", ex.userId, {});
+  revalidatePath("/people");
+  return { ok: true };
 }

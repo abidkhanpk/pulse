@@ -18,11 +18,15 @@ import {
   removeLabIncharge,
   inchargeCandidates,
 } from "@/app/(app)/labs/actions";
+import { LabAttendanceSettings } from "./lab-attendance-settings";
+import type { AttendanceMode } from "@prisma/client";
 
 interface Lab {
   id: string;
   name: string;
   description: string | null;
+  attendanceMode: AttendanceMode;
+  attendanceMarker: { id: string; name: string } | null;
   _count: { desks: number; projects: number };
   incharges: { user: { id: string; name: string; email: string } }[];
 }
@@ -235,6 +239,13 @@ export function LabsClient({
                     </Button>
                   )}
                 </div>
+                {canRename(lab) && (
+                  <LabAttendanceSettings
+                    labId={lab.id}
+                    initialMode={lab.attendanceMode}
+                    initialMarker={lab.attendanceMarker}
+                  />
+                )}
               </CardContent>
             </Card>
           ))}

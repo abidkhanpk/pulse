@@ -45,6 +45,7 @@ export async function listLabs() {
     include: {
       _count: { select: { desks: true, projects: true } },
       incharges: { include: { user: { select: { id: true, name: true, email: true } } } },
+      attendanceMarker: { select: { id: true, name: true } },
     },
     orderBy: { name: "asc" },
   });
@@ -260,5 +261,65 @@ export async function inchargeCandidates(labId: string) {
     select: { id: true, name: true, email: true },
     orderBy: { name: "asc" },
     take: 100,
+  });
+}
+
+// ─── Attendance settings (per lab) ───
+
+const attendanceSettingsSchema = z.object({
+  mode: z.enum(["SELF", "MANUAL", "NONE"]),
+  markerId: z.string().min(1).nullable().optional(),
+});
+
+/**
+ * Set a lab's attendance mode + designated marker.
+ * Allowed for the lab's incharges and admins (labs.manage scoped).
+ */
+export async function updateLabAttendanceSettings(
+  labId: string,
+  input: z.infer<typeof attendanceSettingsSchema>
+): Promise<ActionResult> {
+  const actor = await requireUser();
+  const isIncharge = actor.inchargeOf.some((l) => l.labId === labId);
+  if (!isIncharge && !can(actor, "labs.manage", labId)) {
+    return { ok: false as const, error: "Only the lab incharge or an admin can change attendance settings." };
+  }
+  const parsed = attendanceSettingsSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid attendance settings." };
+  const lab = await prisma.lab.findUnique({ where: { id: labId }, select: { id: true } });
+  if (!lab) return { ok: false, error: "Lab not found." };
+  let markerId: string | null = null;
+  if (parsed.data.mode === "MANUAL" && parsed.data.markerId) {
+    const marker = await prisma.user.findUnique({
+      where: { id: parsed.data.markerId },
+      select: { id: true, labId: true, status: true },
+    });
+    if (!marker || marker.status !== "ACTIVE" || marker.labId !== labId) {
+      return { ok: false, error: "Designated person must be an active member of this lab." };
+    }
+    markerId = marker.id;
+  }
+  await prisma.lab.update({
+    where: { id: labId },
+    data: { attendanceMode: parsed.data.mode, attendanceMarkerId: markerId },
+  });
+  await logAudit(actor.id, "lab.attendance_settings", "Lab", labId, {
+    mode: parsed.data.mode,
+    markerId,
+  });
+  revalidatePath("/labs");
+  revalidatePath("/check-in");
+  return { ok: true };
+}
+
+/** Lab members eligible as designated attendance marker. */
+export async function labMarkerCandidates(labId: string) {
+  const actor = await requireUser();
+  const isIncharge = actor.inchargeOf.some((l) => l.labId === labId);
+  if (!isIncharge && !can(actor, "labs.manage", labId)) return [];
+  return prisma.user.findMany({
+    where: { labId, status: "ACTIVE" },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
   });
 }

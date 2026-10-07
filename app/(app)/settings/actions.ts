@@ -112,3 +112,18 @@ export async function deleteRole(id: string): Promise<ActionResult> {
   revalidatePath("/settings/roles");
   return { ok: true };
 }
+
+const appNameSchema = z.object({ name: z.string().trim().min(1).max(60) });
+
+/** Update the app display name (admin only). */
+export async function updateAppName(input: z.infer<typeof appNameSchema>): Promise<ActionResult> {
+  const actor = await requireUser();
+  if (!can(actor, "org.manage")) return { ok: false, error: "You don't have permission (org.manage)." };
+  const parsed = appNameSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Name must be 1–60 characters." };
+  const { setAppName } = await import("@/lib/app-settings");
+  await setAppName(parsed.data.name);
+  await logAudit(actor.id, "app.rename", "AppSetting", "appName", { name: parsed.data.name });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
