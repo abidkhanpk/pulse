@@ -19,12 +19,14 @@ interface Milestone {
   dueDate: string | null;
   status: string;
   sortOrder: number;
+  prerequisites: { dependsOn: { id: string; title: string; status: string } }[];
 }
 
 interface TodoFull extends KanbanTodo {
   description: string | null;
   startDate: string | null;
   milestoneId: string | null;
+  prerequisites: { dependsOn: { id: string; title: string; status: string } }[];
 }
 
 interface LogEntry {
@@ -191,6 +193,7 @@ export function ProjectDetail({
             title: m.title,
             dueDate: m.dueDate,
             status: m.status,
+            dependsOnIds: m.prerequisites.map((p) => p.dependsOn.id),
           }))}
           todos={project.todos.map((t) => ({
             id: t.id,
@@ -200,6 +203,7 @@ export function ProjectDetail({
             endDate: t.endDate,
             assigneeName: t.assignee?.name ?? null,
             milestoneId: t.milestoneId,
+            dependsOnIds: t.prerequisites.map((p) => p.dependsOn.id),
           }))}
           onResizeTodo={onGanttResize}
           onTodoClick={(t) => openTodoDialog({ id: t.id, status: t.status as KanbanTodo["status"] })}

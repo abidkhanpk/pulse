@@ -30,6 +30,7 @@ export interface KanbanTodo {
   endDate: string | null;
   assignee: { id: string; name: string } | null;
   milestone: { id: string; title: string } | null;
+  prerequisites: { dependsOn: { id: string; title: string; status: string } }[];
 }
 
 const COLUMNS: { id: KanbanTodo["status"]; label: string }[] = [
@@ -50,6 +51,7 @@ function TodoCard({ todo, onClick }: { todo: KanbanTodo; onClick: () => void }) 
     transition,
     opacity: isDragging ? 0.4 : 1,
   };
+  const blockers = todo.prerequisites.filter((p) => p.dependsOn.status !== "DONE");
   return (
     <div
       ref={setNodeRef}
@@ -63,6 +65,14 @@ function TodoCard({ todo, onClick }: { todo: KanbanTodo; onClick: () => void }) 
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         {todo.milestone && (
           <Badge color="info" className="text-[10px]">{todo.milestone.title}</Badge>
+        )}
+        {blockers.length > 0 && todo.status !== "DONE" && (
+          <Badge color="warning" className="text-[10px]" title={`Waiting on: ${blockers.map((b) => b.dependsOn.title).join(", ")}`}>
+            Blocked by {blockers.length}
+          </Badge>
+        )}
+        {todo.prerequisites.length > 0 && blockers.length === 0 && (
+          <Badge color="success" className="text-[10px]">Deps met</Badge>
         )}
         {todo.endDate && (
           <Badge color={isOverdue(todo) ? "danger" : "default"} className="text-[10px]">

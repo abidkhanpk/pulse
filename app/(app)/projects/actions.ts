@@ -44,11 +44,17 @@ export async function getProject(id: string) {
         include: { user: { select: { id: true, name: true, email: true } } },
         orderBy: { user: { name: "asc" } },
       },
-      milestones: { orderBy: { sortOrder: "asc" } },
+      milestones: {
+        orderBy: { sortOrder: "asc" },
+        include: {
+          prerequisites: { include: { dependsOn: { select: { id: true, title: true, status: true } } } },
+        },
+      },
       todos: {
         include: {
           assignee: { select: { id: true, name: true } },
           milestone: { select: { id: true, title: true } },
+          prerequisites: { include: { dependsOn: { select: { id: true, title: true, status: true } } } },
         },
         orderBy: [{ status: "asc" }, { sortOrder: "asc" }],
       },
@@ -417,8 +423,7 @@ export interface ProjectLabOverview {
 }
 
 /** Per-lab project stats for the admin overview. */
-export async function projectLabOverview(): Promise<ProjectLabOverview[]> {
-  const actor = await requireUser();
+export async function projectLabOverview(): Promise<ProjectLabOverview[]> {  const actor = await requireUser();
   if (actor.role.scope !== "GLOBAL") return [];
   const today = todayPKT();
   const labs = await prisma.lab.findMany({ orderBy: { name: "asc" } });
@@ -444,4 +449,139 @@ export async function projectLabOverview(): Promise<ProjectLabOverview[]> {
       };
     })
   );
+}
+
+// ─── Dependencies (Finish-to-Start) ───
+
+/** DFS: is `target` reachable from `from` following dependent → prerequisite edges? */
+function depReaches(edges: Map<string, string[]>, from: string, target: string, seen: Set<string>): boolean {
+  if (from === target) return true;
+  if (seen.has(from)) return false;
+  seen.add(from);
+  for (const next of edges.get(from) ?? []) {
+    if (depReaches(edges, next, target, seen)) return true;
+  }
+  return false;
+}
+
+/** Todos this todo may depend on (same project, excluding itself). */
+export async function todoDependencyCandidates(todoId: string) {
+  const actor = await requireUser();
+  const todo = await prisma.todo.findUnique({ where: { id: todoId }, select: { projectId: true, project: { select: { labId: true } } } });
+  if (!todo) return [];
+  const labIds = scopeFilter(actor);
+  if (labIds && !labIds.includes(todo.project.labId)) return [];
+  return prisma.todo.findMany({
+    where: { projectId: todo.projectId, id: { not: todoId } },
+    select: { id: true, title: true, status: true },
+    orderBy: { title: "asc" },
+    take: 200,
+  });
+}
+
+/** Replace a todo's prerequisites. Validates same-project, no self-dep, no cycles. */
+export async function setTodoDependencies(todoId: string, dependsOnIds: string[]): Promise<ActionResult> {
+  const actor = await requireUser();
+  const todo = await prisma.todo.findUnique({
+    where: { id: todoId },
+    select: { id: true, projectId: true, project: { select: { labId: true } } },
+  });
+  if (!todo) return { ok: false, error: "Todo not found." };
+  if (!can(actor, "projects.manage", todo.project.labId)) return deny("projects.manage");
+
+  const clean = [...new Set(dependsOnIds)].filter((d) => d && d !== todoId);
+  if (clean.length > 0) {
+    const count = await prisma.todo.count({ where: { id: { in: clean }, projectId: todo.projectId } });
+    if (count !== clean.length) return { ok: false, error: "Dependencies must be todos in the same project." };
+  }
+
+  // Build the project's dependency graph with this todo's edges replaced, then
+  // reject if any new prerequisite can already reach this todo (that'd be a cycle).
+  const existing = await prisma.todoDependency.findMany({
+    where: { todo: { projectId: todo.projectId } },
+    select: { todoId: true, dependsOnId: true },
+  });
+  const edges = new Map<string, string[]>();
+  for (const e of existing) {
+    if (e.todoId === todoId) continue;
+    const arr = edges.get(e.todoId) ?? [];
+    arr.push(e.dependsOnId);
+    edges.set(e.todoId, arr);
+  }
+  for (const p of clean) {
+    if (depReaches(edges, p, todoId, new Set())) {
+      const blocker = await prisma.todo.findUnique({ where: { id: p }, select: { title: true } });
+      return { ok: false, error: `"${blocker?.title ?? "Todo"}" already depends on this todo — that would create a cycle.` };
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.todoDependency.deleteMany({ where: { todoId } });
+    if (clean.length > 0) {
+      await tx.todoDependency.createMany({ data: clean.map((d) => ({ todoId, dependsOnId: d })) });
+    }
+  });
+  await logAudit(actor.id, "todo.dependencies_updated", "Todo", todoId, { dependsOn: clean });
+  revalidatePath(`/projects/${todo.projectId}`);
+  return { ok: true };
+}
+
+/** Milestones this milestone may depend on (same project, excluding itself). */
+export async function milestoneDependencyCandidates(milestoneId: string) {
+  const actor = await requireUser();
+  const ms = await prisma.milestone.findUnique({ where: { id: milestoneId }, select: { projectId: true, project: { select: { labId: true } } } });
+  if (!ms) return [];
+  const labIds = scopeFilter(actor);
+  if (labIds && !labIds.includes(ms.project.labId)) return [];
+  return prisma.milestone.findMany({
+    where: { projectId: ms.projectId, id: { not: milestoneId } },
+    select: { id: true, title: true, status: true },
+    orderBy: { sortOrder: "asc" },
+    take: 100,
+  });
+}
+
+/** Replace a milestone's prerequisites. Validates same-project, no self-dep, no cycles. */
+export async function setMilestoneDependencies(milestoneId: string, dependsOnIds: string[]): Promise<ActionResult> {
+  const actor = await requireUser();
+  const ms = await prisma.milestone.findUnique({
+    where: { id: milestoneId },
+    select: { id: true, projectId: true, project: { select: { labId: true } } },
+  });
+  if (!ms) return { ok: false, error: "Milestone not found." };
+  if (!can(actor, "projects.manage", ms.project.labId)) return deny("projects.manage");
+
+  const clean = [...new Set(dependsOnIds)].filter((d) => d && d !== milestoneId);
+  if (clean.length > 0) {
+    const count = await prisma.milestone.count({ where: { id: { in: clean }, projectId: ms.projectId } });
+    if (count !== clean.length) return { ok: false, error: "Dependencies must be milestones in the same project." };
+  }
+
+  const existing = await prisma.milestoneDependency.findMany({
+    where: { milestone: { projectId: ms.projectId } },
+    select: { milestoneId: true, dependsOnId: true },
+  });
+  const edges = new Map<string, string[]>();
+  for (const e of existing) {
+    if (e.milestoneId === milestoneId) continue;
+    const arr = edges.get(e.milestoneId) ?? [];
+    arr.push(e.dependsOnId);
+    edges.set(e.milestoneId, arr);
+  }
+  for (const p of clean) {
+    if (depReaches(edges, p, milestoneId, new Set())) {
+      const blocker = await prisma.milestone.findUnique({ where: { id: p }, select: { title: true } });
+      return { ok: false, error: `"${blocker?.title ?? "Milestone"}" already depends on this milestone — that would create a cycle.` };
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.milestoneDependency.deleteMany({ where: { milestoneId } });
+    if (clean.length > 0) {
+      await tx.milestoneDependency.createMany({ data: clean.map((d) => ({ milestoneId, dependsOnId: d })) });
+    }
+  });
+  await logAudit(actor.id, "milestone.dependencies_updated", "Milestone", milestoneId, { dependsOn: clean });
+  revalidatePath(`/projects/${ms.projectId}`);
+  return { ok: true };
 }

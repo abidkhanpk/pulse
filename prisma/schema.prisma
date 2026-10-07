@@ -302,6 +302,10 @@ model Milestone {
   status      MilestoneStatus @default(PLANNED)
   sortOrder   Int             @default(0)
   todos       Todo[]
+
+  // Finish-to-Start dependencies between milestones.
+  prerequisites MilestoneDependency[] @relation("MilestoneDependents")
+  dependents    MilestoneDependency[] @relation("MilestonePrerequisites")
 }
 
 model Todo {
@@ -322,7 +326,33 @@ model Todo {
   createdBy   User       @relation("CreatedTodos", fields: [createdById], references: [id])
   createdAt   DateTime   @default(now())
 
+  // Finish-to-Start dependencies: this todo starts after its prerequisites finish.
+  prerequisites TodoDependency[] @relation("TodoDependents")
+  dependents    TodoDependency[] @relation("TodoPrerequisites")
+
   @@index([projectId, status, sortOrder])
+}
+
+// Finish-to-Start: todoId starts after dependsOnId finishes.
+model TodoDependency {
+  todoId      String
+  dependsOnId String
+  todo        Todo   @relation("TodoDependents", fields: [todoId], references: [id], onDelete: Cascade)
+  dependsOn   Todo   @relation("TodoPrerequisites", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@id([todoId, dependsOnId])
+  @@index([dependsOnId])
+}
+
+// Finish-to-Start: milestoneId starts after dependsOnId finishes.
+model MilestoneDependency {
+  milestoneId String
+  dependsOnId String
+  milestone   Milestone @relation("MilestoneDependents", fields: [milestoneId], references: [id], onDelete: Cascade)
+  dependsOn   Milestone @relation("MilestonePrerequisites", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@id([milestoneId, dependsOnId])
+  @@index([dependsOnId])
 }
 
 // ─── Audit log ───

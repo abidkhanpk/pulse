@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label, Select, FieldError } from "@/components/ui/input";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { Card, CardContent, Badge } from "@/components/ui/card";
-import { createMilestone, updateMilestone, deleteMilestone } from "@/app/(app)/projects/actions";
+import { createMilestone, updateMilestone, deleteMilestone, milestoneDependencyCandidates, setMilestoneDependencies } from "@/app/(app)/projects/actions";
+import { DependencyPicker, type DependencyCandidate } from "./dependency-picker";
 
 interface Milestone {
   id: string;
@@ -13,6 +14,7 @@ interface Milestone {
   description: string | null;
   dueDate: string | null;
   status: string;
+  prerequisites: { dependsOn: { id: string; title: string; status: string } }[];
 }
 
 const STATUS_COLORS: Record<string, "default" | "info" | "success"> = {
@@ -38,10 +40,13 @@ export function MilestoneManager({
   const [status, setStatus] = React.useState("PLANNED");
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
+  const [candidates, setCandidates] = React.useState<DependencyCandidate[]>([]);
+  const [dependsOn, setDependsOn] = React.useState<string[]>([]);
 
   function startCreate() {
     setEditing(null);
     setTitle(""); setDescription(""); setDueDate(""); setStatus("PLANNED");
+    setDependsOn([]); setCandidates([]);
     setError(null);
     setFormOpen(true);
   }
@@ -50,8 +55,10 @@ export function MilestoneManager({
     setEditing(m);
     setTitle(m.title); setDescription(m.description ?? "");
     setDueDate(m.dueDate ? m.dueDate.slice(0, 10) : ""); setStatus(m.status);
+    setDependsOn(m.prerequisites.map((p) => p.dependsOn.id));
     setError(null);
     setFormOpen(true);
+    milestoneDependencyCandidates(m.id).then(setCandidates);
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -66,14 +73,34 @@ export function MilestoneManager({
         dueDate: dueDate || null,
         status: status as "PLANNED" | "IN_PROGRESS" | "DONE",
       };
-      const res = editing
-        ? await updateMilestone(editing.id, payload)
-        : await createMilestone({ projectId, ...payload });
-      if (!res.ok) setError(res.error);
-      else {
-        setFormOpen(false);
-        onChanged();
+      let targetId: string | undefined;
+      if (editing) {
+        const r = await updateMilestone(editing.id, payload);
+        if (!r.ok) {
+          setError(r.error);
+          setPending(false);
+          return;
+        }
+        targetId = editing.id;
+      } else {
+        const r = await createMilestone({ projectId, ...payload });
+        if (!r.ok) {
+          setError(r.error);
+          setPending(false);
+          return;
+        }
+        targetId = r.data?.id;
       }
+      if (targetId && (dependsOn.length > 0 || editing)) {
+        const depRes = await setMilestoneDependencies(targetId, dependsOn);
+        if (!depRes.ok) {
+          setError(depRes.error);
+          setPending(false);
+          return;
+        }
+      }
+      setFormOpen(false);
+      onChanged();
     } finally {
       setPending(false);
     }
@@ -102,6 +129,11 @@ export function MilestoneManager({
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-slate-900">{m.title}</p>
                   {m.description && <p className="truncate text-sm text-slate-500">{m.description}</p>}
+                  {m.prerequisites.length > 0 && (
+                    <p className="mt-0.5 text-xs text-slate-400">
+                      Depends on: {m.prerequisites.map((p) => p.dependsOn.title).join(", ")}
+                    </p>
+                  )}
                 </div>
                 <Badge color={STATUS_COLORS[m.status] ?? "default"}>{m.status.replace("_", " ")}</Badge>
                 {m.dueDate && <span className="text-xs text-slate-400">Due {m.dueDate.slice(0, 10)}</span>}
@@ -141,6 +173,14 @@ export function MilestoneManager({
             </div>
           </div>
           <FieldError message={error ?? undefined} />
+          {editing && (
+            <DependencyPicker
+              label="Depends on"
+              candidates={candidates}
+              selected={dependsOn}
+              onChange={setDependsOn}
+            />
+          )}
           <div className="flex justify-end gap-2">
             <Button variant="outline" type="button" onClick={() => setFormOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={pending}>{pending ? "Saving…" : editing ? "Save" : "Add"}</Button>

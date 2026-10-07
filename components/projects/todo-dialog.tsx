@@ -4,15 +4,23 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label, Select, FieldError } from "@/components/ui/input";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
-import { createTodo, updateTodo, deleteTodo } from "@/app/(app)/projects/actions";
+import { createTodo, updateTodo, deleteTodo, todoDependencyCandidates, setTodoDependencies } from "@/app/(app)/projects/actions";
+import { DependencyPicker, type DependencyCandidate } from "./dependency-picker";
 import type { KanbanTodo } from "./kanban";
+
+interface TodoWithDeps extends KanbanTodo {
+  description: string | null;
+  startDate: string | null;
+  milestoneId: string | null;
+  prerequisites: { dependsOn: { id: string; title: string; status: string } }[];
+}
 
 interface Props {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
   projectId: string;
-  todo: (KanbanTodo & { description: string | null; startDate: string | null; milestoneId: string | null }) | null;
+  todo: TodoWithDeps | null;
   defaultStatus: KanbanTodo["status"];
   milestones: { id: string; title: string }[];
   members: { id: string; name: string }[];
@@ -29,6 +37,8 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
   const [endDate, setEndDate] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
+  const [candidates, setCandidates] = React.useState<DependencyCandidate[]>([]);
+  const [dependsOn, setDependsOn] = React.useState<string[]>([]);
 
   // Reset the form every time the dialog opens (or a different todo is selected).
   /* eslint-disable react-hooks/set-state-in-effect -- intentional form reset on open */
@@ -41,7 +51,10 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
       setAssigneeId(todo?.assignee?.id ?? "");
       setStartDate(todo?.startDate ? todo.startDate.slice(0, 10) : "");
       setEndDate(todo?.endDate ? todo.endDate.slice(0, 10) : "");
+      setDependsOn(todo?.prerequisites.map((p) => p.dependsOn.id) ?? []);
       setError(null);
+      setCandidates([]);
+      if (todo) todoDependencyCandidates(todo.id).then(setCandidates);
     }
   }, [open, todo, defaultStatus]);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -62,12 +75,34 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
         startDate: startDate || null,
         endDate: endDate || null,
       };
-      const res = todo ? await updateTodo(todo.id, payload) : await createTodo(payload);
-      if (!res.ok) setError(res.error);
-      else {
-        onSaved();
-        onClose();
+      let depTarget: string | undefined;
+      if (todo) {
+        const r = await updateTodo(todo.id, payload);
+        if (!r.ok) {
+          setError(r.error);
+          setPending(false);
+          return;
+        }
+        depTarget = todo.id;
+      } else {
+        const r = await createTodo(payload);
+        if (!r.ok) {
+          setError(r.error);
+          setPending(false);
+          return;
+        }
+        depTarget = r.data?.id;
       }
+      if (depTarget && (dependsOn.length > 0 || todo)) {
+        const depRes = await setTodoDependencies(depTarget, dependsOn);
+        if (!depRes.ok) {
+          setError(depRes.error);
+          setPending(false);
+          return;
+        }
+      }
+      onSaved();
+      onClose();
     } finally {
       setPending(false);
     }
@@ -136,6 +171,15 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
           </div>
         </div>
         <FieldError message={error ?? undefined} />
+        {todo && (
+          <DependencyPicker
+            label="Depends on"
+            candidates={candidates}
+            selected={dependsOn}
+            onChange={setDependsOn}
+            disabled={!canManage}
+          />
+        )}
         <div className="flex justify-between">
           <div>
             {todo && canManage && (

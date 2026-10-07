@@ -9,6 +9,7 @@ export interface GanttMilestone {
   title: string;
   dueDate: string | null;
   status: string;
+  dependsOnIds: string[];
 }
 
 export interface GanttTodo {
@@ -19,6 +20,7 @@ export interface GanttTodo {
   endDate: string | null;
   assigneeName: string | null;
   milestoneId: string | null;
+  dependsOnIds: string[];
 }
 
 const DAY_MS = 86400000;
@@ -139,7 +141,7 @@ export function GanttChart({
     if (loose.length > 0) {
       out.push({
         kind: "milestone",
-        ms: { id: "__none__", title: "Without milestone", dueDate: null, status: "PLANNED" },
+        ms: { id: "__none__", title: "Without milestone", dueDate: null, status: "PLANNED", dependsOnIds: [] },
         spanStart: null,
         spanEnd: null,
       });
@@ -148,7 +150,85 @@ export function GanttChart({
     return out;
   }, [dated, milestones]);
 
+
+
   const xOf = React.useCallback((ms: number) => ((ms - minDay) / DAY_MS) * dw, [minDay, dw]);
+
+  // Bar geometry (mirrors the todo row renderer, incl. drag preview).
+  const barGeom = React.useCallback(
+    (t: GanttTodo) => {
+      const pv = preview[t.id];
+      const s = pv ? pv.s : t.startDate ? parseDay(t.startDate) : t.endDate ? parseDay(t.endDate) : minDay;
+      const e = pv ? pv.e : t.endDate ? parseDay(t.endDate) : t.startDate ? parseDay(t.startDate) : minDay;
+      const left = xOf(s);
+      const width = Math.max(dw * 0.7, xOf(e) - xOf(s) + dw);
+      return { left, width };
+    },
+    [preview, minDay, xOf, dw]
+  );
+
+  // ── Dependency links (Finish-to-Start arrows) ──
+  const links = React.useMemo(() => {
+    const rowY = new Map<string, number>(); // "t:<id>" | "m:<id>" → row center y
+    rows.forEach((row, i) => {
+      const y = i * ROW_H + ROW_H / 2;
+      if (row.kind === "todo") rowY.set(`t:${row.todo.id}`, y);
+      else rowY.set(`m:${row.ms.id}`, y);
+    });
+    // Milestone anchor x: finish = due date (diamond) or span end; start = span start or due date.
+    const msFinishX = new Map<string, number>();
+    const msStartX = new Map<string, number>();
+    for (const row of rows) {
+      if (row.kind !== "milestone" || row.ms.id === "__none__") continue;
+      const { ms, spanStart, spanEnd } = row;
+      const fx = ms.dueDate ? xOf(parseDay(ms.dueDate)) : spanEnd !== null ? xOf(spanEnd) + dw : null;
+      const sx = spanStart !== null ? xOf(spanStart) : ms.dueDate ? xOf(parseDay(ms.dueDate)) : null;
+      if (fx !== null) msFinishX.set(ms.id, fx);
+      if (sx !== null) msStartX.set(ms.id, sx);
+    }
+    const todoById = new Map(dated.map((t) => [t.id, t]));
+    const out: { key: string; x1: number; y1: number; x2: number; y2: number; conflict: boolean; label: string }[] = [];
+
+    // Todo → todo
+    for (const t of dated) {
+      const y2 = rowY.get(`t:${t.id}`);
+      if (y2 === undefined) continue;
+      const { left: x2 } = barGeom(t);
+      for (const depId of t.dependsOnIds) {
+        const pred = todoById.get(depId);
+        const y1 = rowY.get(`t:${depId}`);
+        if (!pred || y1 === undefined) continue;
+        const { left, width } = barGeom(pred);
+        const x1 = left + width;
+        out.push({
+          key: `tt:${depId}:${t.id}`,
+          x1, y1, x2, y2,
+          conflict: x2 < x1 - 1, // successor starts before predecessor finishes
+          label: `${pred.title} → ${t.title}`,
+        });
+      }
+    }
+    // Milestone → milestone
+    for (const row of rows) {
+      if (row.kind !== "milestone" || row.ms.id === "__none__") continue;
+      const y2 = rowY.get(`m:${row.ms.id}`);
+      const x2 = msStartX.get(row.ms.id);
+      if (y2 === undefined || x2 === undefined) continue;
+      for (const depId of row.ms.dependsOnIds) {
+        const y1 = rowY.get(`m:${depId}`);
+        const x1 = msFinishX.get(depId);
+        if (y1 === undefined || x1 === undefined) continue;
+        out.push({
+          key: `mm:${depId}:${row.ms.id}`,
+          x1, y1, x2, y2,
+          conflict: x2 < x1 - 1,
+          label: `Milestone dependency`,
+        });
+      }
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- barGeom identity changes with preview; links must follow drags
+  }, [rows, dated, milestones, xOf, dw, barGeom]);
 
   // Month + day headers
   const { monthCells, dayCells } = React.useMemo(() => {
@@ -259,6 +339,10 @@ export function GanttChart({
           <span className="flex items-center gap-1"><span className="h-2.5 w-6 rounded bg-indigo-500" /> In progress</span>
           <span className="flex items-center gap-1"><span className="h-2.5 w-6 rounded bg-slate-400" /> To do</span>
           <span className="flex items-center gap-1"><span className="h-2.5 w-6 rounded bg-emerald-500" /> Done</span>
+          <span className="flex items-center gap-1" title="Finish-to-Start dependency">
+            <svg width="24" height="10" className="inline"><path d="M1 5 H14 V9 H21" fill="none" stroke="#64748b" strokeWidth="1.5" markerEnd="url(#dep-arrow-legend)" /><defs><marker id="dep-arrow-legend" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 1 L 9 5 L 0 9 z" fill="#64748b" /></marker></defs></svg>
+            Depends on
+          </span>
         </div>
       </div>
 
@@ -302,7 +386,8 @@ export function GanttChart({
             </div>
           </div>
 
-          {/* Rows */}
+          {/* Rows + dependency overlay */}
+          <div className="relative">
           {rows.map((row) => {
             if (row.kind === "milestone") {
               const { ms, spanStart, spanEnd } = row;
@@ -397,6 +482,44 @@ export function GanttChart({
           {rows.length === 0 && (
             <p className="p-6 text-center text-sm text-slate-400">No dated items.</p>
           )}
+          {/* Dependency arrows (SVG overlay over the timeline area) */}
+          {links.length > 0 && (
+            <svg
+              className="pointer-events-none absolute left-0 top-0 z-10"
+              style={{ left: LABEL_W, width: timelineW, height: rows.length * ROW_H }}
+              aria-hidden
+            >
+              <defs>
+                <marker id="dep-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 1 L 9 5 L 0 9 z" fill="#64748b" />
+                </marker>
+                <marker id="dep-arrow-conflict" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 1 L 9 5 L 0 9 z" fill="#dc2626" />
+                </marker>
+              </defs>
+              {links.map((l) => {
+                const stub = 10;
+                const color = l.conflict ? "#dc2626" : "#64748b";
+                // Elbow: out of predecessor's finish → vertical → into successor's start.
+                const d = `M ${l.x1} ${l.y1} h ${stub} V ${l.y2} H ${l.x2 - 2}`;
+                return (
+                  <g key={l.key}>
+                    <title>{l.label}{l.conflict ? " — schedule conflict: starts before predecessor finishes" : ""}</title>
+                    <path
+                      d={d}
+                      fill="none"
+                      stroke={color}
+                      strokeWidth={l.conflict ? 2 : 1.5}
+                      strokeDasharray={l.conflict ? "4 3" : undefined}
+                      markerEnd={`url(#${l.conflict ? "dep-arrow-conflict" : "dep-arrow"})`}
+                      opacity={0.85}
+                    />
+                  </g>
+                );
+              })}
+            </svg>
+          )}
+          </div>
         </div>
       </div>
 

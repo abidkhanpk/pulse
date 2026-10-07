@@ -32,6 +32,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           assignee: t.assignee,
           milestone: t.milestone,
           milestoneId: t.milestoneId,
+          prerequisites: t.prerequisites,
         })),
       }}
       logEntries={logEntries.map((e) => ({
