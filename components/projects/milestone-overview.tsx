@@ -49,6 +49,10 @@ function fmt(d: string | null): string {
   return `${m}/${day}/${y}`;
 }
 
+// Projects auto-expanded this session — survives tab switches (component
+// remounts) but resets on page reload, so a collapsed milestone stays collapsed.
+const autoExpandedProjects = new Set<string>();
+
 const STATUS_PILL: Record<string, string> = {
   TODO: "bg-blue-600 hover:bg-blue-700",
   IN_PROGRESS: "bg-amber-500 hover:bg-amber-600",
@@ -203,9 +207,9 @@ function MilestoneCard({
         className="relative cursor-pointer overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(15,40,70,0.08)] ring-1 ring-slate-100 transition hover:ring-indigo-200"
         onClick={onToggle}
       >
-        <div className="flex items-start gap-3 px-4 pt-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
           <span
-            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500"
             aria-expanded={expanded}
             title={expanded ? "Collapse" : "Expand"}
           >
@@ -213,18 +217,44 @@ function MilestoneCard({
               <ChevronDown className="h-4 w-4" />
             </motion.span>
           </span>
-          <span className="min-w-0 flex-1 text-left">
+          <span className="min-w-0 w-48 shrink-0 text-left">
             <span className="block text-[10px] leading-tight text-slate-400">{projectName}</span>
-            <span className="block truncate text-[15px] font-bold text-[#1d3f66]">{milestone.title}</span>
+            <span className="block truncate text-[15px] font-bold text-[#1d3f66]" title={milestone.title}>{milestone.title}</span>
+          </span>
+          {/* Progress bar inline with the title */}
+          <span className="flex min-w-[140px] flex-1 items-center gap-2">
+            <span
+              className="w-16 shrink-0 text-right text-[11px] text-slate-400"
+              title={startAuto ? "Auto: earliest todo start" : "Milestone start date"}
+            >
+              {startLabel ? fmt(startLabel) : "—"}{startAuto && <span className="ml-0.5 rounded bg-slate-100 px-1 text-[9px]">auto</span>}
+            </span>
+            <span
+              className="h-2.5 min-w-[60px] flex-1 overflow-hidden rounded-full bg-slate-100"
+              title={`${done}/${todos.length} todos done${milestone.prerequisites.length > 0 ? ` · Depends on: ${milestone.prerequisites.map((p) => p.dependsOn.title).join(", ")}` : ""}`}
+            >
+              <motion.span
+                className="block h-full rounded-full bg-[#1e4a7a]"
+                initial={false}
+                animate={{ width: `${pct}%` }}
+                transition={{ type: "spring", stiffness: 120, damping: 20 }}
+              />
+            </span>
+            <span
+              className="w-16 shrink-0 text-[11px] text-slate-400"
+              title={endAuto ? "Auto: latest todo end" : "Milestone due date"}
+            >
+              {endAuto && <span className="mr-0.5 rounded bg-slate-100 px-1 text-[9px]">auto</span>}{endLabel ? fmt(endLabel) : "—"}
+            </span>
           </span>
           {!isPseudo && (
-            <span className="hidden shrink-0 pt-4 text-xs text-slate-400 sm:block">
+            <span className="hidden shrink-0 text-xs text-slate-400 md:block">
               Due By: {milestone.dueDate ? fmt(milestone.dueDate) : "—"}
             </span>
           )}
-          <span className="shrink-0 pt-4 text-xs font-medium text-slate-500">{pct.toFixed(2)}% Complete</span>
+          <span className="shrink-0 text-xs font-medium text-slate-500">{pct.toFixed(2)}% Complete</span>
           {canManage && !isPseudo && (
-            <span className="flex shrink-0 gap-0.5 pt-3" onClick={(e) => e.stopPropagation()}>
+            <span className="flex shrink-0 gap-0.5" onClick={(e) => e.stopPropagation()}>
               <Button variant="ghost" size="sm" onClick={onEdit} title="Edit milestone" className="!px-2">
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
@@ -234,33 +264,8 @@ function MilestoneCard({
             </span>
           )}
         </div>
-        {/* Progress bar */}
-        <div className="px-4 pb-3 pt-2">
-          <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-            <motion.div
-              className="h-full rounded-full bg-[#1e4a7a]"
-              initial={false}
-              animate={{ width: `${pct}%` }}
-              transition={{ type: "spring", stiffness: 120, damping: 20 }}
-            />
-          </div>
-          <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
-            <span title={startAuto ? "Auto: earliest todo start" : "Milestone start date"}>
-              {startLabel ? fmt(startLabel) : "—"}{startAuto && <span className="ml-1 rounded bg-slate-100 px-1 text-[9px]">auto</span>}
-            </span>
-            <span>
-              {done}/{todos.length} done
-              {milestone.prerequisites.length > 0 && (
-                <> · Depends on: {milestone.prerequisites.map((p) => p.dependsOn.title).join(", ")}</>
-              )}
-            </span>
-            <span title={endAuto ? "Auto: latest todo end" : "Milestone due date"}>
-              {endAuto && <span className="mr-1 rounded bg-slate-100 px-1 text-[9px]">auto</span>}{endLabel ? fmt(endLabel) : "—"}
-            </span>
-          </div>
-        </div>
-        {/* navy bottom accent */}
-        <div className="h-1 bg-[#1e4a7a]" />
+        {/* navy accent — only on expanded cards */}
+        {expanded && <div className="h-1 bg-[#1e4a7a]" />}
       </div>
 
       {/* Expandable todo tree */}
@@ -362,16 +367,17 @@ export function MilestoneOverview({
     return { msWithKey, loose: sortTodos(loose) };
   }, [milestones, todos]);
 
-  // Expand the first milestone by default (like the screenshot) — once only,
-  // so the user can close everything afterwards.
+  // Expand the first milestone by default (like the screenshot) — once per
+  // session, so tab switches don't re-expand what the user collapsed.
   const autoExpanded = React.useRef(false);
   /* eslint-disable react-hooks/set-state-in-effect -- one-time default expansion on data load */
   React.useEffect(() => {
-    if (!autoExpanded.current && groups.msWithKey.length > 0) {
+    if (!autoExpanded.current && !autoExpandedProjects.has(projectId) && groups.msWithKey.length > 0) {
       autoExpanded.current = true;
+      autoExpandedProjects.add(projectId);
       setExpanded(new Set([groups.msWithKey[0].m.id]));
     }
-  }, [groups]);
+  }, [groups, projectId]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   function expandAll() {
