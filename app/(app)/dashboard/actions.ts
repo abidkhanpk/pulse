@@ -15,6 +15,11 @@ export interface DashboardData {
   myTodos: { id: string; title: string; projectName: string; projectId: string; endDate: string | null; status: string }[];
   todayBookings: { id: string; personName: string; deskLabel: string | null; timeStart: string; timeEnd: string; title: string | null }[];
   canSeeBookings: boolean;
+  attendanceTrend: { date: string; present: number }[];
+  projectProgress: { name: string; done: number; total: number }[];
+  recentActivity: { id: string; action: string; entity: string; at: string; userName: string }[];
+  attendanceEnabled: boolean;
+  myMonthPct: number | null;
 }
 
 function fmtTime(iso: Date): string {
@@ -89,6 +94,93 @@ export async function dashboardData(): Promise<DashboardData> {
         : Promise.resolve([]),
     ]);
 
+  // ── extended data ──
+  const trendStart = new Date(today);
+  trendStart.setUTCDate(trendStart.getUTCDate() - 13);
+  const [trendRecords, projects, activity, labsWithAttendance, myRecords, myWorking] = await Promise.all([
+    prisma.attendanceRecord.findMany({
+      where: {
+        date: { gte: trendStart, lte: today },
+        checkIn: { not: null },
+        ...(labFilter ? { user: { labId: labFilter } } : {}),
+      },
+      select: { date: true },
+    }),
+    prisma.project.findMany({
+      where: { ...(labFilter ? { labId: labFilter } : {}), status: { in: ["ACTIVE", "PLANNING"] } },
+      select: {
+        name: true,
+        milestones: { select: { todos: { select: { status: true } } } },
+      },
+      take: 6,
+    }),
+    prisma.auditLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      include: { actor: { select: { name: true } } },
+    }),
+    prisma.lab.count({
+      where: { ...(labFilter ? { id: labFilter } : {}), attendanceMode: { not: "NONE" } },
+    }),
+    prisma.attendanceRecord.findMany({
+      where: {
+        userId: actor.id,
+        date: { gte: new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1)), lte: today },
+        checkIn: { not: null },
+      },
+      select: { date: true, workMode: true },
+    }),
+    (async () => {
+      const me = await prisma.user.findUnique({
+        where: { id: actor.id },
+        select: {
+          linkAttendanceToBooking: true,
+          workingDayExceptions: { select: { date: true, recurrence: true } },
+        },
+      });
+      if (!me) return [];
+      const occs = await prisma.bookingOccurrence.findMany({
+        where: {
+          status: "SCHEDULED",
+          date: { gte: new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1)), lte: today },
+          booking: { userId: actor.id },
+        },
+        select: { date: true },
+      });
+      const { workingDaysInRange } = await import("@/lib/attendance");
+      const y = today.getUTCFullYear();
+      const m = String(today.getUTCMonth() + 1).padStart(2, "0");
+      return workingDaysInRange(`${y}-${m}-01`, toISODate(today), {
+        bookingDays: new Set(occs.map((o) => toISODate(o.date))),
+        linkToBooking: me.linkAttendanceToBooking,
+        exceptions: me.workingDayExceptions.map((e) => ({ date: toISODate(e.date), recurrence: e.recurrence })),
+      });
+    })(),
+  ]);
+
+  const trendMap = new Map<string, number>();
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() - i);
+    trendMap.set(toISODate(d), 0);
+  }
+  for (const r of trendRecords) {
+    const k = toISODate(r.date);
+    trendMap.set(k, (trendMap.get(k) ?? 0) + 1);
+  }
+  const attendanceTrend = [...trendMap.entries()].map(([date, present]) => ({
+    date: date.slice(5),
+    present,
+  }));
+
+  const projectProgress = projects.map((pr) => {
+    const todos = pr.milestones.flatMap((m) => m.todos);
+    return { name: pr.name.length > 18 ? pr.name.slice(0, 18) + "…" : pr.name, done: todos.filter((t) => t.status === "DONE").length, total: todos.length };
+  });
+
+  const myPresent = new Set(myRecords.filter((r) => r.workMode !== "LEAVE").map((r) => toISODate(r.date))).size;
+  const myMonthPct = myWorking.length ? Math.round((myPresent / myWorking.length) * 100) : null;
+
   return {
     desksOccupied: occupied,
     desksTotal,
@@ -113,5 +205,16 @@ export async function dashboardData(): Promise<DashboardData> {
       title: o.booking.title,
     })),
     canSeeBookings: hasPermission(actor, "bookings.view_all"),
+    attendanceTrend,
+    projectProgress,
+    recentActivity: activity.map((a) => ({
+      id: a.id,
+      action: a.action,
+      entity: a.entityType,
+      at: a.createdAt.toISOString(),
+      userName: a.actor?.name ?? "System",
+    })),
+    attendanceEnabled: labsWithAttendance > 0,
+    myMonthPct,
   };
 }

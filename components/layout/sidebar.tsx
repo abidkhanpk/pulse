@@ -35,17 +35,17 @@ export function roleDisplayName(key: string): string {
     .join("");
 }
 
-const NAV: { href: string; label: string; icon: typeof LayoutDashboard; perm: PermissionKey | null }[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, perm: null },
-  { href: "/desks", label: "Desks", icon: Armchair, perm: "bookings.view_all" },
-  { href: "/projects", label: "Projects", icon: FolderKanban, perm: null },
-  { href: "/logbook", label: "Logbook", icon: BookOpenText, perm: null },
-  { href: "/people", label: "People", icon: Users, perm: "users.manage" },
-  { href: "/check-in", label: "Check-in", icon: ClipboardList, perm: null },
-  { href: "/reports", label: "Reports", icon: BarChart3, perm: "attendance.view_reports" },
-  { href: "/labs", label: "Labs", icon: FlaskConical, perm: "labs.manage" },
-  { href: "/audit", label: "Audit", icon: ShieldCheck, perm: "audit.view" },
-  { href: "/settings", label: "Settings", icon: Settings, perm: "org.manage" },
+const NAV: { href: string; label: string; icon: typeof LayoutDashboard; perm: PermissionKey | null; section: string }[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, perm: null, section: "Main" },
+  { href: "/desks", label: "Desks", icon: Armchair, perm: "bookings.view_all", section: "Main" },
+  { href: "/projects", label: "Projects", icon: FolderKanban, perm: null, section: "Main" },
+  { href: "/logbook", label: "Logbook", icon: BookOpenText, perm: null, section: "Main" },
+  { href: "/people", label: "People", icon: Users, perm: "users.manage", section: "Main" },
+  { href: "/check-in", label: "Check-in", icon: ClipboardList, perm: null, section: "Main" },
+  { href: "/reports", label: "Reports", icon: BarChart3, perm: "attendance.view_reports", section: "Main" },
+  { href: "/labs", label: "Labs", icon: FlaskConical, perm: "labs.manage", section: "Manage" },
+  { href: "/audit", label: "Audit", icon: ShieldCheck, perm: "audit.view", section: "Manage" },
+  { href: "/settings", label: "Settings", icon: Settings, perm: "org.manage", section: "Manage" },
 ];
 
 function canSee(actor: SessionActorLike, item: (typeof NAV)[number]) {
@@ -97,10 +97,10 @@ export function Sidebar({
       transition={{ type: "spring", stiffness: 380, damping: 36 }}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
-      className="fixed bottom-0 left-0 top-0 z-40 hidden flex-col overflow-hidden bg-[#0e2238] shadow-[4px_0_24px_rgba(2,8,23,0.35)] dark:bg-[#0a1424] md:flex"
+      className="fixed bottom-0 left-0 top-0 z-40 hidden flex-col overflow-hidden border-r border-slate-200/70 bg-white shadow-[4px_0_24px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#0a0a0e] dark:shadow-[4px_0_24px_rgba(0,0,0,0.5)] md:flex"
     >
       {/* Brand */}
-      <div className={cn("flex h-16 shrink-0 items-center border-b border-white/10", expanded ? "px-5" : "justify-center px-2")}>
+      <div className={cn("flex h-16 shrink-0 items-center border-b border-slate-100 dark:border-white/10", expanded ? "px-5" : "justify-center px-2")}>
         <Link href="/dashboard" className="flex items-center gap-2.5" title={appName}>
           <motion.span
             whileHover={{ rotate: -8, scale: 1.06 }}
@@ -112,7 +112,7 @@ export function Sidebar({
             <motion.span
               initial={{ opacity: 0, x: -6 }}
               animate={{ opacity: 1, x: 0 }}
-              className="whitespace-nowrap text-xl font-extrabold tracking-tight text-white"
+              className="whitespace-nowrap bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-xl font-extrabold tracking-tight text-transparent"
             >
               {appName}
             </motion.span>
@@ -122,54 +122,98 @@ export function Sidebar({
 
       {/* Nav */}
       <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden p-3">
-        {items.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={expanded ? undefined : item.label}
-              className={cn(
-                "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
-                !expanded && "justify-center px-0",
-                active ? "text-white" : "text-slate-300/80 hover:bg-white/10 hover:text-white"
-              )}
-            >
-              {active && (
-                <motion.span
-                  layoutId="sidebar-active"
-                  className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 shadow-[0_4px_14px_rgba(99,102,241,0.45)]"
-                  transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                />
-              )}
-              <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center">
-                <Icon className="h-[18px] w-[18px]" />
-              </span>
-              {expanded && (
-                <motion.span
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="relative z-10 truncate whitespace-nowrap"
+        {(() => {
+          let lastSection = "";
+          return items.map((item) => {
+            const active = pathname === item.href || pathname.startsWith(item.href + "/");
+            const Icon = item.icon;
+            const sectionHeader = item.section !== lastSection ? item.section : null;
+            lastSection = item.section;
+            return (
+              <React.Fragment key={item.href}>
+                {sectionHeader && expanded && (
+                  <p className="px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                    {sectionHeader}
+                  </p>
+                )}
+                <Link
+                  href={item.href}
+                  title={expanded ? undefined : item.label}
+                  className={cn(
+                    "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
+                    !expanded && "justify-center px-0",
+                    active
+                      ? "text-white"
+                      : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+                  )}
                 >
-                  {item.label}
-                </motion.span>
-              )}
-            </Link>
-          );
-        })}
+                  {active && (
+                    <motion.span
+                      layoutId="sidebar-active"
+                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 shadow-[0_4px_14px_rgba(99,102,241,0.45)]"
+                      transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                    />
+                  )}
+                  <span
+                    className={cn(
+                      "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
+                      active
+                        ? "bg-white/20"
+                        : "bg-slate-100 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600 dark:bg-white/5 dark:text-slate-400 dark:group-hover:bg-white/10 dark:group-hover:text-white"
+                    )}
+                  >
+                    <Icon className="h-[18px] w-[18px]" />
+                  </span>
+                  {expanded && (
+                    <motion.span
+                      initial={{ opacity: 0, x: -6 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="relative z-10 truncate whitespace-nowrap"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                  {expanded && active && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="relative z-10 ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-white"
+                    />
+                  )}
+                </Link>
+              </React.Fragment>
+            );
+          });
+        })()}
       </nav>
 
-      {/* Pin toggle */}
-      <div className="border-t border-white/10 p-3">
+      {/* Profile + pin */}
+      <div className="space-y-2 border-t border-slate-100 p-3 dark:border-white/10">
+        {expanded && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center gap-2.5 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 p-2.5 ring-1 ring-indigo-100 dark:from-white/5 dark:to-white/10 dark:ring-white/10"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-xs font-bold text-white">
+              {actor.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-slate-800 dark:text-white">{actor.name}</span>
+              <span className="block truncate text-[11px] text-slate-500 dark:text-slate-400">{roleDisplayName(actor.role.key)}</span>
+            </span>
+          </motion.div>
+        )}
         <button
           onClick={onTogglePin}
           title={pinned ? "Unpin sidebar (auto-collapse on hover)" : "Pin sidebar open"}
           className={cn(
             "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
             !expanded && "justify-center px-0",
-            pinned ? "bg-white/10 text-white" : "text-slate-300/70 hover:bg-white/10 hover:text-white"
+            pinned
+              ? "bg-indigo-100 text-indigo-700 dark:bg-white/10 dark:text-white"
+              : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
           )}
         >
           {pinned ? <PinOff className="h-[18px] w-[18px] shrink-0" /> : <Pin className="h-[18px] w-[18px] shrink-0" />}

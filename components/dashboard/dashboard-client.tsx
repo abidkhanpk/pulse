@@ -3,11 +3,46 @@
 import * as React from "react";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
-import { Armchair, UserCheck, AlertTriangle, ClipboardCheck, ArrowRight } from "lucide-react";
+import {
+  Armchair,
+  UserCheck,
+  AlertTriangle,
+  ClipboardCheck,
+  ArrowRight,
+  TrendingUp,
+  Activity,
+  CalendarCheck,
+  ListTodo,
+} from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  RadialBarChart,
+  RadialBar,
+  PolarAngleAxis,
+} from "recharts";
 import { Card, CardHeader, CardTitle, CardContent, Badge } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
 import { FadeIn, Stagger, StaggerItem } from "@/components/ui/motion";
 import type { DashboardData } from "@/app/(app)/dashboard/actions";
+
+function useIsDark(): boolean {
+  const [dark, setDark] = React.useState(false);
+  React.useEffect(() => {
+    const el = document.documentElement;
+    const update = () => setDark(el.classList.contains("dark"));
+    update();
+    const obs = new MutationObserver(update);
+    obs.observe(el, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+  return dark;
+}
 
 function AnimatedNumber({ value }: { value: number }) {
   const ref = React.useRef<HTMLSpanElement>(null);
@@ -16,7 +51,7 @@ function AnimatedNumber({ value }: { value: number }) {
   React.useEffect(() => {
     if (!inView) return;
     const start = performance.now();
-    const dur = 800;
+    const dur = 900;
     let raf = 0;
     const tick = (t: number) => {
       const p = Math.min(1, (t - start) / dur);
@@ -29,6 +64,15 @@ function AnimatedNumber({ value }: { value: number }) {
   return <span ref={ref}>{n}</span>;
 }
 
+const CHART_COLORS = {
+  indigo: "#6366f1",
+  emerald: "#10b981",
+  amber: "#f59e0b",
+  sky: "#0ea5e9",
+  rose: "#f43f5e",
+  violet: "#8b5cf6",
+};
+
 function Stat({
   icon: Icon,
   label,
@@ -37,6 +81,8 @@ function Stat({
   hint,
   href,
   gradient,
+  spark,
+  sparkColor,
 }: {
   icon: React.ElementType;
   label: string;
@@ -45,22 +91,39 @@ function Stat({
   hint?: string;
   href?: string;
   gradient: string;
+  spark?: number[];
+  sparkColor?: string;
 }) {
   const inner = (
     <Card hover={!!href} className="relative overflow-hidden p-5">
-      <div className={`pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br ${gradient} opacity-10 blur-2xl`} />
+      <div className={`pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br ${gradient} opacity-[0.14] blur-2xl`} />
       <div className="flex items-start justify-between">
-        <span className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-white shadow-lg`}>
-          <Icon className="h-5 w-5" />
+        <span className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-white shadow-lg`}>
+          <Icon className="h-6 w-6" />
         </span>
         {href && <ArrowRight className="h-4 w-4 text-slate-300 transition-transform duration-200 group-hover:translate-x-0.5" />}
       </div>
-      <p className="mt-4 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+      <p className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
         <AnimatedNumber value={value} />
         {total !== undefined && <span className="text-lg font-medium text-slate-400"> / {total}</span>}
       </p>
-      <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-300">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300">{label}</p>
       {hint && <p className="text-xs text-slate-400">{hint}</p>}
+      {spark && spark.length > 1 && (
+        <div className="mt-2 h-10">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={spark.map((v, i) => ({ i, v }))} margin={{ top: 2, bottom: 2, left: 0, right: 0 }}>
+              <defs>
+                <linearGradient id={`spark-${label}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={sparkColor} stopOpacity={0.5} />
+                  <stop offset="100%" stopColor={sparkColor} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <Area type="monotone" dataKey="v" stroke={sparkColor ?? "#6366f1"} strokeWidth={2} fill={sparkColor ? `url(#spark-${label})` : "none"} isAnimationActive={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </Card>
   );
   return href ? (
@@ -72,86 +135,233 @@ function Stat({
   );
 }
 
+function ChartCard({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        {action}
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
+const tooltipStyle = (dark: boolean) => ({
+  backgroundColor: dark ? "#1e293b" : "#ffffff",
+  border: `1px solid ${dark ? "#334155" : "#e2e8f0"}`,
+  borderRadius: 12,
+  fontSize: 12,
+  color: dark ? "#e2e8f0" : "#0f172a",
+});
+
 export function DashboardClient({ d }: { d: DashboardData }) {
+  const dark = useIsDark();
+  const occupancyPct = d.desksTotal ? Math.round((d.desksOccupied / d.desksTotal) * 100) : 0;
+  const occupancyData = [{ name: "Occupancy", value: occupancyPct, fill: CHART_COLORS.indigo }];
+
   return (
     <div className="space-y-6">
       <FadeIn>
-        <div>
-          <h1 className="bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
-            Dashboard
-          </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Today&apos;s overview of the lab.</p>
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h1 className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-600 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent">
+              Dashboard
+            </h1>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Live overview of desks, people, projects and activity.
+            </p>
+          </div>
+          {d.myMonthPct !== null && (
+            <div className="flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-2 dark:border-indigo-800 dark:bg-indigo-950">
+              <CalendarCheck className="h-5 w-5 text-indigo-600 dark:text-indigo-300" />
+              <div>
+                <p className="text-lg font-extrabold leading-none text-indigo-700 dark:text-indigo-300">{d.myMonthPct}%</p>
+                <p className="text-[11px] text-indigo-500 dark:text-indigo-400">my attendance this month</p>
+              </div>
+            </div>
+          )}
         </div>
       </FadeIn>
 
       <Stagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" gap={0.08}>
         <StaggerItem>
-          <Stat icon={Armchair} label="Desks occupied now" value={d.desksOccupied} total={d.desksTotal} hint="Active desks with a live booking" href={d.canSeeBookings ? "/desks" : undefined} gradient="from-indigo-600 to-violet-600" />
+          <Stat icon={Armchair} label="Desks occupied now" value={d.desksOccupied} total={d.desksTotal} hint="Live bookings on active desks" href={d.canSeeBookings ? "/desks" : undefined} gradient="from-indigo-600 to-violet-600" spark={d.attendanceTrend.map((t) => t.present)} sparkColor={CHART_COLORS.indigo} />
         </StaggerItem>
         <StaggerItem>
-          <Stat icon={UserCheck} label="Checked in today" value={d.checkedInToday} total={d.peopleTotal} hint="Active people" href="/reports" gradient="from-emerald-600 to-teal-600" />
+          <Stat icon={UserCheck} label="Checked in today" value={d.checkedInToday} total={d.peopleTotal} hint="Across your labs" href="/reports" gradient="from-emerald-600 to-teal-600" spark={d.attendanceTrend.map((t) => t.present)} sparkColor={CHART_COLORS.emerald} />
         </StaggerItem>
         <StaggerItem>
-          <Stat icon={AlertTriangle} label="Overdue todos" value={d.overdueTodos} href="/projects" gradient="from-amber-500 to-orange-600" />
+          <Stat icon={AlertTriangle} label="Overdue todos" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="from-amber-500 to-orange-600" />
         </StaggerItem>
         <StaggerItem>
           <Stat icon={ClipboardCheck} label="Awaiting review" value={d.pendingReviews} hint="Logbook entries" href="/logbook" gradient="from-sky-600 to-blue-600" />
         </StaggerItem>
       </Stagger>
 
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {d.attendanceEnabled && (
+          <FadeIn delay={0.1} className="lg:col-span-2">
+            <ChartCard
+              title="Attendance — last 14 days"
+              action={
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                  <TrendingUp className="h-3.5 w-3.5" /> daily check-ins
+                </span>
+              }
+            >
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={d.attendanceTrend} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="attTrend" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={CHART_COLORS.emerald} stopOpacity={0.45} />
+                        <stop offset="100%" stopColor={CHART_COLORS.emerald} stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#1e293b" : "#e2e8f0"} vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: dark ? "#94a3b8" : "#64748b" }} tickLine={false} axisLine={false} interval={2} />
+                    <YAxis tick={{ fontSize: 11, fill: dark ? "#94a3b8" : "#64748b" }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <Tooltip contentStyle={tooltipStyle(dark)} />
+                    <Area type="monotone" dataKey="present" name="Present" stroke={CHART_COLORS.emerald} strokeWidth={2.5} fill="url(#attTrend)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </ChartCard>
+          </FadeIn>
+        )}
+
+        <FadeIn delay={0.16}>
+          <ChartCard title="Desk occupancy">
+            <div className="relative h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadialBarChart cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" data={occupancyData} startAngle={90} endAngle={-270}>
+                  <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
+                  <RadialBar dataKey="value" angleAxisId={0} cornerRadius={12} background={{ fill: dark ? "#1e293b" : "#f1f5f9" }} />
+                </RadialBarChart>
+              </ResponsiveContainer>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <p className="text-4xl font-extrabold text-slate-900 dark:text-white">{occupancyPct}%</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {d.desksOccupied} of {d.desksTotal} desks
+                </p>
+              </div>
+            </div>
+          </ChartCard>
+        </FadeIn>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <FadeIn delay={0.15}>
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle>My open todos</CardTitle>
-              <Link href="/projects" className="group inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700">
+        <FadeIn delay={0.2}>
+          <ChartCard
+            title="Project progress"
+            action={
+              <Link href="/projects" className="group inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
                 All projects <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </Link>
-            </CardHeader>
-            <CardContent className="space-y-2">
+            }
+          >
+            <div className="space-y-3">
+              {d.projectProgress.length === 0 && <p className="text-sm text-slate-400">No active projects.</p>}
+              {d.projectProgress.map((p, i) => {
+                const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
+                const colors = [CHART_COLORS.indigo, CHART_COLORS.violet, CHART_COLORS.sky, CHART_COLORS.emerald, CHART_COLORS.amber, CHART_COLORS.rose];
+                const c = colors[i % colors.length];
+                return (
+                  <div key={p.name}>
+                    <div className="mb-1 flex items-center justify-between text-sm">
+                      <span className="truncate font-medium text-slate-700 dark:text-slate-300">{p.name}</span>
+                      <span className="ml-2 shrink-0 text-xs text-slate-400">
+                        {p.done}/{p.total} · {pct}%
+                      </span>
+                    </div>
+                    <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 0.9, delay: 0.25 + i * 0.08, ease: "easeOut" }}
+                        className="h-full rounded-full"
+                        style={{ background: `linear-gradient(90deg, ${c}, ${c}cc)` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ChartCard>
+        </FadeIn>
+
+        <FadeIn delay={0.26}>
+          <ChartCard title="Recent activity">
+            <div className="max-h-72 space-y-1 overflow-y-auto">
+              {d.recentActivity.length === 0 && <p className="text-sm text-slate-400">No activity yet.</p>}
+              {d.recentActivity.map((a) => (
+                <div key={a.id} className="flex items-start gap-3 rounded-xl px-2 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300">
+                    <Activity className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {a.userName} <span className="font-normal text-slate-400">· {a.action.replace(/\./g, " ")}</span>
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {a.entity} · {new Date(a.at).toLocaleString("en-PK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Karachi" })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ChartCard>
+        </FadeIn>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <FadeIn delay={0.3}>
+          <ChartCard
+            title="My open todos"
+            action={
+              <Link href="/projects" className="group inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
+                All projects <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            }
+          >
+            <div className="space-y-2">
               {d.myTodos.length === 0 && <p className="text-sm text-slate-400">Nothing assigned — enjoy the quiet.</p>}
               {d.myTodos.map((t, i) => (
-                <motion.div
-                  key={t.id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 + i * 0.05, duration: 0.3 }}
-                >
-                  <Link href={`/projects/${t.projectId}`} className="block rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:-translate-y-px hover:border-indigo-200 hover:shadow-md dark:border-slate-800">
-                    <div className="flex items-center gap-2">
-                      <span className="flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-200">{t.title}</span>
-                      <Badge color={t.status === "IN_PROGRESS" ? "info" : "default"}>{t.status.replace("_", "")}</Badge>
-                    </div>
-                    <p className="mt-0.5 text-xs text-slate-400">
-                      {t.projectName}
-                      {t.endDate ? ` · due ${t.endDate}` : ""}
-                    </p>
+                <motion.div key={t.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.32 + i * 0.05, duration: 0.3 }}>
+                  <Link href={`/projects/${t.projectId}`} className="flex items-center gap-2 rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:-translate-y-px hover:border-indigo-200 hover:shadow-md dark:border-slate-800">
+                    <ListTodo className="h-4 w-4 shrink-0 text-slate-400" />
+                    <span className="flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-200">{t.title}</span>
+                    <Badge color={t.status === "IN_PROGRESS" ? "info" : "default"}>{t.status.replace("_", "")}</Badge>
                   </Link>
+                  <p className="mt-0.5 pl-6 text-xs text-slate-400">
+                    {t.projectName}
+                    {t.endDate ? ` · due ${t.endDate}` : ""}
+                  </p>
                 </motion.div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </ChartCard>
         </FadeIn>
 
         {d.canSeeBookings && (
-          <FadeIn delay={0.22}>
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle>Today&apos;s bookings</CardTitle>
-                <Link href="/desks" className="group inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700">
+          <FadeIn delay={0.36}>
+            <ChartCard
+              title="Today's bookings"
+              action={
+                <Link href="/desks" className="group inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
                   Desk booking <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {d.todayBookings.length === 0 && (
-                  <EmptyState title="No bookings today" description="The labs are free — or nobody booked." />
-                )}
+              }
+            >
+              <div className="space-y-2">
+                {d.todayBookings.length === 0 && <EmptyState title="No bookings today" description="The labs are free — or nobody booked." />}
                 {d.todayBookings.map((b, i) => (
                   <motion.div
                     key={b.id}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.25 + i * 0.04, duration: 0.3 }}
+                    transition={{ delay: 0.38 + i * 0.04, duration: 0.3 }}
                     className="flex items-center gap-2 rounded-xl border border-slate-100 px-3 py-2.5 text-sm transition-shadow hover:shadow-sm dark:border-slate-800"
                   >
                     <span className="font-medium text-slate-800 dark:text-slate-200">{b.personName}</span>
@@ -161,8 +371,8 @@ export function DashboardClient({ d }: { d: DashboardData }) {
                     {b.title && <span className="truncate text-xs text-slate-400">· {b.title}</span>}
                   </motion.div>
                 ))}
-              </CardContent>
-            </Card>
+              </div>
+            </ChartCard>
           </FadeIn>
         )}
       </div>
