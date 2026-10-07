@@ -20,17 +20,23 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Badge } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/misc";
-import { moveTodo } from "@/app/(app)/projects/actions";
+import { moveTodo, initKanbanOrder } from "@/app/(app)/projects/actions";
 
 export interface KanbanTodo {
   id: string;
   title: string;
   status: "TODO" | "IN_PROGRESS" | "DONE";
   sortOrder: number;
+  startDate: string | null;
   endDate: string | null;
   assignee: { id: string; name: string } | null;
   milestone: { id: string; title: string } | null;
   prerequisites: { dependsOn: { id: string; title: string; status: string } }[];
+}
+
+/** Earlier start date on top; undated todos sink to the bottom. */
+function dateKey(t: KanbanTodo): string {
+  return t.startDate ?? t.endDate ?? "9999-99-99";
 }
 
 const COLUMNS: { id: KanbanTodo["status"]; label: string }[] = [
@@ -120,27 +126,36 @@ function Column({
 }
 
 export function KanbanBoard({
+  projectId,
   initialTodos,
+  kanbanOrdered,
   onTodoClick,
   onNewTodo,
 }: {
   projectId: string;
   initialTodos: KanbanTodo[];
+  kanbanOrdered: boolean;
   onTodoClick: (t: KanbanTodo) => void;
   onNewTodo: (status: KanbanTodo["status"]) => void;
 }) {
   const [todos, setTodos] = React.useState(initialTodos);
   const [activeTodo, setActiveTodo] = React.useState<KanbanTodo | null>(null);
+  const [ordered, setOrdered] = React.useState(kanbanOrdered);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   // Sync when the server data refreshes (e.g. after a dialog save).
   // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional prop-to-state sync on refresh
-  React.useEffect(() => setTodos(initialTodos), [initialTodos]);
+  React.useEffect(() => {
+    setTodos(initialTodos);
+    setOrdered(kanbanOrdered);
+  }, [initialTodos, kanbanOrdered]);
 
   const byStatus = React.useCallback(
     (status: KanbanTodo["status"]) =>
-      todos.filter((t) => t.status === status).sort((a, b) => a.sortOrder - b.sortOrder),
-    [todos]
+      todos
+        .filter((t) => t.status === status)
+        .sort((a, b) => (ordered ? a.sortOrder - b.sortOrder : dateKey(a).localeCompare(dateKey(b)))),
+    [todos, ordered]
   );
 
   function onDragStart(e: DragStartEvent) {
@@ -152,7 +167,32 @@ export function KanbanBoard({
     setActiveTodo(null);
     const { active, over } = e;
     if (!over) return;
-    const dragged = todos.find((t) => t.id === active.id);
+
+    // First manual drag on a date-ordered board: freeze the current display
+    // order as the manual order, then process the drag on top of it.
+    let working = todos;
+    let colOf = byStatus;
+    if (!ordered) {
+      const frozen: KanbanTodo[] = [];
+      for (const c of COLUMNS) {
+        byStatus(c.id).forEach((t, i) => frozen.push({ ...t, sortOrder: i }));
+      }
+      const res = await initKanbanOrder(
+        projectId,
+        frozen.map((t) => ({ id: t.id, status: t.status, sortOrder: t.sortOrder }))
+      );
+      if (!res.ok) {
+        alert(res.error);
+        return;
+      }
+      working = frozen;
+      colOf = (status: KanbanTodo["status"]) =>
+        working.filter((t) => t.status === status).sort((a, b) => a.sortOrder - b.sortOrder);
+      setOrdered(true);
+      setTodos(frozen);
+    }
+
+    const dragged = working.find((t) => t.id === active.id);
     if (!dragged) return;
 
     let toStatus = dragged.status;
@@ -161,12 +201,12 @@ export function KanbanBoard({
 
     if (overId.startsWith("column-")) {
       toStatus = overId.replace("column-", "") as KanbanTodo["status"];
-      toIndex = byStatus(toStatus).length;
+      toIndex = colOf(toStatus).length;
     } else {
-      const overTodo = todos.find((t) => t.id === overId);
+      const overTodo = working.find((t) => t.id === overId);
       if (overTodo) {
         toStatus = overTodo.status;
-        const col = byStatus(toStatus).filter((t) => t.id !== dragged.id);
+        const col = colOf(toStatus).filter((t) => t.id !== dragged.id);
         const overIdx = col.findIndex((t) => t.id === overTodo.id);
         toIndex = overIdx === -1 ? col.length : overIdx;
       }
@@ -203,7 +243,10 @@ export function KanbanBoard({
 
   return (
     <div>
-      <div className="mb-3 flex justify-end">
+      <div className="mb-3 flex items-center justify-end gap-3">
+        <span className="text-xs text-slate-400" title={ordered ? "You rearranged this board — drag and drop to reorder" : "Earliest start date on top — drag any card to switch to manual ordering"}>
+          {ordered ? "Custom order" : "Sorted by date"}
+        </span>
         <button
           onClick={() => onNewTodo("TODO")}
           className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"

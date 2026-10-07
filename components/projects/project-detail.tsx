@@ -8,7 +8,7 @@ import { Tabs, StatCard } from "@/components/ui/misc";
 import { KanbanBoard, type KanbanTodo } from "./kanban";
 import { GanttChart } from "./gantt";
 import { TodoDialog } from "./todo-dialog";
-import { MilestoneManager } from "./milestone-manager";
+import { MilestoneOverview } from "./milestone-overview";
 import { MembersManager } from "./members-manager";
 import { deleteProject, updateTodo } from "@/app/(app)/projects/actions";
 
@@ -44,6 +44,7 @@ interface Project {
   status: string;
   startDate: string | null;
   endDate: string | null;
+  kanbanOrdered: boolean;
   lab: { id: string; name: string };
   lead: { id: string; name: string } | null;
   members: { user: { id: string; name: string; email: string }; role: string }[];
@@ -152,28 +153,26 @@ export function ProjectDetail({
               <CardContent><p className="whitespace-pre-wrap text-sm text-slate-700">{project.description}</p></CardContent>
             </Card>
           )}
-          <Card>
-            <CardHeader><CardTitle>Milestones</CardTitle></CardHeader>
-            <CardContent>
-              {canManage ? (
-                <MilestoneManager projectId={project.id} milestones={project.milestones} onChanged={() => router.refresh()} />
-              ) : project.milestones.length === 0 ? (
-                <p className="text-sm text-slate-400">No milestones.</p>
-              ) : (
-                <div className="space-y-2">
-                  {project.milestones.map((m) => (
-                    <div key={m.id} className="flex items-center gap-3 rounded-lg border border-slate-100 px-3 py-2">
-                      <span className="flex-1 text-sm font-medium text-slate-800">{m.title}</span>
-                      <Badge color={m.status === "DONE" ? "success" : m.status === "IN_PROGRESS" ? "info" : "default"}>
-                        {m.status.replace("_", " ")}
-                      </Badge>
-                      {m.dueDate && <span className="text-xs text-slate-400">{m.dueDate.slice(0, 10)}</span>}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <MilestoneOverview
+            projectId={project.id}
+            milestones={project.milestones}
+            todos={project.todos.map((t) => ({
+              id: t.id,
+              title: t.title,
+              status: t.status,
+              startDate: t.startDate,
+              endDate: t.endDate,
+              milestoneId: t.milestoneId,
+              assignee: t.assignee,
+              prerequisites: t.prerequisites,
+            }))}
+            canManage={canManage}
+            onChanged={() => router.refresh()}
+            onTodoClick={(t) => {
+              const full = project.todos.find((x) => x.id === t.id);
+              if (full) setTodoDialog({ open: true, todo: full, defaultStatus: full.status });
+            }}
+          />
         </div>
       )}
 
@@ -181,6 +180,7 @@ export function ProjectDetail({
         <KanbanBoard
           projectId={project.id}
           initialTodos={project.todos}
+          kanbanOrdered={project.kanbanOrdered}
           onTodoClick={(t) => openTodoDialog(t)}
           onNewTodo={(status) => setTodoDialog({ open: true, todo: null, defaultStatus: status })}
         />

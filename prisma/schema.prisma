@@ -274,6 +274,8 @@ model Project {
   startDate   DateTime?     @db.Date
   endDate     DateTime?     @db.Date
   createdAt   DateTime      @default(now())
+  // False = kanban columns show date order; set true on first manual drag.
+  kanbanOrdered Boolean     @default(false)
 
   members    ProjectMember[]
   milestones Milestone[]

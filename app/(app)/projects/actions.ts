@@ -585,3 +585,30 @@ export async function setMilestoneDependencies(milestoneId: string, dependsOnIds
   revalidatePath(`/projects/${ms.projectId}`);
   return { ok: true };
 }
+
+/**
+ * Materialize a board's current display order as the manual kanban order.
+ * Called on the first manual drag of a date-ordered board: persists each
+ * todo's position and flips the project to manual ordering.
+ */
+export async function initKanbanOrder(
+  projectId: string,
+  items: { id: string; status: "TODO" | "IN_PROGRESS" | "DONE"; sortOrder: number }[]
+): Promise<ActionResult> {
+  const actor = await requireUser();
+  const proj = await prisma.project.findUnique({ where: { id: projectId }, select: { labId: true } });
+  if (!proj) return { ok: false, error: "Project not found." };
+  if (!can(actor, "projects.manage", proj.labId)) return deny("projects.manage");
+  const valid = items.filter((i) => i.id);
+  await prisma.$transaction(async (tx) => {
+    for (const item of valid) {
+      await tx.todo.update({
+        where: { id: item.id },
+        data: { status: item.status, sortOrder: item.sortOrder },
+      });
+    }
+    await tx.project.update({ where: { id: projectId }, data: { kanbanOrdered: true } });
+  });
+  revalidatePath(`/projects/${projectId}`);
+  return { ok: true };
+}
