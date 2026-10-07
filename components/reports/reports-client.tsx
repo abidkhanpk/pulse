@@ -16,16 +16,20 @@ const MONTHS = [
 
 export function ReportsClient({
   labs,
+  isGlobal,
   initialYear,
   initialMonth,
 }: {
   labs: { id: string; name: string }[];
+  isGlobal: boolean;
   initialYear: number;
   initialMonth: number;
 }) {
   const [year, setYear] = React.useState(initialYear);
   const [month, setMonth] = React.useState(initialMonth);
-  const [labId, setLabId] = React.useState("");
+  // Non-admins only ever see their own labs: no "All labs" option, and a
+  // single lab is preselected.
+  const [labId, setLabId] = React.useState(() => (!isGlobal && labs.length === 1 ? labs[0].id : ""));
   const [userId, setUserId] = React.useState("");
   const [people, setPeople] = React.useState<{ id: string; name: string }[]>([]);
   const [rows, setRows] = React.useState<ReportRow[]>([]);
@@ -37,7 +41,7 @@ export function ReportsClient({
   }
 
   React.useEffect(() => {
-    loadPeople("");
+    loadPeople(!isGlobal && labs.length === 1 ? labs[0].id : "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -102,7 +106,7 @@ export function ReportsClient({
                   loadPeople(e.target.value);
                 }}
               >
-                <option value="">All labs</option>
+                {isGlobal && <option value="">All labs</option>}
                 {labs.map((l) => (
                   <option key={l.id} value={l.id}>{l.name}</option>
                 ))}
