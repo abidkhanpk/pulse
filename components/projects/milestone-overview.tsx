@@ -224,10 +224,11 @@ function MilestoneCard({
           {/* Progress bar inline with the title */}
           <span className="flex min-w-[140px] flex-1 items-center gap-2">
             <span
-              className="w-16 shrink-0 text-right text-[11px] text-slate-400"
+              className="flex w-[76px] shrink-0 flex-col items-end leading-tight"
               title={startAuto ? "Auto: earliest todo start" : "Milestone start date"}
             >
-              {startLabel ? fmt(startLabel) : "—"}{startAuto && <span className="ml-0.5 rounded bg-slate-100 px-1 text-[9px]">auto</span>}
+              <span className="text-[11px] text-slate-400">{startLabel ? fmt(startLabel) : "—"}</span>
+              {startAuto && <span className="text-[9px] text-slate-300">(auto)</span>}
             </span>
             <span
               className="h-2.5 min-w-[60px] flex-1 overflow-hidden rounded-full bg-slate-100"
@@ -241,10 +242,11 @@ function MilestoneCard({
               />
             </span>
             <span
-              className="w-16 shrink-0 text-[11px] text-slate-400"
+              className="flex w-[76px] shrink-0 flex-col items-start leading-tight"
               title={endAuto ? "Auto: latest todo end" : "Milestone due date"}
             >
-              {endAuto && <span className="mr-0.5 rounded bg-slate-100 px-1 text-[9px]">auto</span>}{endLabel ? fmt(endLabel) : "—"}
+              <span className="text-[11px] text-slate-400">{endLabel ? fmt(endLabel) : "—"}</span>
+              {endAuto && <span className="text-[9px] text-slate-300">(auto)</span>}
             </span>
           </span>
           {!isPseudo && (
