@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/misc";
 export interface GanttMilestone {
   id: string;
   title: string;
+  startDate: string | null;
   dueDate: string | null;
   status: string;
   dependsOnIds: string[];
@@ -131,6 +132,11 @@ export function GanttChart({
         const d = parseDay(m.dueDate);
         if (spanEnd === null || d > spanEnd) spanEnd = d;
       }
+      // Manual milestone start widens the span left (containment guarantees it never narrows).
+      if (m.startDate) {
+        const msd = parseDay(m.startDate);
+        if (spanStart === null || msd < spanStart) spanStart = msd;
+      }
       out.push({ kind: "milestone", ms: m, spanStart, spanEnd });
       for (const t of mTodos) out.push({ kind: "todo", todo: t });
       byMs.delete(m.id);
@@ -141,7 +147,7 @@ export function GanttChart({
     if (loose.length > 0) {
       out.push({
         kind: "milestone",
-        ms: { id: "__none__", title: "Without milestone", dueDate: null, status: "PLANNED", dependsOnIds: [] },
+        ms: { id: "__none__", title: "Without milestone", startDate: null, dueDate: null, status: "PLANNED", dependsOnIds: [] },
         spanStart: null,
         spanEnd: null,
       });

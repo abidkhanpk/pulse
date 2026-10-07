@@ -33,6 +33,7 @@ export interface OverviewMilestone {
   id: string;
   title: string;
   description: string | null;
+  startDate: string | null;
   dueDate: string | null;
   status: string;
   prerequisites: { dependsOn: { id: string; title: string; status: string } }[];
@@ -181,32 +182,41 @@ function MilestoneCard({
 }) {
   const done = todos.filter((t) => t.status === "DONE").length;
   const pct = todos.length === 0 ? 0 : (done / todos.length) * 100;
-  const starts = todos.map((t) => t.startDate ?? t.endDate).filter(Boolean) as string[];
-  const ends = todos.map((t) => t.endDate ?? t.startDate).filter(Boolean) as string[];
-  if (milestone.dueDate) ends.push(milestone.dueDate.slice(0, 10));
-  const startLabel = starts.length ? fmt(starts.sort()[0]) : null;
-  const endLabel = ends.length ? fmt(ends.sort().pop()!) : null;
+  // Hybrid dates: manual milestone dates widen the envelope; otherwise roll up from todos.
+  const rolledStarts = todos.map((t) => t.startDate ?? t.endDate).filter(Boolean) as string[];
+  const rolledEnds = todos.map((t) => t.endDate ?? t.startDate).filter(Boolean) as string[];
+  if (milestone.dueDate) rolledEnds.push(milestone.dueDate.slice(0, 10));
+  const rolledStart = rolledStarts.length ? rolledStarts.sort()[0].slice(0, 10) : null;
+  const rolledEnd = rolledEnds.length ? rolledEnds.sort().pop()!.slice(0, 10) : null;
+  const manualStart = milestone.startDate ? milestone.startDate.slice(0, 10) : null;
+  const manualEnd = milestone.dueDate ? milestone.dueDate.slice(0, 10) : null;
+  const startLabel = manualStart ?? rolledStart;
+  const endLabel = manualEnd ?? rolledEnd;
+  const startAuto = !manualStart && !!rolledStart;
+  const endAuto = !manualEnd && !!rolledEnd;
   const isPseudo = milestone.id === "__none__";
 
   return (
     <div>
-      {/* Milestone header card */}
-      <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(15,40,70,0.08)] ring-1 ring-slate-100">
+      {/* Milestone header card — clicking anywhere toggles expand/collapse */}
+      <div
+        className="relative cursor-pointer overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(15,40,70,0.08)] ring-1 ring-slate-100 transition hover:ring-indigo-200"
+        onClick={onToggle}
+      >
         <div className="flex items-start gap-3 px-4 pt-3">
-          <button
-            onClick={onToggle}
-            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-indigo-300 hover:text-indigo-600"
+          <span
+            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500"
             aria-expanded={expanded}
             title={expanded ? "Collapse" : "Expand"}
           >
             <motion.span animate={{ rotate: expanded ? 0 : -90 }} transition={{ type: "spring", stiffness: 400, damping: 30 }} className="flex">
               <ChevronDown className="h-4 w-4" />
             </motion.span>
-          </button>
-          <button onClick={onToggle} className="min-w-0 flex-1 text-left">
+          </span>
+          <span className="min-w-0 flex-1 text-left">
             <span className="block text-[10px] leading-tight text-slate-400">{projectName}</span>
             <span className="block truncate text-[15px] font-bold text-[#1d3f66]">{milestone.title}</span>
-          </button>
+          </span>
           {!isPseudo && (
             <span className="hidden shrink-0 pt-4 text-xs text-slate-400 sm:block">
               Due By: {milestone.dueDate ? fmt(milestone.dueDate) : "—"}
@@ -214,7 +224,7 @@ function MilestoneCard({
           )}
           <span className="shrink-0 pt-4 text-xs font-medium text-slate-500">{pct.toFixed(2)}% Complete</span>
           {canManage && !isPseudo && (
-            <span className="flex shrink-0 gap-0.5 pt-3">
+            <span className="flex shrink-0 gap-0.5 pt-3" onClick={(e) => e.stopPropagation()}>
               <Button variant="ghost" size="sm" onClick={onEdit} title="Edit milestone" className="!px-2">
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
@@ -235,14 +245,18 @@ function MilestoneCard({
             />
           </div>
           <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
-            <span>{startLabel ?? "—"}</span>
+            <span title={startAuto ? "Auto: earliest todo start" : "Milestone start date"}>
+              {startLabel ? fmt(startLabel) : "—"}{startAuto && <span className="ml-1 rounded bg-slate-100 px-1 text-[9px]">auto</span>}
+            </span>
             <span>
               {done}/{todos.length} done
               {milestone.prerequisites.length > 0 && (
                 <> · Depends on: {milestone.prerequisites.map((p) => p.dependsOn.title).join(", ")}</>
               )}
             </span>
-            <span>{endLabel ?? "—"}</span>
+            <span title={endAuto ? "Auto: latest todo end" : "Milestone due date"}>
+              {endAuto && <span className="mr-1 rounded bg-slate-100 px-1 text-[9px]">auto</span>}{endLabel ? fmt(endLabel) : "—"}
+            </span>
           </div>
         </div>
         {/* navy bottom accent */}
@@ -318,6 +332,7 @@ export function MilestoneOverview({
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [dueDate, setDueDate] = React.useState("");
+  const [startDate, setStartDate] = React.useState("");
   const [status, setStatus] = React.useState("PLANNED");
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
@@ -347,14 +362,27 @@ export function MilestoneOverview({
     return { msWithKey, loose: sortTodos(loose) };
   }, [milestones, todos]);
 
-  // Expand the first milestone by default (like the screenshot).
-  /* eslint-disable react-hooks/set-state-in-effect -- expand first group on data load */
+  // Expand the first milestone by default (like the screenshot) — once only,
+  // so the user can close everything afterwards.
+  const autoExpanded = React.useRef(false);
+  /* eslint-disable react-hooks/set-state-in-effect -- one-time default expansion on data load */
   React.useEffect(() => {
-    if (expanded.size === 0 && groups.msWithKey.length > 0) {
+    if (!autoExpanded.current && groups.msWithKey.length > 0) {
+      autoExpanded.current = true;
       setExpanded(new Set([groups.msWithKey[0].m.id]));
     }
-  }, [groups, expanded.size]);
+  }, [groups]);
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  function expandAll() {
+    const ids = groups.msWithKey.map(({ m }) => m.id);
+    if (groups.loose.length > 0) ids.push("__none__");
+    setExpanded(new Set(ids));
+  }
+
+  function collapseAll() {
+    setExpanded(new Set());
+  }
 
   function toggle(id: string) {
     setExpanded((prev) => {
@@ -367,7 +395,7 @@ export function MilestoneOverview({
 
   function startCreate() {
     setEditing(null);
-    setTitle(""); setDescription(""); setDueDate(""); setStatus("PLANNED");
+    setTitle(""); setDescription(""); setDueDate(""); setStartDate(""); setStatus("PLANNED");
     setDependsOn([]); setCandidates([]);
     setError(null);
     setFormOpen(true);
@@ -376,7 +404,9 @@ export function MilestoneOverview({
   function startEdit(m: OverviewMilestone) {
     setEditing(m);
     setTitle(m.title); setDescription(m.description ?? "");
-    setDueDate(m.dueDate ? m.dueDate.slice(0, 10) : ""); setStatus(m.status);
+    setDueDate(m.dueDate ? m.dueDate.slice(0, 10) : "");
+    setStartDate(m.startDate ? m.startDate.slice(0, 10) : "");
+    setStatus(m.status);
     setDependsOn(m.prerequisites.map((p) => p.dependsOn.id));
     setError(null);
     setFormOpen(true);
@@ -392,6 +422,7 @@ export function MilestoneOverview({
       const payload = {
         title: title.trim(),
         description: description.trim() || null,
+        startDate: startDate || null,
         dueDate: dueDate || null,
         status: status as "PLANNED" | "IN_PROGRESS" | "DONE",
       };
@@ -427,11 +458,20 @@ export function MilestoneOverview({
     <div className="space-y-4 rounded-2xl bg-[#edf2f5] p-4">
       <div className="flex items-center justify-between px-1">
         <h3 className="text-sm font-semibold text-slate-700">Milestones & todos</h3>
-        {canManage && (
-          <Button size="sm" onClick={startCreate}>
-            <Plus className="mr-1 h-4 w-4" /> Milestone
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <button onClick={expandAll} className="text-xs font-medium text-slate-500 hover:text-indigo-600">
+            Expand all
+          </button>
+          <span className="text-slate-300">|</span>
+          <button onClick={collapseAll} className="text-xs font-medium text-slate-500 hover:text-indigo-600">
+            Collapse all
+          </button>
+          {canManage && (
+            <Button size="sm" onClick={startCreate} className="ml-2">
+              <Plus className="mr-1 h-4 w-4" /> Milestone
+            </Button>
+          )}
+        </div>
       </div>
 
       {groups.msWithKey.length === 0 && groups.loose.length === 0 && (
@@ -459,7 +499,7 @@ export function MilestoneOverview({
 
       {groups.loose.length > 0 && (
         <MilestoneCard
-          milestone={{ id: "__none__", title: "Without milestone", description: null, dueDate: null, status: "PLANNED", prerequisites: [] }}
+          milestone={{ id: "__none__", title: "Without milestone", description: null, startDate: null, dueDate: null, status: "PLANNED", prerequisites: [] }}
           projectName={projectName}
           todos={groups.loose}
           expanded={expanded.has("__none__")}
@@ -486,17 +526,26 @@ export function MilestoneOverview({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
+              <Label htmlFor="mo-start">Start date (optional)</Label>
+              <Input id="mo-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            </div>
+            <div>
               <Label htmlFor="mo-due">Due date (optional)</Label>
               <Input id="mo-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
-            <div>
-              <Label htmlFor="mo-status">Status</Label>
-              <Select id="mo-status" value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="PLANNED">Planned</option>
-                <option value="IN_PROGRESS">In progress</option>
-                <option value="DONE">Done</option>
-              </Select>
-            </div>
+          </div>
+          <p className="rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-700">
+            Tip: leave dates empty to roll them up from the milestone&apos;s todos — start becomes the first
+            todo&apos;s start and due becomes the last todo&apos;s end. If you set them, the milestone may start
+            earlier or end later, but never narrower than its todos.
+          </p>
+          <div>
+            <Label htmlFor="mo-status">Status</Label>
+            <Select id="mo-status" value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="PLANNED">Planned</option>
+              <option value="IN_PROGRESS">In progress</option>
+              <option value="DONE">Done</option>
+            </Select>
           </div>
           {editing && (
             <DependencyPicker label="Depends on" candidates={candidates} selected={dependsOn} onChange={setDependsOn} />

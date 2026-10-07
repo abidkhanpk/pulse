@@ -300,6 +300,7 @@ model Milestone {
   project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   title       String
   description String?         @db.Text
+  startDate   DateTime?       @db.Date
   dueDate     DateTime?       @db.Date
   status      MilestoneStatus @default(PLANNED)
   sortOrder   Int             @default(0)

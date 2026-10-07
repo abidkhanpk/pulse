@@ -19,6 +19,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         endDate: project.endDate ? project.endDate.toISOString().slice(0, 10) : null,
         milestones: project.milestones.map((m) => ({
           ...m,
+          startDate: m.startDate ? m.startDate.toISOString().slice(0, 10) : null,
           dueDate: m.dueDate ? m.dueDate.toISOString().slice(0, 10) : null,
         })),
         todos: project.todos.map((t) => ({

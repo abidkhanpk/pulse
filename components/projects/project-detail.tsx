@@ -16,6 +16,7 @@ interface Milestone {
   id: string;
   title: string;
   description: string | null;
+  startDate: string | null;
   dueDate: string | null;
   status: string;
   sortOrder: number;
@@ -196,6 +197,7 @@ export function ProjectDetail({
           milestones={project.milestones.map((m) => ({
             id: m.id,
             title: m.title,
+            startDate: m.startDate,
             dueDate: m.dueDate,
             status: m.status,
             dependsOnIds: m.prerequisites.map((p) => p.dependsOn.id),

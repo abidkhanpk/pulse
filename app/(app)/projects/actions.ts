@@ -144,9 +144,69 @@ const milestoneSchema = z.object({
   projectId: z.string().min(1),
   title: z.string().trim().min(1).max(160),
   description: z.string().trim().max(1000).optional().nullable(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   status: z.enum(["PLANNED", "IN_PROGRESS", "DONE"]),
 });
+
+/** Rolled-up envelope of a milestone's todos: earliest start / latest end (YYYY-MM-DD). */
+async function milestoneTodoEnvelope(milestoneId: string): Promise<{ minStart: string | null; maxEnd: string | null }> {
+  const todos = await prisma.todo.findMany({
+    where: { milestoneId },
+    select: { startDate: true, endDate: true },
+  });
+  let minStart: string | null = null;
+  let maxEnd: string | null = null;
+  for (const t of todos) {
+    const s = t.startDate ? t.startDate.toISOString().slice(0, 10) : t.endDate ? t.endDate.toISOString().slice(0, 10) : null;
+    const e = t.endDate ? t.endDate.toISOString().slice(0, 10) : t.startDate ? t.startDate.toISOString().slice(0, 10) : null;
+    if (s && (!minStart || s < minStart)) minStart = s;
+    if (e && (!maxEnd || e > maxEnd)) maxEnd = e;
+  }
+  return { minStart, maxEnd };
+}
+
+/**
+ * Hybrid milestone dates: manual dates may widen the envelope but never narrow
+ * it past the todos. Returns an error message or null.
+ */
+function validateMilestoneDates(
+  startDate: string | null,
+  dueDate: string | null,
+  env: { minStart: string | null; maxEnd: string | null }
+): string | null {
+  if (startDate && dueDate && startDate > dueDate) return "Milestone start date cannot be after its due date.";
+  if (startDate && env.minStart && startDate > env.minStart)
+    return `Milestone start cannot be later than the first todo's start (${env.minStart}).`;
+  if (dueDate && env.maxEnd && dueDate < env.maxEnd)
+    return `Milestone due date cannot be earlier than the last todo's end (${env.maxEnd}).`;
+  return null;
+}
+
+/** Block todo dates that would poke outside their milestone's manual envelope. */
+async function checkTodoMilestoneEnvelope(
+  milestoneId: string | null,
+  startDate: string | null,
+  endDate: string | null
+): Promise<string | null> {
+  if (!milestoneId) return null;
+  const ms = await prisma.milestone.findUnique({
+    where: { id: milestoneId },
+    select: { startDate: true, dueDate: true, title: true },
+  });
+  if (!ms) return null;
+  if (ms.startDate && startDate) {
+    const msStart = ms.startDate.toISOString().slice(0, 10);
+    if (startDate < msStart)
+      return `Todo starts before its milestone's start date (${msStart}). Adjust the milestone "${ms.title}" first.`;
+  }
+  if (ms.dueDate && endDate) {
+    const msEnd = ms.dueDate.toISOString().slice(0, 10);
+    if (endDate > msEnd)
+      return `Todo ends after its milestone's due date (${msEnd}). Adjust the milestone "${ms.title}" first.`;
+  }
+  return null;
+}
 
 async function projectScope(projectId: string) {
   return prisma.project.findUnique({ where: { id: projectId }, select: { labId: true } });
@@ -159,12 +219,17 @@ export async function createMilestone(input: z.infer<typeof milestoneSchema>): P
   const proj = await projectScope(parsed.data.projectId);
   if (!proj || !can(actor, "projects.manage", proj.labId)) return deny("projects.manage");
   const count = await prisma.milestone.count({ where: { projectId: parsed.data.projectId } });
+  const startDate = parsed.data.startDate || null;
+  const dueDate = parsed.data.dueDate || null;
+  const dateError = validateMilestoneDates(startDate, dueDate, { minStart: null, maxEnd: null });
+  if (dateError) return { ok: false, error: dateError };
   const ms = await prisma.milestone.create({
     data: {
       projectId: parsed.data.projectId,
       title: parsed.data.title,
       description: parsed.data.description || null,
-      dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null,
+      startDate: startDate ? new Date(startDate) : null,
+      dueDate: dueDate ? new Date(dueDate) : null,
       status: parsed.data.status,
       sortOrder: count,
     },
@@ -184,12 +249,17 @@ export async function updateMilestone(
   if (!can(actor, "projects.manage", ms.project.labId)) return deny("projects.manage");
   const parsed = milestoneSchema.omit({ projectId: true }).safeParse(input);
   if (!parsed.success) return { ok: false, error: "Invalid milestone." };
+  const startDate = parsed.data.startDate || null;
+  const dueDate = parsed.data.dueDate || null;
+  const dateError = validateMilestoneDates(startDate, dueDate, await milestoneTodoEnvelope(id));
+  if (dateError) return { ok: false, error: dateError };
   await prisma.milestone.update({
     where: { id },
     data: {
       title: parsed.data.title,
       description: parsed.data.description || null,
-      dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null,
+      startDate: startDate ? new Date(startDate) : null,
+      dueDate: dueDate ? new Date(dueDate) : null,
       status: parsed.data.status,
     },
   });
@@ -236,6 +306,12 @@ export async function createTodo(input: z.infer<typeof todoSchema>): Promise<Act
     where: { projectId: parsed.data.projectId, status: parsed.data.status },
     _max: { sortOrder: true },
   });
+  const envError = await checkTodoMilestoneEnvelope(
+    parsed.data.milestoneId || null,
+    parsed.data.startDate || null,
+    parsed.data.endDate || null
+  );
+  if (envError) return { ok: false, error: envError };
   const todo = await prisma.todo.create({
     data: {
       projectId: parsed.data.projectId,
@@ -270,6 +346,12 @@ export async function updateTodo(id: string, input: z.infer<typeof todoSchema>):
   // Non-managers may only change status of their own todos.
   const data: Record<string, unknown> = { status: parsed.data.status };
   if (manager) {
+    const envError = await checkTodoMilestoneEnvelope(
+      parsed.data.milestoneId || null,
+      parsed.data.startDate || null,
+      parsed.data.endDate || null
+    );
+    if (envError) return { ok: false, error: envError };
     Object.assign(data, {
       title: parsed.data.title,
       description: parsed.data.description || null,
