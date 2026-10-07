@@ -25,7 +25,7 @@ export function AppShell({
         onToggleCollapse={() => setCollapsed((v) => !v)}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur md:px-6">
+        <header className="relative z-40 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur md:px-6">
           <span className="text-lg font-bold tracking-tight text-slate-900 md:hidden">Pulse</span>
           <div className="hidden text-sm text-slate-500 md:block">
             {new Date().toLocaleDateString("en-PK", {
