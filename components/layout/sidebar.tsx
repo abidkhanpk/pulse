@@ -20,9 +20,10 @@ export interface SessionActorLike {
   role: { permissions: string[] };
   name: string;
   email: string;
+  inchargeOf: { labId: string }[];
 }
 
-const NAV: { href: string; label: string; icon: typeof LayoutDashboard; perm: PermissionKey | null }[] = [
+const NAV: { href: string; label: string; icon: typeof LayoutDashboard; perm: PermissionKey | null; showForIncharge?: boolean }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, perm: null },
   { href: "/desks", label: "Desks", icon: Armchair, perm: "bookings.view_all" },
   { href: "/projects", label: "Projects", icon: FolderKanban, perm: null },
@@ -30,17 +31,20 @@ const NAV: { href: string; label: string; icon: typeof LayoutDashboard; perm: Pe
   { href: "/people", label: "People", icon: Users, perm: "users.manage" },
   { href: "/check-in", label: "Check-in", icon: BarChart3, perm: null },
   { href: "/reports", label: "Reports", icon: BarChart3, perm: "attendance.view_reports" },
-  { href: "/labs", label: "Labs", icon: FlaskConical, perm: "labs.manage" },
+  { href: "/labs", label: "Labs", icon: FlaskConical, perm: "labs.manage", showForIncharge: true },
   { href: "/audit", label: "Audit", icon: ShieldCheck, perm: "audit.view" },
   { href: "/settings", label: "Settings", icon: Settings, perm: "org.manage" },
 ];
 
-function canSee(actor: SessionActorLike, perm: PermissionKey | null) {
-  return !perm || actor.role.permissions.includes(perm);
+function canSee(actor: SessionActorLike, item: (typeof NAV)[number]) {
+  if (!item.perm) return true;
+  if (actor.role.permissions.includes(item.perm)) return true;
+  if (item.showForIncharge && actor.inchargeOf.length > 0) return true;
+  return false;
 }
 
 export function Sidebar({ actor, pathname }: { actor: SessionActorLike; pathname: string }) {
-  const items = NAV.filter((n) => canSee(actor, n.perm));
+  const items = NAV.filter((n) => canSee(actor, n));
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
       <div className="flex h-16 items-center border-b border-slate-100 px-5">
@@ -89,7 +93,7 @@ export function Sidebar({ actor, pathname }: { actor: SessionActorLike; pathname
 }
 
 export function MobileNav({ actor, pathname }: { actor: SessionActorLike; pathname: string }) {
-  const items = NAV.filter((n) => canSee(actor, n.perm)).slice(0, 5);
+  const items = NAV.filter((n) => canSee(actor, n)).slice(0, 5);
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-slate-200 bg-white md:hidden">
       {items.map((item) => {

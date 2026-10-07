@@ -91,6 +91,27 @@ export async function updateLab(id: string, input: z.infer<typeof labSchema>): P
   return { ok: true };
 }
 
+/**
+ * Rename a lab. Allowed for admins with labs.manage (scoped) and for the
+ * lab's own incharges. Only the name can be changed through this action.
+ */
+export async function renameLab(id: string, name: string): Promise<ActionResult> {
+  const actor = await requireUser();
+  const isIncharge = actor.inchargeOf.some((l) => l.labId === id);
+  if (!isIncharge && !can(actor, "labs.manage", id)) {
+    return { ok: false as const, error: "Only the lab incharge or an admin can rename this lab." };
+  }
+  const clean = name.trim();
+  if (!clean) return { ok: false, error: "Lab name is required." };
+  if (clean.length > 120) return { ok: false, error: "Lab name is too long (max 120 characters)." };
+  const lab = await prisma.lab.findUnique({ where: { id }, select: { id: true, name: true } });
+  if (!lab) return { ok: false, error: "Lab not found." };
+  await prisma.lab.update({ where: { id }, data: { name: clean } });
+  await logAudit(actor.id, "lab.renamed", "Lab", id, { from: lab.name, to: clean });
+  revalidatePath("/labs");
+  return { ok: true };
+}
+
 export async function deleteLab(id: string): Promise<ActionResult> {
   const actor = await requireUser();
   if (!can(actor, "labs.manage", id)) return deny("labs.manage");

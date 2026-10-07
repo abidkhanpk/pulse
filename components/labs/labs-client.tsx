@@ -11,6 +11,7 @@ import {
   createLab,
   updateLab,
   deleteLab,
+  renameLab,
   assignLabIncharge,
   removeLabIncharge,
   inchargeCandidates,
@@ -24,7 +25,15 @@ interface Lab {
   incharges: { user: { id: string; name: string; email: string } }[];
 }
 
-export function LabsClient({ labs }: { labs: Lab[] }) {
+export function LabsClient({
+  labs,
+  canManage,
+  inchargeLabIds,
+}: {
+  labs: Lab[];
+  canManage: boolean;
+  inchargeLabIds: string[];
+}) {
   const router = useRouter();
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Lab | null>(null);
@@ -33,9 +42,17 @@ export function LabsClient({ labs }: { labs: Lab[] }) {
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
 
+  // Rename-only dialog (for lab incharges without full manage rights)
+  const [renameLabTarget, setRenameLabTarget] = React.useState<Lab | null>(null);
+  const [renameName, setRenameName] = React.useState("");
+  const [renameError, setRenameError] = React.useState<string | null>(null);
+  const [renamePending, setRenamePending] = React.useState(false);
+
   const [inchargeLab, setInchargeLab] = React.useState<Lab | null>(null);
   const [candidates, setCandidates] = React.useState<{ id: string; name: string; email: string }[]>([]);
   const [candidateId, setCandidateId] = React.useState("");
+
+  const canRename = (lab: Lab) => canManage || inchargeLabIds.includes(lab.id);
 
   function startCreate() {
     setEditing(null);
@@ -51,6 +68,12 @@ export function LabsClient({ labs }: { labs: Lab[] }) {
     setDescription(lab.description ?? "");
     setError(null);
     setFormOpen(true);
+  }
+
+  function startRename(lab: Lab) {
+    setRenameLabTarget(lab);
+    setRenameName(lab.name);
+    setRenameError(null);
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -69,6 +92,24 @@ export function LabsClient({ labs }: { labs: Lab[] }) {
       }
     } finally {
       setPending(false);
+    }
+  }
+
+  async function onRename(e: React.FormEvent) {
+    e.preventDefault();
+    if (!renameLabTarget) return;
+    setRenameError(null);
+    if (!renameName.trim()) return setRenameError("Name is required.");
+    setRenamePending(true);
+    try {
+      const res = await renameLab(renameLabTarget.id, renameName.trim());
+      if (!res.ok) setRenameError(res.error);
+      else {
+        setRenameLabTarget(null);
+        router.refresh();
+      }
+    } finally {
+      setRenamePending(false);
     }
   }
 
@@ -106,21 +147,21 @@ export function LabsClient({ labs }: { labs: Lab[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Labs</h1>
-          <p className="text-sm text-slate-500">Departments within the organization.</p>
-        </div>
-        <div className="ml-auto">
+      {canManage && (
+        <div className="flex justify-end">
           <Button onClick={startCreate}>Add lab</Button>
         </div>
-      </div>
+      )}
 
       {labs.length === 0 ? (
         <EmptyState
           title="No labs yet"
-          description="Create your first lab to start organizing desks, projects, and people."
-          action={<Button onClick={startCreate}>Add lab</Button>}
+          description={
+            canManage
+              ? "Create your first lab to start organizing desks, projects, and people."
+              : "You are not incharge of any lab yet."
+          }
+          action={canManage ? <Button onClick={startCreate}>Add lab</Button> : undefined}
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -129,12 +170,22 @@ export function LabsClient({ labs }: { labs: Lab[] }) {
               <CardHeader>
                 <CardTitle>{lab.name}</CardTitle>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => startEdit(lab)}>
-                    Edit
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => remove(lab)} className="text-red-600">
-                    Delete
-                  </Button>
+                  {canManage ? (
+                    <>
+                      <Button variant="ghost" size="sm" onClick={() => startEdit(lab)}>
+                        Edit
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => remove(lab)} className="text-red-600">
+                        Delete
+                      </Button>
+                    </>
+                  ) : (
+                    canRename(lab) && (
+                      <Button variant="ghost" size="sm" onClick={() => startRename(lab)}>
+                        Rename
+                      </Button>
+                    )
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -157,9 +208,11 @@ export function LabsClient({ labs }: { labs: Lab[] }) {
                       </Badge>
                     ))}
                   </div>
-                  <Button variant="outline" size="sm" className="mt-2" onClick={() => openIncharges(lab)}>
-                    Manage incharges
-                  </Button>
+                  {canManage && (
+                    <Button variant="outline" size="sm" className="mt-2" onClick={() => openIncharges(lab)}>
+                      Manage incharges
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -167,7 +220,7 @@ export function LabsClient({ labs }: { labs: Lab[] }) {
         </div>
       )}
 
-      {/* Create / edit dialog */}
+      {/* Create / edit dialog (admin) */}
       <Dialog open={formOpen} onClose={() => setFormOpen(false)}>
         <DialogTitle>{editing ? "Edit lab" : "Add lab"}</DialogTitle>
         <form onSubmit={onSubmit} className="mt-4 space-y-3">
@@ -186,6 +239,31 @@ export function LabsClient({ labs }: { labs: Lab[] }) {
             </Button>
             <Button type="submit" disabled={pending}>
               {pending ? "Saving…" : editing ? "Save" : "Add lab"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
+      {/* Rename dialog (lab incharge) */}
+      <Dialog open={!!renameLabTarget} onClose={() => setRenameLabTarget(null)}>
+        <DialogTitle>Rename lab</DialogTitle>
+        <form onSubmit={onRename} className="mt-4 space-y-3">
+          <div>
+            <Label htmlFor="lab-rename">Name</Label>
+            <Input
+              id="lab-rename"
+              value={renameName}
+              onChange={(e) => setRenameName(e.target.value)}
+              maxLength={120}
+            />
+          </div>
+          <FieldError message={renameError ?? undefined} />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" type="button" onClick={() => setRenameLabTarget(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={renamePending}>
+              {renamePending ? "Saving…" : "Rename"}
             </Button>
           </div>
         </form>

@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, Badge } from "@/components/ui/card";
 import { Tabs, StatCard } from "@/components/ui/misc";
 import { KanbanBoard, type KanbanTodo } from "./kanban";
-import { GanttChart, type GanttItem } from "./gantt";
+import { GanttChart } from "./gantt";
 import { TodoDialog } from "./todo-dialog";
 import { MilestoneManager } from "./milestone-manager";
 import { MembersManager } from "./members-manager";
-import { deleteProject } from "@/app/(app)/projects/actions";
+import { deleteProject, updateTodo } from "@/app/(app)/projects/actions";
 
 interface Milestone {
   id: string;
@@ -71,26 +71,27 @@ export function ProjectDetail({
     (t) => t.endDate && t.status !== "DONE" && t.endDate.slice(0, 10) < new Date().toISOString().slice(0, 10)
   ).length;
 
-  const ganttItems: GanttItem[] = [
-    ...project.milestones.map((m) => ({
-      id: `ms-${m.id}`,
-      title: m.title,
-      kind: "milestone" as const,
-      status: m.status,
-      startDate: null,
-      endDate: m.dueDate,
-      assigneeName: null,
-    })),
-    ...project.todos.map((t) => ({
-      id: t.id,
+  function openTodoDialog(t: { id: string; status: KanbanTodo["status"] }) {
+    const full = project.todos.find((x) => x.id === t.id);
+    setTodoDialog({ open: true, todo: full ?? null, defaultStatus: t.status });
+  }
+
+  async function onGanttResize(todoId: string, startDate: string, endDate: string) {
+    const t = project.todos.find((x) => x.id === todoId);
+    if (!t) return;
+    const res = await updateTodo(todoId, {
+      projectId: project.id,
       title: t.title,
-      kind: "todo" as const,
+      description: t.description,
       status: t.status,
-      startDate: t.startDate,
-      endDate: t.endDate,
-      assigneeName: t.assignee?.name ?? null,
-    })),
-  ];
+      milestoneId: t.milestoneId,
+      assigneeId: t.assignee?.id ?? null,
+      startDate,
+      endDate,
+    });
+    if (!res.ok) alert(res.error);
+    router.refresh();
+  }
 
   async function onDelete() {
     if (!confirm(`Delete project "${project.name}"? All milestones, todos and memberships go with it.`)) return;
@@ -178,15 +179,32 @@ export function ProjectDetail({
         <KanbanBoard
           projectId={project.id}
           initialTodos={project.todos}
-          onTodoClick={(t) => {
-            const full = project.todos.find((x) => x.id === t.id);
-            setTodoDialog({ open: true, todo: full ?? null, defaultStatus: t.status });
-          }}
+          onTodoClick={(t) => openTodoDialog(t)}
           onNewTodo={(status) => setTodoDialog({ open: true, todo: null, defaultStatus: status })}
         />
       )}
 
-      {tab === "gantt" && <GanttChart items={ganttItems} />}
+      {tab === "gantt" && (
+        <GanttChart
+          milestones={project.milestones.map((m) => ({
+            id: m.id,
+            title: m.title,
+            dueDate: m.dueDate,
+            status: m.status,
+          }))}
+          todos={project.todos.map((t) => ({
+            id: t.id,
+            title: t.title,
+            status: t.status,
+            startDate: t.startDate,
+            endDate: t.endDate,
+            assigneeName: t.assignee?.name ?? null,
+            milestoneId: t.milestoneId,
+          }))}
+          onResizeTodo={onGanttResize}
+          onTodoClick={(t) => openTodoDialog({ id: t.id, status: t.status as KanbanTodo["status"] })}
+        />
+      )}
 
       {tab === "logbook" && (
         <Card>
