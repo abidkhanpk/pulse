@@ -112,22 +112,111 @@ export async function renameLab(id: string, name: string): Promise<ActionResult>
   return { ok: true };
 }
 
+export interface LabDeletePreview {
+  labName: string;
+  desks: number;
+  projects: number;
+  todos: number;
+  users: number;
+  bookings: number;
+  logEntries: number;
+  attendanceRecords: number;
+}
+
+/** Counts of everything that will be removed by a cascade lab delete. */
+export async function labDeletePreview(id: string): Promise<LabDeletePreview | null> {
+  const actor = await requireUser();
+  if (!can(actor, "labs.manage", id)) return null;
+  const lab = await prisma.lab.findUnique({ where: { id }, select: { name: true } });
+  if (!lab) return null;
+  const [users, projects, desks] = await Promise.all([
+    prisma.user.findMany({ where: { labId: id }, select: { id: true } }),
+    prisma.project.findMany({ where: { labId: id }, select: { id: true } }),
+    prisma.desk.findMany({ where: { labId: id }, select: { id: true } }),
+  ]);
+  const userIds = users.map((u) => u.id);
+  const projectIds = projects.map((p) => p.id);
+  const deskIds = desks.map((d) => d.id);
+  const [todos, bookings, logEntries, attendanceRecords] = await Promise.all([
+    prisma.todo.count({ where: { projectId: { in: projectIds } } }),
+    prisma.booking.count({
+      where: {
+        OR: [
+          { userId: { in: userIds } },
+          { deskId: { in: deskIds } },
+          { projectId: { in: projectIds } },
+          { createdById: { in: userIds } },
+        ],
+      },
+    }),
+    prisma.logEntry.count({
+      where: { OR: [{ userId: { in: userIds } }, { projectId: { in: projectIds } }] },
+    }),
+    prisma.attendanceRecord.count({ where: { userId: { in: userIds } } }),
+  ]);
+  return {
+    labName: lab.name,
+    desks: desks.length,
+    projects: projects.length,
+    todos,
+    users: users.length,
+    bookings,
+    logEntries,
+    attendanceRecords,
+  };
+}
+
+/**
+ * Delete a lab and EVERYTHING under it: desks, projects (with milestones,
+ * todos, members), users in the lab (with their bookings, log entries and
+ * attendance), and all related records. Atomic via transaction.
+ */
 export async function deleteLab(id: string): Promise<ActionResult> {
   const actor = await requireUser();
   if (!can(actor, "labs.manage", id)) return deny("labs.manage");
-  const counts = await prisma.lab.findUnique({
-    where: { id },
-    include: { _count: { select: { desks: true, projects: true, members: true } } },
-  });
-  if (!counts) return { ok: false, error: "Lab not found." };
-  if (counts._count.desks > 0 || counts._count.projects > 0 || counts._count.members > 0) {
-    return { ok: false, error: "Cannot delete a lab that still has desks, projects, or members." };
+  const lab = await prisma.lab.findUnique({ where: { id }, select: { name: true } });
+  if (!lab) return { ok: false, error: "Lab not found." };
+
+  const userIds = (await prisma.user.findMany({ where: { labId: id }, select: { id: true } })).map((u) => u.id);
+  // Safety: never delete yourself, and never remove the last admin.
+  if (userIds.includes(actor.id)) {
+    return { ok: false, error: "You cannot delete the lab you belong to. Move yourself to another lab first." };
   }
-  await prisma.$transaction([
-    prisma.labIncharge.deleteMany({ where: { labId: id } }),
-    prisma.lab.delete({ where: { id } }),
-  ]);
-  await logAudit(actor.id, "lab.deleted", "Lab", id, {});
+  const projectIds = (await prisma.project.findMany({ where: { labId: id }, select: { id: true } })).map((p) => p.id);
+  const deskIds = (await prisma.desk.findMany({ where: { labId: id }, select: { id: true } })).map((d) => d.id);
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Bookings touching the lab (occurrences cascade from bookings).
+    await tx.booking.deleteMany({
+      where: {
+        OR: [
+          { userId: { in: userIds } },
+          { deskId: { in: deskIds } },
+          { projectId: { in: projectIds } },
+          { createdById: { in: userIds } },
+        ],
+      },
+    });
+    // 2. Log entries by lab users / for lab projects (reviewedBy nulled first).
+    await tx.logEntry.updateMany({ where: { reviewedById: { in: userIds } }, data: { reviewedById: null } });
+    await tx.logEntry.deleteMany({
+      where: { OR: [{ userId: { in: userIds } }, { projectId: { in: projectIds } }] },
+    });
+    // 3. Attendance records of lab users.
+    await tx.attendanceRecord.deleteMany({ where: { userId: { in: userIds } } });
+    // 4. Todos created by lab users (outside cascade-deleted projects).
+    await tx.todo.deleteMany({ where: { createdById: { in: userIds } } });
+    // 5. Projects in other labs led by lab users — drop the lead, keep the project.
+    await tx.project.updateMany({ where: { leadId: { in: userIds } }, data: { leadId: null } });
+    // 6. Lab projects (milestones, todos, members cascade).
+    await tx.project.deleteMany({ where: { labId: id } });
+    // 7. Lab users (incharge links cascade; assigned todos already gone or SetNull).
+    await tx.user.deleteMany({ where: { labId: id } });
+    // 8. The lab itself (desks + incharge links cascade).
+    await tx.lab.delete({ where: { id } });
+  });
+
+  await logAudit(actor.id, "lab.deleted", "Lab", id, { name: lab.name, cascade: true });
   revalidatePath("/labs");
   return { ok: true };
 }

@@ -12,6 +12,8 @@ import {
   updateLab,
   deleteLab,
   renameLab,
+  labDeletePreview,
+  type LabDeletePreview,
   assignLabIncharge,
   removeLabIncharge,
   inchargeCandidates,
@@ -51,6 +53,11 @@ export function LabsClient({
   const [inchargeLab, setInchargeLab] = React.useState<Lab | null>(null);
   const [candidates, setCandidates] = React.useState<{ id: string; name: string; email: string }[]>([]);
   const [candidateId, setCandidateId] = React.useState("");
+
+  // Cascade-delete confirmation
+  const [deleteTarget, setDeleteTarget] = React.useState<Lab | null>(null);
+  const [deletePreview, setDeletePreview] = React.useState<LabDeletePreview | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
 
   const canRename = (lab: Lab) => canManage || inchargeLabIds.includes(lab.id);
 
@@ -113,11 +120,25 @@ export function LabsClient({
     }
   }
 
-  async function remove(lab: Lab) {
-    if (!confirm(`Delete lab "${lab.name}"? Desks, projects and members must be moved first.`)) return;
-    const res = await deleteLab(lab.id);
-    if (!res.ok) alert(res.error);
-    else router.refresh();
+  async function askDelete(lab: Lab) {
+    setDeleteTarget(lab);
+    setDeletePreview(null);
+    setDeletePreview(await labDeletePreview(lab.id));
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await deleteLab(deleteTarget.id);
+      if (!res.ok) alert(res.error);
+      else {
+        setDeleteTarget(null);
+        router.refresh();
+      }
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function openIncharges(lab: Lab) {
@@ -175,7 +196,7 @@ export function LabsClient({
                       <Button variant="ghost" size="sm" onClick={() => startEdit(lab)}>
                         Edit
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => remove(lab)} className="text-red-600">
+                      <Button variant="ghost" size="sm" onClick={() => askDelete(lab)} className="text-red-600">
                         Delete
                       </Button>
                     </>
@@ -302,6 +323,46 @@ export function LabsClient({
             </div>
           </>
         )}
+      </Dialog>
+
+      {/* Cascade delete confirmation */}
+      <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
+        <DialogTitle className="text-red-700">Delete lab permanently?</DialogTitle>
+        <div className="mt-4 space-y-3">
+          <p className="text-sm text-slate-600">
+            <span className="font-semibold text-slate-900">{deleteTarget?.name}</span> and{" "}
+            <span className="font-semibold text-red-700">everything under it</span> will be
+            permanently deleted. This cannot be undone.
+          </p>
+          {!deletePreview ? (
+            <p className="text-sm text-slate-400">Counting records…</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 rounded-xl bg-red-50 p-4 ring-1 ring-red-100">
+              {[
+                ["Users", deletePreview.users],
+                ["Projects", deletePreview.projects],
+                ["Todos", deletePreview.todos],
+                ["Desks", deletePreview.desks],
+                ["Bookings", deletePreview.bookings],
+                ["Log entries", deletePreview.logEntries],
+                ["Attendance records", deletePreview.attendanceRecords],
+              ].map(([label, n]) => (
+                <div key={label as string} className="flex items-baseline justify-between text-sm">
+                  <span className="text-slate-600">{label}</span>
+                  <span className="font-bold text-slate-900">{n as number}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" type="button" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={confirmDelete} disabled={deleting || !deletePreview}>
+              {deleting ? "Deleting…" : "Delete everything"}
+            </Button>
+          </div>
+        </div>
       </Dialog>
     </div>
   );
