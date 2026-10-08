@@ -6,13 +6,16 @@ import { motion, useInView } from "framer-motion";
 import {
   Armchair,
   UserCheck,
+  Users,
   AlertTriangle,
   ClipboardCheck,
   ArrowRight,
   TrendingUp,
   Activity,
   CalendarCheck,
+  CalendarDays,
   ListTodo,
+  FolderKanban,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -22,9 +25,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  RadialBarChart,
-  RadialBar,
-  PolarAngleAxis,
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent, Badge } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
@@ -155,10 +155,37 @@ const tooltipStyle = (dark: boolean) => ({
   color: dark ? "#e2e8f0" : "#0f172a",
 });
 
+function BookingRows({
+  bookings,
+}: {
+  bookings: { id: string; deskLabel: string | null; timeStart: string; timeEnd: string; title: string | null }[];
+}) {
+  if (bookings.length === 0) {
+    return <EmptyState title="No bookings today" description="Nothing on your calendar." />;
+  }
+  return (
+    <div className="space-y-2">
+      {bookings.map((b, i) => (
+        <motion.div
+          key={b.id}
+          initial={{ opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.38 + i * 0.04, duration: 0.3 }}
+          className="flex items-center gap-2 rounded-xl border border-slate-100 px-3 py-2.5 text-sm transition-shadow hover:shadow-sm dark:border-slate-800"
+        >
+          <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
+          <span className="text-slate-600 dark:text-slate-300">
+            {b.deskLabel ?? "Remote"} · {b.timeStart}–{b.timeEnd}
+          </span>
+          {b.title && <span className="truncate text-xs text-slate-400">· {b.title}</span>}
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 export function DashboardClient({ d }: { d: DashboardData }) {
   const dark = useIsDark();
-  const occupancyPct = d.desksTotal ? Math.round((d.desksOccupied / d.desksTotal) * 100) : 0;
-  const occupancyData = [{ name: "Occupancy", value: occupancyPct, fill: CHART_COLORS.indigo }];
 
   return (
     <div className="space-y-6">
@@ -169,7 +196,11 @@ export function DashboardClient({ d }: { d: DashboardData }) {
               Dashboard
             </h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Live overview of desks, people, projects and activity.
+              {d.mode === "full"
+                ? "Live overview of desks, people, projects and activity."
+                : d.mode === "team"
+                  ? "You, your projects, and your project teams."
+                  : "Your work, your projects, your day."}
             </p>
           </div>
           {d.myMonthPct !== null && (
@@ -184,77 +215,63 @@ export function DashboardClient({ d }: { d: DashboardData }) {
         </div>
       </FadeIn>
 
+      {/* ── stat cards ── */}
       <Stagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" gap={0.08}>
-        <StaggerItem>
-          <Stat icon={Armchair} label="Desks occupied now" value={d.desksOccupied} total={d.desksTotal} hint="Live bookings on active desks" href={d.canSeeBookings ? "/desks" : undefined} gradient="from-indigo-600 to-violet-600" spark={d.attendanceTrend.map((t) => t.present)} sparkColor={CHART_COLORS.indigo} />
-        </StaggerItem>
-        <StaggerItem>
-          <Stat icon={UserCheck} label="Checked in today" value={d.checkedInToday} total={d.peopleTotal} hint="Across your labs" href="/reports" gradient="from-emerald-600 to-teal-600" spark={d.attendanceTrend.map((t) => t.present)} sparkColor={CHART_COLORS.emerald} />
-        </StaggerItem>
-        <StaggerItem>
-          <Stat icon={AlertTriangle} label="Overdue todos" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="from-amber-500 to-orange-600" />
-        </StaggerItem>
-        <StaggerItem>
-          <Stat icon={ClipboardCheck} label="Awaiting review" value={d.pendingReviews} hint="Logbook entries" href="/logbook" gradient="from-sky-600 to-blue-600" />
-        </StaggerItem>
+        {d.mode === "full" && (
+          <>
+            <StaggerItem>
+              <Stat icon={Armchair} label="Desks occupied now" value={d.desksOccupied} total={d.desksTotal} hint="Live bookings on active desks" href={d.canSeeBookings ? "/desks" : undefined} gradient="from-indigo-600 to-violet-600" />
+            </StaggerItem>
+            <StaggerItem>
+              <Stat icon={UserCheck} label="Checked in today" value={d.checkedInToday} total={d.peopleTotal} hint="Across your labs" href={d.canViewReports ? "/reports" : undefined} gradient="from-emerald-600 to-teal-600" spark={d.attendanceTrend.map((t) => t.present)} sparkColor={CHART_COLORS.emerald} />
+            </StaggerItem>
+            <StaggerItem>
+              <Stat icon={AlertTriangle} label="Overdue todos" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="from-amber-500 to-orange-600" />
+            </StaggerItem>
+            <StaggerItem>
+              <Stat icon={ClipboardCheck} label="Awaiting review" value={d.pendingReviews} hint="Logbook entries" href="/logbook" gradient="from-sky-600 to-blue-600" />
+            </StaggerItem>
+          </>
+        )}
+        {d.mode === "team" && (
+          <>
+            <StaggerItem>
+              <Stat icon={ListTodo} label="My open todos" value={d.myTodos.length} hint="Assigned to me" href="/projects" gradient="from-indigo-600 to-violet-600" />
+            </StaggerItem>
+            <StaggerItem>
+              <Stat icon={AlertTriangle} label="Overdue in my projects" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="from-amber-500 to-orange-600" />
+            </StaggerItem>
+            <StaggerItem>
+              <Stat icon={Users} label="Team checked in today" value={d.teamCheckedInToday} total={d.teamSize} hint="My project teams" href={d.canViewReports ? "/reports" : undefined} gradient="from-emerald-600 to-teal-600" spark={d.attendanceTrend.map((t) => t.present)} sparkColor={CHART_COLORS.emerald} />
+            </StaggerItem>
+            <StaggerItem>
+              <Stat icon={ClipboardCheck} label="Awaiting review" value={d.pendingReviews} hint="My teams' logbooks" href="/logbook" gradient="from-sky-600 to-blue-600" />
+            </StaggerItem>
+          </>
+        )}
+        {d.mode === "personal" && (
+          <>
+            <StaggerItem>
+              <Stat icon={ListTodo} label="My open todos" value={d.myTodos.length} hint="Assigned to me" href="/projects" gradient="from-indigo-600 to-violet-600" />
+            </StaggerItem>
+            <StaggerItem>
+              <Stat icon={AlertTriangle} label="Overdue" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="from-amber-500 to-orange-600" />
+            </StaggerItem>
+            <StaggerItem>
+              <Stat icon={CalendarDays} label="My bookings today" value={d.myBookingsToday.length} hint="Desk & remote" gradient="from-emerald-600 to-teal-600" />
+            </StaggerItem>
+            <StaggerItem>
+              <Stat icon={FolderKanban} label="My projects" value={d.myProjectsCount} hint="Where I'm lead or member" href="/projects" gradient="from-sky-600 to-blue-600" />
+            </StaggerItem>
+          </>
+        )}
       </Stagger>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {d.attendanceEnabled && (
-          <FadeIn delay={0.1} className="lg:col-span-2">
-            <ChartCard
-              title="Attendance — last 14 days"
-              action={
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                  <TrendingUp className="h-3.5 w-3.5" /> daily check-ins
-                </span>
-              }
-            >
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={d.attendanceTrend} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="attTrend" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={CHART_COLORS.emerald} stopOpacity={0.45} />
-                        <stop offset="100%" stopColor={CHART_COLORS.emerald} stopOpacity={0.02} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#1e293b" : "#e2e8f0"} vertical={false} />
-                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: dark ? "#94a3b8" : "#64748b" }} tickLine={false} axisLine={false} interval={2} />
-                    <YAxis tick={{ fontSize: 11, fill: dark ? "#94a3b8" : "#64748b" }} tickLine={false} axisLine={false} allowDecimals={false} />
-                    <Tooltip contentStyle={tooltipStyle(dark)} />
-                    <Area type="monotone" dataKey="present" name="Present" stroke={CHART_COLORS.emerald} strokeWidth={2.5} fill="url(#attTrend)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </ChartCard>
-          </FadeIn>
-        )}
-
-        <FadeIn delay={0.16}>
-          <ChartCard title="Desk occupancy">
-            <div className="relative h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadialBarChart cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" data={occupancyData} startAngle={90} endAngle={-270}>
-                  <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
-                  <RadialBar dataKey="value" angleAxisId={0} cornerRadius={12} background={{ fill: dark ? "#1e293b" : "#f1f5f9" }} />
-                </RadialBarChart>
-              </ResponsiveContainer>
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <p className="text-4xl font-extrabold text-slate-900 dark:text-white">{occupancyPct}%</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {d.desksOccupied} of {d.desksTotal} desks
-                </p>
-              </div>
-            </div>
-          </ChartCard>
-        </FadeIn>
-      </div>
-
+      {/* ── projects + activity ── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <FadeIn delay={0.2}>
           <ChartCard
-            title="Project progress"
+            title={d.mode === "full" ? "Project progress" : "My projects"}
             action={
               <Link href="/projects" className="group inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
                 All projects <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -292,7 +309,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
         </FadeIn>
 
         <FadeIn delay={0.26}>
-          <ChartCard title="Recent activity">
+          <ChartCard title={d.mode === "full" ? "Recent activity" : d.mode === "team" ? "Team activity" : "My activity"}>
             <div className="max-h-72 space-y-1 overflow-y-auto">
               {d.recentActivity.length === 0 && <p className="text-sm text-slate-400">No activity yet.</p>}
               {d.recentActivity.map((a) => (
@@ -315,6 +332,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
         </FadeIn>
       </div>
 
+      {/* ── todos + bookings ── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <FadeIn delay={0.3}>
           <ChartCard
@@ -344,7 +362,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
           </ChartCard>
         </FadeIn>
 
-        {d.canSeeBookings && (
+        {d.mode === "full" && d.canSeeBookings ? (
           <FadeIn delay={0.36}>
             <ChartCard
               title="Today's bookings"
@@ -374,8 +392,46 @@ export function DashboardClient({ d }: { d: DashboardData }) {
               </div>
             </ChartCard>
           </FadeIn>
+        ) : (
+          <FadeIn delay={0.36}>
+            <ChartCard title="My bookings today">
+              <BookingRows bookings={d.myBookingsToday} />
+            </ChartCard>
+          </FadeIn>
         )}
       </div>
+
+      {/* ── attendance chart, last ── */}
+      {d.attendanceEnabled && (
+        <FadeIn delay={0.4}>
+          <ChartCard
+            title={d.attendanceTrendTitle}
+            action={
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                <TrendingUp className="h-3.5 w-3.5" /> daily check-ins
+              </span>
+            }
+          >
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={d.attendanceTrend} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="attTrend" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={CHART_COLORS.emerald} stopOpacity={0.45} />
+                      <stop offset="100%" stopColor={CHART_COLORS.emerald} stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#1e293b" : "#e2e8f0"} vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: dark ? "#94a3b8" : "#64748b" }} tickLine={false} axisLine={false} interval={2} />
+                  <YAxis tick={{ fontSize: 11, fill: dark ? "#94a3b8" : "#64748b" }} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={tooltipStyle(dark)} />
+                  <Area type="monotone" dataKey="present" name="Present" stroke={CHART_COLORS.emerald} strokeWidth={2.5} fill="url(#attTrend)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </ChartCard>
+        </FadeIn>
+      )}
     </div>
   );
 }
