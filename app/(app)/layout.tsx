@@ -1,17 +1,22 @@
 import { requireUser } from "@/lib/auth-helpers";
-import { getAppName } from "@/lib/app-settings";
+import { getAppName, getUserAccentColor } from "@/lib/app-settings";
 import { isCheckInVisible } from "./check-in/actions";
 import { AppShell } from "@/components/layout/app-shell";
+import { AccentRoot } from "@/components/theme-accent";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const [actor, appName, showCheckIn] = await Promise.all([
-    requireUser(),
+  const actor = await requireUser();
+  const [appName, showCheckIn, accent] = await Promise.all([
     getAppName(),
-    isCheckInVisible((await requireUser()).id),
+    isCheckInVisible(actor.id),
+    getUserAccentColor(actor.id),
   ]);
   return (
-    <AppShell actor={actor} appName={appName} showCheckIn={showCheckIn}>
-      {children}
-    </AppShell>
+    <>
+      <AccentRoot accent={accent} />
+      <AppShell actor={actor} appName={appName} showCheckIn={showCheckIn}>
+        {children}
+      </AppShell>
+    </>
   );
 }

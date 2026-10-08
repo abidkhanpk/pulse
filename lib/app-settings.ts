@@ -22,3 +22,39 @@ export async function setAppName(name: string): Promise<void> {
     create: { key: "appName", value },
   });
 }
+
+export const DEFAULT_ACCENT_COLOR = "indigo";
+
+/** Admin-chosen default accent color id (falls back to indigo). */
+export const getDefaultAccentColor = cache(async (): Promise<string> => {
+  try {
+    const row = await prisma.appSetting.findUnique({ where: { key: "defaultAccentColor" } });
+    const v = row?.value.trim();
+    const { isAccentId } = await import("./accent");
+    return v && isAccentId(v) ? v : DEFAULT_ACCENT_COLOR;
+  } catch {
+    return DEFAULT_ACCENT_COLOR;
+  }
+});
+
+export async function setDefaultAccentColor(id: string): Promise<void> {
+  const { isAccentId, DEFAULT_ACCENT_ID } = await import("./accent");
+  const value = isAccentId(id) ? id : DEFAULT_ACCENT_ID;
+  await prisma.appSetting.upsert({
+    where: { key: "defaultAccentColor" },
+    update: { value },
+    create: { key: "defaultAccentColor", value },
+  });
+}
+
+/** Effective accent for a user: their choice, else the admin default. */
+export async function getUserAccentColor(userId: string): Promise<string> {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { accentColor: true } });
+    const { isAccentId } = await import("./accent");
+    if (user?.accentColor && isAccentId(user.accentColor)) return user.accentColor;
+  } catch {
+    /* fall through */
+  }
+  return getDefaultAccentColor();
+}

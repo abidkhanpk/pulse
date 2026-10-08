@@ -123,6 +123,8 @@ model User {
   attendanceTracking Boolean     @default(true)
   attendanceModeOverride AttendanceMode?
   linkAttendanceToBooking Boolean @default(true)
+  // UI accent color choice (null = app default).
+  accentColor      String?
   labId              String?
   lab                Lab?        @relation("HomeLab", fields: [labId], references: [id])
   createdAt          DateTime    @default(now())

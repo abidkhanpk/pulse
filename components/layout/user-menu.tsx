@@ -4,9 +4,10 @@ import * as React from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, FlaskConical, Settings, LogOut, Sun, Moon, Monitor } from "lucide-react";
-import { signOutAction } from "./actions";
+import { signOutAction, setMyAccentAction } from "./actions";
 import { roleDisplayName, type SessionActorLike } from "./sidebar";
 import { useTheme, type Theme } from "@/components/theme";
+import { AccentPicker } from "@/components/accent-picker";
 
 function initials(name: string): string {
   return name
@@ -106,6 +107,14 @@ export function UserMenu({ actor }: { actor: SessionActorLike }) {
                   );
                 })}
               </div>
+              {/* Accent color picker */}
+              <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                Accent color
+              </div>
+              <AccentPicker
+                initial={typeof document !== "undefined" ? document.documentElement.dataset.accent || "indigo" : "indigo"}
+                onPick={setMyAccentAction}
+              />
               {isIncharge && (
                 <Link
                   href="/labs"

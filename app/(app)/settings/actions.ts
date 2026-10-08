@@ -127,3 +127,20 @@ export async function updateAppName(input: z.infer<typeof appNameSchema>): Promi
   revalidatePath("/", "layout");
   return { ok: true };
 }
+
+const accentSchema = z.object({ accentId: z.string().trim().min(1).max(30) });
+
+/** Update the default accent color for users who haven't chosen one (admin only). */
+export async function updateDefaultAccentColor(input: z.infer<typeof accentSchema>): Promise<ActionResult> {
+  const actor = await requireUser();
+  if (!can(actor, "org.manage")) return { ok: false, error: "You don't have permission (org.manage)." };
+  const parsed = accentSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid color." };
+  const { isAccentId } = await import("@/lib/accent");
+  if (!isAccentId(parsed.data.accentId)) return { ok: false, error: "Unknown color." };
+  const { setDefaultAccentColor } = await import("@/lib/app-settings");
+  await setDefaultAccentColor(parsed.data.accentId);
+  await logAudit(actor.id, "app.accent", "AppSetting", "defaultAccentColor", { accent: parsed.data.accentId });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
