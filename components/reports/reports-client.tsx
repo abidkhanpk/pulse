@@ -19,36 +19,48 @@ export function ReportsClient({
   isGlobal,
   initialYear,
   initialMonth,
+  projectScoped = false,
+  projects = [],
 }: {
   labs: { id: string; name: string }[];
   isGlobal: boolean;
   initialYear: number;
   initialMonth: number;
+  projectScoped?: boolean;
+  projects?: { id: string; name: string }[];
 }) {
   const [year, setYear] = React.useState(initialYear);
   const [month, setMonth] = React.useState(initialMonth);
   // Non-admins only ever see their own labs: no "All labs" option, and a
-  // single lab is preselected.
+  // single lab is preselected. Project-scoped viewers (supervisors) pick a
+  // project instead of a lab.
   const [labId, setLabId] = React.useState(() => (!isGlobal && labs.length === 1 ? labs[0].id : ""));
+  const [projectId, setProjectId] = React.useState("");
   const [userId, setUserId] = React.useState("");
   const [people, setPeople] = React.useState<{ id: string; name: string }[]>([]);
   const [rows, setRows] = React.useState<ReportRow[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [loaded, setLoaded] = React.useState(false);
 
-  async function loadPeople(lab: string) {
-    setPeople(await reportPeople(lab || undefined));
+  async function loadPeople(lab: string, proj: string) {
+    setPeople(await reportPeople(lab || undefined, proj || undefined));
   }
 
   React.useEffect(() => {
-    loadPeople(!isGlobal && labs.length === 1 ? labs[0].id : "");
+    loadPeople(!isGlobal && labs.length === 1 ? labs[0].id : "", "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function run() {
     setLoading(true);
     try {
-      const r = await monthlyReport({ year, month, labId: labId || undefined, userId: userId || undefined });
+      const r = await monthlyReport({
+        year,
+        month,
+        labId: projectScoped ? undefined : labId || undefined,
+        userId: userId || undefined,
+        projectId: projectScoped ? projectId || undefined : undefined,
+      });
       setRows(r);
       setLoaded(true);
     } finally {
@@ -95,23 +107,43 @@ export function ReportsClient({
                 ))}
               </Select>
             </div>
-            <div>
-              <Label htmlFor="rep-lab">Lab</Label>
-              <Select
-                id="rep-lab"
-                value={labId}
-                onChange={(e) => {
-                  setLabId(e.target.value);
-                  setUserId("");
-                  loadPeople(e.target.value);
-                }}
-              >
-                {isGlobal && <option value="">All labs</option>}
-                {labs.map((l) => (
-                  <option key={l.id} value={l.id}>{l.name}</option>
-                ))}
-              </Select>
-            </div>
+            {projectScoped ? (
+              <div>
+                <Label htmlFor="rep-project">Project</Label>
+                <Select
+                  id="rep-project"
+                  value={projectId}
+                  onChange={(e) => {
+                    setProjectId(e.target.value);
+                    setUserId("");
+                    loadPeople("", e.target.value);
+                  }}
+                >
+                  <option value="">All my projects</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </Select>
+              </div>
+            ) : (
+              <div>
+                <Label htmlFor="rep-lab">Lab</Label>
+                <Select
+                  id="rep-lab"
+                  value={labId}
+                  onChange={(e) => {
+                    setLabId(e.target.value);
+                    setUserId("");
+                    loadPeople(e.target.value, "");
+                  }}
+                >
+                  {isGlobal && <option value="">All labs</option>}
+                  {labs.map((l) => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </Select>
+              </div>
+            )}
             <div>
               <Label htmlFor="rep-person">Person</Label>
               <Select id="rep-person" value={userId} onChange={(e) => setUserId(e.target.value)}>

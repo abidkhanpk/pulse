@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-helpers";
 import { can, scopeFilter, type PermissionKey } from "@/lib/permissions";
+import { canViewAllProjects, myProjectIds, projectTeamUserIds, projectMemberUserIds } from "@/lib/project-access";
 import { logAudit } from "@/lib/audit";
 import { todayPKT, toISODate } from "@/lib/bookings";
 import type { ReportRow } from "@/lib/report-csv";
@@ -44,6 +45,21 @@ export async function canMarkAttendance(actorId: string, labId: string): Promise
 /** Whether the check-in module is enabled for a user (effective mode is not NONE). */
 export async function isCheckInEnabled(userId: string): Promise<boolean> {
   return (await effectiveAttendanceMode(userId)) !== "NONE";
+}
+
+/**
+ * Whether the Check-in sidebar entry is shown for a user.
+ * - SELF: everyone checks themselves in → shown.
+ * - MANUAL: only the marker (incharge / designated person / admin) needs the
+ *   page; others would only see a "marked by your incharge" dead end → hidden.
+ * - NONE: hidden for everyone.
+ */
+export async function isCheckInVisible(userId: string): Promise<boolean> {
+  const mode = await effectiveAttendanceMode(userId);
+  if (mode === "SELF") return true;
+  if (mode === "NONE") return false;
+  const me = await prisma.user.findUnique({ where: { id: userId }, select: { labId: true } });
+  return me?.labId ? canMarkAttendance(userId, me.labId) : false;
 }
 
 /** Attendance context for the check-in page. */
@@ -190,12 +206,37 @@ export interface ReportFilters {
   month: number; // 1-12
   labId?: string;
   userId?: string;
+  projectId?: string;
 }
 
-export async function monthlyReport({ year, month, labId, userId }: ReportFilters): Promise<ReportRow[]> {
+export async function monthlyReport({ year, month, labId, userId, projectId }: ReportFilters): Promise<ReportRow[]> {
   const actor = await requireUser();
   if (!can(actor, "attendance.view_reports")) return [];
   const labIds = scopeFilter(actor);
+  const viewAll = canViewAllProjects(actor);
+
+  // ── scope enforcement ──
+  // Lab incharges may only report on their own lab(s): reject out-of-scope filters.
+  if (labId && labIds && !labIds.includes(labId)) return [];
+  // Supervisors (no projects.view_all) may only report on their project teams.
+  let allowedUserIds: string[] | null = null;
+  if (!viewAll) {
+    const mine = await myProjectIds(actor);
+    if (projectId) {
+      if (!mine.includes(projectId)) return [];
+      allowedUserIds = await projectMemberUserIds(projectId);
+    } else {
+      allowedUserIds = await projectTeamUserIds(actor);
+    }
+  }
+  if (userId) {
+    if (allowedUserIds && !allowedUserIds.includes(userId)) return [];
+    if (!allowedUserIds) {
+      const person = await prisma.user.findUnique({ where: { id: userId }, select: { labId: true } });
+      if (!person) return [];
+      if (labIds && person.labId && !labIds.includes(person.labId)) return [];
+    }
+  }
 
   const monthStart = new Date(Date.UTC(year, month - 1, 1));
   const monthEnd = new Date(Date.UTC(year, month, 0)); // last day
@@ -210,7 +251,8 @@ export async function monthlyReport({ year, month, labId, userId }: ReportFilter
     where: {
       status: "ACTIVE",
       attendanceTracking: true,
-      ...(userId ? { id: userId } : labId ? { labId } : labIds ? { labId: { in: labIds } } : {}),
+      ...(userId ? { id: userId } : allowedUserIds ? { id: { in: allowedUserIds } } : {}),
+      ...(labId ? { labId } : labIds ? { labId: { in: labIds } } : {}),
     },
     include: {
       lab: { select: { name: true } },
@@ -295,13 +337,25 @@ export async function monthlyReport({ year, month, labId, userId }: ReportFilter
 }
 
 /** People visible to the actor for report filters. */
-export async function reportPeople(labId?: string) {
+export async function reportPeople(labId?: string, projectId?: string) {
   const actor = await requireUser();
   if (!can(actor, "attendance.view_reports")) return [];
   const labIds = scopeFilter(actor);
+  if (labId && labIds && !labIds.includes(labId)) return [];
+  let idFilter: Record<string, unknown> = {};
+  if (!canViewAllProjects(actor)) {
+    const mine = await myProjectIds(actor);
+    if (projectId) {
+      if (!mine.includes(projectId)) return [];
+      idFilter = { id: { in: await projectMemberUserIds(projectId) } };
+    } else {
+      idFilter = { id: { in: await projectTeamUserIds(actor) } };
+    }
+  }
   return prisma.user.findMany({
     where: {
       status: "ACTIVE",
+      ...idFilter,
       ...(labId ? { labId } : labIds ? { labId: { in: labIds } } : {}),
     },
     select: { id: true, name: true },
@@ -317,7 +371,9 @@ export async function personAttendance(userId: string, from: string, to: string)
   if (!person) return [];
   if (userId !== actor.id) {
     if (!can(actor, "attendance.view_reports")) return [];
-    if (person.labId && scopeFilter(actor) && !scopeFilter(actor)!.includes(person.labId)) return [];
+    const labIds = scopeFilter(actor);
+    if (person.labId && labIds && !labIds.includes(person.labId)) return [];
+    if (!canViewAllProjects(actor) && !(await projectTeamUserIds(actor)).includes(userId)) return [];
   }
   return prisma.attendanceRecord.findMany({
     where: {

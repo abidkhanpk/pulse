@@ -6,6 +6,7 @@ import { Prisma, type LogStatus, type RevisionKind } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-helpers";
 import { can, scopeFilter, type PermissionKey } from "@/lib/permissions";
+import { canAccessProject, canViewAllProjects, projectTeamUserIds } from "@/lib/project-access";
 import { logAudit } from "@/lib/audit";
 import { todayPKT, toISODate } from "@/lib/bookings";
 import type { ActionResult } from "../labs/actions";
@@ -71,16 +72,21 @@ export async function listEntries(filters: EntryFilters = {}) {
   });
 }
 
-/** Review queue: SUBMITTED entries in the actor's scope. */
+/**
+ * Review queue: SUBMITTED entries in the actor's scope.
+ * Reviewers without projects.view_all (e.g. supervisors) only see entries
+ * from members of their own projects.
+ */
 export async function reviewQueue() {
   const actor = await requireUser();
   if (!can(actor, "logbook.review")) return [];
   const labIds = scopeFilter(actor);
+  const teamIds = canViewAllProjects(actor) ? null : await projectTeamUserIds(actor);
   return prisma.logEntry.findMany({
     where: {
       status: "SUBMITTED",
       deletedAt: null,
-      ...(labIds ? { user: { labId: { in: labIds } } } : {}),
+      ...(teamIds ? { userId: { in: teamIds } } : labIds ? { user: { labId: { in: labIds } } } : {}),
     },
     include: {
       user: { select: { id: true, name: true } },
@@ -172,6 +178,9 @@ export async function createEntry(input: z.infer<typeof entrySchema>): Promise<A
   if (!parsed.success) return { ok: false, error: "Summary and date are required." };
   const date = new Date(parsed.data.date + "T00:00:00Z");
   const projectId = parsed.data.projectId || null;
+  if (projectId && !(await canAccessProject(actor, projectId))) {
+    return { ok: false, error: "You can only log against your own projects." };
+  }
   const dup = await prisma.logEntry.findFirst({
     where: { userId: actor.id, date, projectId, deletedAt: null },
   });
@@ -208,6 +217,10 @@ export async function updateEntry(id: string, input: z.infer<typeof entrySchema>
   if (existing.userId !== actor.id) return { ok: false, error: "You can only edit your own entries." };
   if (existing.deletedAt) return { ok: false, error: "This entry is deleted. Restore it before editing." };
   if (existing.status === "REVIEWED") return { ok: false, error: "Reviewed entries cannot be edited." };
+  const newProjectId = parsed.data.projectId || null;
+  if (newProjectId && !(await canAccessProject(actor, newProjectId))) {
+    return { ok: false, error: "You can only log against your own projects." };
+  }
   const dup = await prisma.logEntry.findFirst({
     where: {
       userId: actor.id,
@@ -414,10 +427,14 @@ export async function reviewEntry(input: z.infer<typeof reviewSchema>): Promise<
 export async function entryProjects() {
   const actor = await requireUser();
   const labIds = scopeFilter(actor);
+  const mine = canViewAllProjects(actor)
+    ? {}
+    : { OR: [{ leadId: actor.id }, { members: { some: { userId: actor.id } } }] };
   return prisma.project.findMany({
     where: {
       status: "ACTIVE",
       ...(labIds ? { labId: { in: labIds } } : {}),
+      ...mine,
     },
     select: { id: true, name: true },
     orderBy: { name: "asc" },

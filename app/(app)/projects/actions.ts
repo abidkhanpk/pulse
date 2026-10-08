@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-helpers";
 import { can, scopeFilter, type PermissionKey } from "@/lib/permissions";
+import { canViewAllProjects } from "@/lib/project-access";
 import { logAudit } from "@/lib/audit";
 import { todayPKT } from "@/lib/bookings";
 import type { ActionResult } from "../labs/actions";
@@ -18,10 +19,15 @@ function deny(perm: PermissionKey) {
 export async function listProjects(filters: { labId?: string; status?: string } = {}) {
   const actor = await requireUser();
   const labIds = scopeFilter(actor);
+  // Without projects.view_all you only see projects where you are lead or member.
+  const mine = canViewAllProjects(actor)
+    ? {}
+    : { OR: [{ leadId: actor.id }, { members: { some: { userId: actor.id } } }] };
   return prisma.project.findMany({
     where: {
       ...(filters.labId ? { labId: filters.labId } : labIds ? { labId: { in: labIds } } : {}),
       ...(filters.status ? { status: filters.status as never } : {}),
+      ...mine,
     },
     include: {
       lab: { select: { id: true, name: true } },
@@ -63,6 +69,11 @@ export async function getProject(id: string) {
   if (!project) return null;
   const labIds = scopeFilter(actor);
   if (labIds && !labIds.includes(project.labId)) return null;
+  if (!canViewAllProjects(actor)) {
+    const isMine =
+      project.leadId === actor.id || project.members.some((m) => m.user.id === actor.id);
+    if (!isMine) return null;
+  }
   return project;
 }
 
