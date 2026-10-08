@@ -1,9 +1,9 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 
-export const DEFAULT_APP_NAME = "Pulse";
+export const DEFAULT_APP_NAME = "LOOM";
 
-/** App display name, editable by admin in Settings. Falls back to "Pulse". */
+/** App display name, editable by admin in Settings. Falls back to "LOOM". */
 export const getAppName = cache(async (): Promise<string> => {
   try {
     const row = await prisma.appSetting.findUnique({ where: { key: "appName" } });

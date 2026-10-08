@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/brand-logo";
 import type { PermissionKey, ActorRole } from "@/lib/permissions";
 import {
   LayoutDashboard,
@@ -104,9 +105,9 @@ export function Sidebar({
         <Link href="/dashboard" className="flex items-center gap-2.5" title={appName}>
           <motion.span
             whileHover={{ rotate: -8, scale: 1.06 }}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-base font-black text-white shadow-[0_4px_14px_rgba(99,102,241,0.5)]"
+            className="flex h-9 w-9 shrink-0 items-center justify-center"
           >
-            {appName.charAt(0).toUpperCase()}
+            <BrandLogo className="h-9 w-9" />
           </motion.span>
           {expanded && (
             <motion.span

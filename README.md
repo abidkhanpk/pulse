@@ -1,4 +1,4 @@
-# Pulse — Lab Management System
+# LOOM — Lab Management System
 
 Internal web app for managing labs: desk booking, project management
 (projects → milestones → todos, kanban, Gantt), intern/personnel management

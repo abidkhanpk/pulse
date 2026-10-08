@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Label, FieldError } from "@/components/ui/input";
+import { BrandLogo } from "@/components/brand-logo";
 
 export function LoginForm({ appName }: { appName: string }) {
   const searchParams = useSearchParams();
@@ -40,6 +41,9 @@ export function LoginForm({ appName }: { appName: string }) {
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 dark:bg-slate-800">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:bg-slate-900 dark:border-slate-700">
         <div className="mb-6 text-center">
+          <div className="mb-4 flex justify-center">
+            <BrandLogo className="h-16 w-16" />
+          </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{appName}</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Lab management system</p>
         </div>

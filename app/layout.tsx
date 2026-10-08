@@ -19,6 +19,13 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${appName} — Lab Management`,
     description: "MEDD lab management system: desk booking, projects, logbook, attendance",
+    icons: {
+      icon: [
+        { url: "/brand/favicon-light.png", media: "(prefers-color-scheme: light)" },
+        { url: "/brand/favicon-dark.png", media: "(prefers-color-scheme: dark)" },
+      ],
+      apple: "/brand/apple-touch-icon.png",
+    },
   };
 }
 
