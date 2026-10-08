@@ -126,7 +126,15 @@ export function DesksClient({
             labName={labs.find((l) => l.id === labId)?.name ?? ""}
           />
         ) : labId ? (
-          <FloorplanView key={`view-${labId}`} labId={labId} labName={labs.find((l) => l.id === labId)?.name ?? ""} />
+          <FloorplanView
+            key={`view-${labId}`}
+            labId={labId}
+            labName={labs.find((l) => l.id === labId)?.name ?? ""}
+            desks={desks}
+            people={people}
+            projects={projects}
+            canBook={canManage}
+          />
         ) : (
           <p className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
             Pick a lab above to see its floorplan layout.

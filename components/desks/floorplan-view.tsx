@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/misc";
 import { getFloorplan, layoutOccupancy } from "@/app/(app)/desks/actions";
+import { BookingDrawer } from "./booking-drawer";
 
 interface DeskPos {
   id: string;
@@ -32,7 +34,21 @@ function fmtTime(iso: string): string {
   });
 }
 
-export function FloorplanView({ labId, labName }: { labId: string; labName: string }) {
+export function FloorplanView({
+  labId,
+  labName,
+  desks: bookableDesks,
+  people,
+  projects,
+  canBook,
+}: {
+  labId: string;
+  labName: string;
+  desks: { id: string; label: string; status: string }[];
+  people: { id: string; name: string }[];
+  projects: { id: string; name: string }[];
+  canBook: boolean;
+}) {
   const [imageUrl, setImageUrl] = React.useState<string | null>(null);
   const [desks, setDesks] = React.useState<DeskPos[]>([]);
   const [shapes, setShapes] = React.useState<
@@ -41,6 +57,8 @@ export function FloorplanView({ labId, labName }: { labId: string; labName: stri
   const [occs, setOccs] = React.useState<Occ[]>([]);
   const [hasImage, setHasImage] = React.useState(false);
   const [selected, setSelected] = React.useState<string | null>(null);
+  const [bookingDeskId, setBookingDeskId] = React.useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = React.useState(0);
 
   React.useEffect(() => {
     (async () => {
@@ -53,7 +71,8 @@ export function FloorplanView({ labId, labName }: { labId: string; labName: stri
       }
       setOccs(await layoutOccupancy(labId));
     })();
-  }, [labId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [labId, refreshKey]);
 
   const placed = desks.filter((d) => d.xPct != null);
   const occByDesk = new Map<string, Occ[]>();
@@ -157,12 +176,19 @@ export function FloorplanView({ labId, labName }: { labId: string; labName: stri
       {selDesk && (
         <Card>
           <CardContent className="!py-3">
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-              {selDesk.label}
-              <span className="ml-2 text-xs font-normal text-slate-400">
-                {statusOf(selDesk) === "occupied" ? "Occupied now" : statusOf(selDesk) === "upcoming" ? "Booked later today" : statusOf(selDesk) === "maintenance" ? "Under maintenance" : "Free"}
-              </span>
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                {selDesk.label}
+                <span className="ml-2 text-xs font-normal text-slate-400">
+                  {statusOf(selDesk) === "occupied" ? "Occupied now" : statusOf(selDesk) === "upcoming" ? "Booked later today" : statusOf(selDesk) === "maintenance" ? "Under maintenance" : "Free"}
+                </span>
+              </p>
+              {canBook && statusOf(selDesk) !== "maintenance" && (
+                <Button size="sm" onClick={() => setBookingDeskId(selDesk.id)}>
+                  Book this station
+                </Button>
+              )}
+            </div>
             {selOccs.length > 0 ? (
               <ul className="mt-1 space-y-1 text-sm text-slate-600 dark:text-slate-300">
                 {selOccs.map((o, i) => (
@@ -178,6 +204,23 @@ export function FloorplanView({ labId, labName }: { labId: string; labName: stri
             )}
           </CardContent>
         </Card>
+      )}
+
+      {bookingDeskId && (
+        <BookingDrawer
+          key={bookingDeskId}
+          open={!!bookingDeskId}
+          onClose={() => setBookingDeskId(null)}
+          onSaved={() => {
+            setBookingDeskId(null);
+            setRefreshKey((k) => k + 1);
+          }}
+          defaults={{ deskId: bookingDeskId }}
+          people={people}
+          desks={bookableDesks}
+          projects={projects}
+          initial={null}
+        />
       )}
     </div>
   );
