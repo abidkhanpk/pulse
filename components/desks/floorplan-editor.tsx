@@ -75,6 +75,12 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
   const [polyCursor, setPolyCursor] = React.useState<{ x: number; y: number } | null>(null);
   const canvasRef = React.useRef<HTMLDivElement>(null);
   const fileRef = React.useRef<HTMLInputElement>(null);
+  const idCounter = React.useRef(0);
+
+  function newShapeId(): string {
+    idCounter.current += 1;
+    return `new-${idCounter.current}`;
+  }
 
   const load = React.useCallback(async () => {
     const fp = await getFloorplan(labId);
@@ -131,7 +137,7 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
       alert("Polygon is too small.");
       return;
     }
-    const id = `new-${Date.now()}`;
+    const id = newShapeId();
     setShapes((ss) => [
       ...ss,
       {
@@ -287,7 +293,7 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
       const h = Math.abs(drawCur.y - drawStart.y);
       if (w > 0.5 && h > 0.5) {
         const kind: ShapeKind = tool === "wall" ? "WALL" : tool === "zone" ? "ZONE" : tool === "rectangle" ? "RECTANGLE" : "CIRCLE";
-        const id = `new-${Date.now()}`;
+        const id = newShapeId();
         const zoneLike = kind === "ZONE" || kind === "RECTANGLE" || kind === "CIRCLE";
         setShapes((ss) => [
           ...ss,
