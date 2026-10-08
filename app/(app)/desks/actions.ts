@@ -41,6 +41,7 @@ const deskSchema = z.object({
   labId: z.string().min(1),
   label: z.string().trim().min(1).max(60),
   notes: z.string().trim().max(300).optional().nullable(),
+  markerShape: z.enum(["CIRCLE", "SQUARE", "ROUNDED"]).optional(),
 });
 
 export async function createDesk(input: z.infer<typeof deskSchema>): Promise<ActionResult<{ id: string }>> {
@@ -73,7 +74,12 @@ export async function updateDesk(
   if (!can(actor, "desks.manage", parsed.data.labId)) return deny("desks.manage");
   await prisma.desk.update({
     where: { id },
-    data: { labId: parsed.data.labId, label: parsed.data.label, notes: parsed.data.notes ?? null },
+    data: {
+      labId: parsed.data.labId,
+      label: parsed.data.label,
+      notes: parsed.data.notes ?? null,
+      ...(parsed.data.markerShape ? { markerShape: parsed.data.markerShape } : {}),
+    },
   });
   await logAudit(actor.id, "desk.updated", "Desk", id, { label: parsed.data.label });
   revalidatePath("/desks");
@@ -467,13 +473,18 @@ const shapesSchema = z.object({
   labId: z.string().min(1),
   shapes: z.array(
     z.object({
-      kind: z.enum(["WALL", "ZONE"]),
+      kind: z.enum(["WALL", "ZONE", "RECTANGLE", "CIRCLE", "POLYGON"]),
       xPct: z.number().min(0).max(100),
       yPct: z.number().min(0).max(100),
       wPct: z.number().min(0.5).max(100),
       hPct: z.number().min(0.5).max(100),
       label: z.string().max(60).nullable().optional(),
       color: z.string().max(20).nullable().optional(),
+      points: z
+        .array(z.object({ x: z.number().min(0).max(100), y: z.number().min(0).max(100) }))
+        .nullable()
+        .optional(),
+      filled: z.boolean().optional(),
     })
   ),
 });
@@ -497,6 +508,8 @@ export async function saveFloorplanShapes(input: z.infer<typeof shapesSchema>): 
           hPct: sh.hPct,
           label: sh.label?.trim() || null,
           color: sh.color || null,
+          points: sh.points ?? undefined,
+          filled: sh.filled ?? true,
         })),
       });
     }
@@ -517,7 +530,7 @@ export async function getFloorplan(labId: string) {
     prisma.floorplanImage.findUnique({ where: { labId }, select: { id: true, updatedAt: true } }),
     prisma.desk.findMany({
       where: { labId },
-      select: { id: true, label: true, status: true, xPct: true, yPct: true },
+      select: { id: true, label: true, status: true, xPct: true, yPct: true, markerShape: true },
       orderBy: { label: "asc" },
     }),
     prisma.floorplanShape.findMany({ where: { labId } }),
@@ -535,6 +548,8 @@ export async function getFloorplan(labId: string) {
       hPct: sh.hPct,
       label: sh.label,
       color: sh.color,
+      points: (sh.points as { x: number; y: number }[] | null) ?? null,
+      filled: sh.filled,
     })),
   };
 }
