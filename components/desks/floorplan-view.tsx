@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/misc";
 import { getFloorplan, layoutOccupancy } from "@/app/(app)/desks/actions";
 import { BookingDrawer } from "./booking-drawer";
@@ -133,7 +132,7 @@ export function FloorplanView({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-3 text-xs">
+      <div className="flex flex-wrap items-center gap-3 text-xs">
         {[
           ["bg-red-500", "Occupied now"],
           ["bg-emerald-500", "Free"],
@@ -145,6 +144,11 @@ export function FloorplanView({
             {label}
           </span>
         ))}
+        {canBook && (
+          <span className="ml-auto font-medium text-indigo-600 dark:text-indigo-400">
+            Click a station to book it
+          </span>
+        )}
       </div>
 
       <Card>
@@ -183,12 +187,21 @@ export function FloorplanView({
             {placed.map((d) => {
               const st = statusOf(d);
               const rad = markerRadius(d.markerShape);
+              const bookable = canBook && d.status !== "MAINTENANCE";
               const color =
                 st === "occupied" ? "bg-red-500" : st === "upcoming" ? "bg-sky-500" : st === "maintenance" ? "bg-amber-500" : "bg-emerald-500";
               return (
                 <button
                   key={d.id}
-                  onClick={() => setSelected(selected === d.id ? null : d.id)}
+                  onClick={() => {
+                    if (bookable) {
+                      // Bookers go straight to the booking dialog with this station preselected.
+                      setBookingDeskId(d.id);
+                    } else {
+                      // Everyone else (and maintenance stations) gets the inspection card.
+                      setSelected(selected === d.id ? null : d.id);
+                    }
+                  }}
                   className={`absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center ${rad} text-[10px] font-bold text-white shadow-lg transition-transform hover:scale-110 ${
                     selected === d.id ? "ring-2 ring-indigo-500 ring-offset-2" : ""
                   }`}
@@ -221,11 +234,6 @@ export function FloorplanView({
                   {statusOf(selDesk) === "occupied" ? "Occupied now" : statusOf(selDesk) === "upcoming" ? "Booked later today" : statusOf(selDesk) === "maintenance" ? "Under maintenance" : "Free"}
                 </span>
               </p>
-              {canBook && statusOf(selDesk) !== "maintenance" && (
-                <Button size="sm" onClick={() => setBookingDeskId(selDesk.id)}>
-                  Book this station
-                </Button>
-              )}
             </div>
             {selOccs.length > 0 ? (
               <ul className="mt-1 space-y-1 text-sm text-slate-600 dark:text-slate-300">
