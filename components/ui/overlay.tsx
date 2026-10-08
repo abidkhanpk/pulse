@@ -34,11 +34,23 @@ function Backdrop({ onClose }: { onClose: () => void }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]"
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className="absolute inset-0 bg-slate-950/45 backdrop-blur-md dark:bg-slate-950/60"
       onClick={onClose}
       aria-hidden
     />
+  );
+}
+
+function CloseButton({ onClose }: { onClose: () => void }) {
+  return (
+    <button
+      onClick={onClose}
+      aria-label="Close"
+      className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-slate-400 transition-all duration-200 hover:rotate-90 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+    >
+      <X className="h-4 w-4" />
+    </button>
   );
 }
 
@@ -52,23 +64,16 @@ export function Dialog({ open, onClose, children, className }: OverlayProps) {
           <motion.div
             role="dialog"
             aria-modal
-            initial={{ opacity: 0, scale: 0.96, y: 16 }}
+            initial={{ opacity: 0, scale: 0.94, y: 24 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 8 }}
-            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+            exit={{ opacity: 0, scale: 0.96, y: 12 }}
+            transition={{ type: "spring", stiffness: 420, damping: 34 }}
             className={cn(
-              "relative w-full max-w-lg rounded-2xl bg-white p-6 dark:bg-slate-900 dark:ring-1 dark:ring-slate-700",
-              "shadow-[0_24px_64px_rgba(15,23,42,0.18)]",
+              "card-sheen relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200/70 bg-white p-6 shadow-pop dark:border-slate-700/60 dark:bg-slate-900",
               className
             )}
           >
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <CloseButton onClose={onClose} />
             {children}
           </motion.div>
         </div>
@@ -94,19 +99,13 @@ export function Sheet({ open, onClose, children, className }: OverlayProps) {
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ type: "spring", stiffness: 320, damping: 34 }}
+            transition={{ type: "spring", stiffness: 360, damping: 36 }}
             className={cn(
-              "absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl dark:bg-slate-900",
+              "absolute right-0 top-0 flex h-full w-full max-w-md flex-col rounded-l-3xl border-l border-slate-200/70 bg-white shadow-pop dark:border-slate-700/60 dark:bg-slate-900",
               className
             )}
           >
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              className="absolute right-4 top-4 z-10 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <CloseButton onClose={onClose} />
             {children}
           </motion.div>
         </div>
@@ -116,7 +115,7 @@ export function Sheet({ open, onClose, children, className }: OverlayProps) {
 }
 
 export function SheetHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("border-b border-slate-100 px-6 py-5 dark:border-slate-800", className)} {...props} />;
+  return <div className={cn("border-b border-slate-100 px-6 py-5 dark:border-slate-800/80", className)} {...props} />;
 }
 
 export function SheetTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
@@ -129,6 +128,6 @@ export function SheetBody({ className, ...props }: React.HTMLAttributes<HTMLDivE
 
 export function SheetFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("flex justify-end gap-2 border-t border-slate-100 px-6 py-4 dark:border-slate-800", className)} {...props} />
+    <div className={cn("flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:border-slate-800/80 dark:bg-slate-800/40", className)} {...props} />
   );
 }
