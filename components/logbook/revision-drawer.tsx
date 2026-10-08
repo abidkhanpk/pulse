@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { Sheet, SheetHeader, SheetTitle, SheetBody } from "@/components/ui/overlay";
+import { Checkbox } from "@/components/ui/input";
 import { Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { RevisionView } from "@/app/(app)/logbook/actions";
@@ -26,7 +27,7 @@ const KIND_META: Record<
 > = {
   CREATED: { label: "Created", icon: Plus, bubble: "bg-emerald-500" },
   EDITED: { label: "Edited", icon: Pencil, bubble: "bg-blue-500" },
-  SUBMITTED: { label: "Submitted for review", icon: Send, bubble: "bg-indigo-500" },
+  SUBMITTED: { label: "Submitted for review", icon: Send, bubble: "bg-accent-500" },
   REVIEWED: { label: "Approved", icon: CheckCircle2, bubble: "bg-green-600" },
   RETURNED: { label: "Returned to draft", icon: Undo2, bubble: "bg-amber-500" },
   DELETED: { label: "Deleted", icon: Trash2, bubble: "bg-red-500" },
@@ -238,7 +239,7 @@ export function RevisionDrawer({
               </div>
             )}
             {compareMode && (!before || !after) && (
-              <p className="mb-4 rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+              <p className="mb-4 rounded-lg bg-accent-50 px-3 py-2 text-xs text-accent-700 dark:bg-accent-950 dark:text-accent-300">
                 Tick two revisions below to compare them side by side.
               </p>
             )}
@@ -266,19 +267,18 @@ export function RevisionDrawer({
                         className={cn(
                           "rounded-xl border px-4 py-3 transition-colors",
                           picked
-                            ? "border-indigo-400 bg-indigo-50/60 dark:border-indigo-600 dark:bg-indigo-950/40"
+                            ? "border-accent-400 bg-accent-50/60 dark:border-accent-600 dark:bg-accent-950/40"
                             : "border-slate-200 dark:border-slate-700",
                           r.kind === "DELETED" && "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/30",
                         )}
                       >
                         <div className="flex items-start gap-2">
                           {compareMode && (
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               checked={picked}
                               onChange={() => togglePick(r.revisionNo)}
                               aria-label={`Select revision ${r.revisionNo} for comparison`}
-                              className="mt-1 h-4 w-4 shrink-0 accent-indigo-600"
+                              className="mt-1"
                             />
                           )}
                           <div className="min-w-0 flex-1">
@@ -301,7 +301,7 @@ export function RevisionDrawer({
                             )}
                             <button
                               onClick={() => setExpanded(isOpen ? null : r.revisionNo)}
-                              className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+                              className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-accent-600 hover:text-accent-800 dark:text-accent-400"
                             >
                               <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />
                               {isOpen ? "Hide snapshot" : "View snapshot"}
@@ -309,7 +309,7 @@ export function RevisionDrawer({
                             {isOpen && (
                               <div className="mt-2 space-y-2 border-t border-slate-100 pt-2 dark:border-slate-700">
                                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-                                  {r.projectName && <span className="font-medium text-indigo-600 dark:text-indigo-400">{r.projectName}</span>}
+                                  {r.projectName && <span className="font-medium text-accent-600 dark:text-accent-400">{r.projectName}</span>}
                                   <span>{r.date}</span>
                                   <Badge color={r.status === "REVIEWED" ? "success" : r.status === "SUBMITTED" ? "info" : "default"}>
                                     {r.status}

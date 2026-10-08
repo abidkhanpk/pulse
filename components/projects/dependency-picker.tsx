@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Label } from "@/components/ui/input";
+import { Label, Checkbox } from "@/components/ui/input";
 import { Badge } from "@/components/ui/card";
 
 export interface DependencyCandidate {
@@ -48,12 +48,10 @@ export function DependencyPicker({
                 key={c.id}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
               >
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={selected.includes(c.id)}
                   onChange={() => toggle(c.id)}
                   disabled={disabled}
-                  className="h-4 w-4 accent-indigo-600"
                 />
                 <span className="min-w-0 flex-1 truncate text-slate-800 dark:text-slate-200">{c.title}</span>
                 <Badge color={done ? "success" : "default"}>{c.status.replace("_", "")}</Badge>

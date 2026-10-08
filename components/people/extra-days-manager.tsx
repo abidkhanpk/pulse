@@ -77,12 +77,12 @@ export function ExtraDaysManager({ userId, userName }: { userId: string; userNam
       {days.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-1.5">
           {days.map((d) => (
-            <span key={d.id} className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 py-1 pl-2.5 pr-1.5 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:ring-indigo-800">
+            <span key={d.id} className="inline-flex items-center gap-1.5 rounded-full bg-accent-50 py-1 pl-2.5 pr-1.5 text-xs font-medium text-accent-700 ring-1 ring-accent-200 dark:bg-accent-950 dark:text-accent-300 dark:ring-accent-800">
               {fmtDate(d.date)} · {RECURRENCE_LABELS[d.recurrence]}
               {d.note ? ` · ${d.note}` : ""}
               <button
                 onClick={() => onDelete(d.id)}
-                className="rounded-full px-1.5 text-indigo-400 hover:bg-indigo-100 hover:text-indigo-700 dark:hover:bg-indigo-900"
+                className="rounded-full px-1.5 text-accent-400 hover:bg-accent-100 hover:text-accent-700 dark:hover:bg-accent-900"
                 title="Remove"
               >
                 ✕

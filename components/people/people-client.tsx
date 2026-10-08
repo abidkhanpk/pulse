@@ -308,7 +308,7 @@ export function PeopleClient({
                       name="p-mode-override"
                       checked={modeOverride === m.id}
                       onChange={() => setModeOverride(m.id)}
-                      className="h-4 w-4 accent-indigo-600"
+                      className="h-4 w-4 accent-accent-600"
                     />
                     <span className="text-sm text-slate-700 dark:text-slate-300">
                       {m.label} <span className="text-xs text-slate-400">— {m.hint}</span>
@@ -372,7 +372,7 @@ export function PeopleClient({
                       name="p-mode-override"
                       checked={modeOverride === m.id}
                       onChange={() => setModeOverride(m.id)}
-                      className="h-4 w-4 accent-indigo-600"
+                      className="h-4 w-4 accent-accent-600"
                     />
                     <span className="text-sm text-slate-700 dark:text-slate-300">
                       {m.label} <span className="text-xs text-slate-400">— {m.hint}</span>

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input, Textarea, Label, Select, FieldError } from "@/components/ui/input";
+import { Input, Textarea, Label, Select, Checkbox, FieldError } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { Card, CardHeader, CardTitle, CardContent, Badge } from "@/components/ui/card";
@@ -79,7 +79,7 @@ function EntryCard({
               {entry.deleted && <Badge color="danger">Deleted</Badge>}
               <span className="text-xs text-slate-400">{entry.date}</span>
               {!mine && <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{entry.user.name}</span>}
-              {entry.project && <span className="text-xs text-indigo-600">{entry.project.name}</span>}
+              {entry.project && <span className="text-xs text-accent-600">{entry.project.name}</span>}
             </div>
             <p className="mt-1.5 font-medium text-slate-900 dark:text-slate-100">{entry.summary}</p>
             {entry.details && <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">{entry.details}</p>}
@@ -380,7 +380,7 @@ export function LogbookClient({
                   {d.entries.map((e) => (
                     <div key={e.id} className="rounded-lg border border-slate-100 px-3 py-2 text-sm dark:border-slate-800">
                       <span className="font-medium text-slate-800 dark:text-slate-200">{e.userName}</span>
-                      {e.projectName && <span className="ml-2 text-xs text-indigo-600">{e.projectName}</span>}
+                      {e.projectName && <span className="ml-2 text-xs text-accent-600">{e.projectName}</span>}
                       <span className="ml-2"><Badge color={STATUS_COLORS[e.status] ?? "default"}>{e.status}</Badge></span>
                       <p className="mt-0.5 text-slate-600 dark:text-slate-300">{e.summary}</p>
                     </div>
@@ -423,11 +423,10 @@ export function LogbookClient({
             </Select>
             {canReview && tab === "all" && (
               <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={showDeleted}
                   onChange={(e) => setShowDeleted(e.target.checked)}
-                  className="h-4 w-4 accent-red-600"
+                  className="accent-red-600"
                 />
                 Show deleted
               </label>

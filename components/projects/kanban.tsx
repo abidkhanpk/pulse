@@ -65,7 +65,7 @@ function TodoCard({ todo, onClick }: { todo: KanbanTodo; onClick: () => void }) 
       {...attributes}
       {...listeners}
       onClick={onClick}
-      className="cursor-grab rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:border-indigo-300 active:cursor-grabbing dark:bg-slate-900 dark:border-slate-700"
+      className="cursor-grab rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:border-accent-300 active:cursor-grabbing dark:bg-slate-900 dark:border-slate-700"
     >
       <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{todo.title}</p>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -108,7 +108,7 @@ function Column({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-80 shrink-0 flex-col rounded-xl border p-2 ${isOver ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950" : "border-slate-200 bg-slate-50 dark:bg-slate-800 dark:border-slate-700"}`}
+      className={`flex w-80 shrink-0 flex-col rounded-xl border p-2 ${isOver ? "border-accent-400 bg-accent-50 dark:bg-accent-950" : "border-slate-200 bg-slate-50 dark:bg-slate-800 dark:border-slate-700"}`}
     >
       <div className="flex items-center justify-between px-2 py-1.5">
         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{label}</h3>
@@ -249,7 +249,7 @@ export function KanbanBoard({
         </span>
         <button
           onClick={() => onNewTodo("TODO")}
-          className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+          className="rounded-lg bg-accent-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-accent-700"
         >
           + Add todo
         </button>
@@ -262,7 +262,7 @@ export function KanbanBoard({
         </div>
         <DragOverlay>
           {activeTodo && (
-            <div className="w-80 rounded-lg border border-indigo-300 bg-white p-3 shadow-lg dark:bg-slate-900">
+            <div className="w-80 rounded-lg border border-accent-300 bg-white p-3 shadow-lg dark:bg-slate-900">
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{activeTodo.title}</p>
             </div>
           )}

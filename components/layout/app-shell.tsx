@@ -45,7 +45,7 @@ export function AppShell({
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-100 dark:bg-slate-950">
+    <div className="app-wash flex min-h-screen bg-slate-100 dark:bg-slate-950">
       <Sidebar
         actor={actor}
         appName={appName}

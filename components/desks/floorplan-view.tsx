@@ -145,7 +145,7 @@ export function FloorplanView({
           </span>
         ))}
         {canBook && (
-          <span className="ml-auto font-medium text-indigo-600 dark:text-indigo-400">
+          <span className="ml-auto font-medium text-accent-600 dark:text-accent-400">
             Click a station to book it
           </span>
         )}
@@ -203,7 +203,7 @@ export function FloorplanView({
                     }
                   }}
                   className={`absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center ${rad} text-[10px] font-bold text-white shadow-lg transition-transform hover:scale-110 ${
-                    selected === d.id ? "ring-2 ring-indigo-500 ring-offset-2" : ""
+                    selected === d.id ? "ring-2 ring-accent-500 ring-offset-2" : ""
                   }`}
                   style={{ left: `${d.xPct}%`, top: `${d.yPct}%` }}
                   title={`${d.label} — ${st}`}

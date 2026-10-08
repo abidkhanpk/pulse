@@ -192,7 +192,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
       <FadeIn>
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h1 className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-600 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent">
+            <h1 className="bg-gradient-to-r from-accent-600 via-accent-700 to-accent-600 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent">
               Dashboard
             </h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -204,11 +204,11 @@ export function DashboardClient({ d }: { d: DashboardData }) {
             </p>
           </div>
           {d.myMonthPct !== null && (
-            <div className="flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-2 dark:border-indigo-800 dark:bg-indigo-950">
-              <CalendarCheck className="h-5 w-5 text-indigo-600 dark:text-indigo-300" />
+            <div className="flex items-center gap-2 rounded-2xl border border-accent-200 bg-accent-50 px-4 py-2 dark:border-accent-800 dark:bg-accent-950">
+              <CalendarCheck className="h-5 w-5 text-accent-600 dark:text-accent-300" />
               <div>
-                <p className="text-lg font-extrabold leading-none text-indigo-700 dark:text-indigo-300">{d.myMonthPct}%</p>
-                <p className="text-[11px] text-indigo-500 dark:text-indigo-400">my attendance this month</p>
+                <p className="text-lg font-extrabold leading-none text-accent-700 dark:text-accent-300">{d.myMonthPct}%</p>
+                <p className="text-[11px] text-accent-500 dark:text-accent-400">my attendance this month</p>
               </div>
             </div>
           )}
@@ -220,7 +220,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
         {d.mode === "full" && (
           <>
             <StaggerItem>
-              <Stat icon={Armchair} label="Desks occupied now" value={d.desksOccupied} total={d.desksTotal} hint="Live bookings on active desks" href={d.canSeeBookings ? "/desks" : undefined} gradient="from-indigo-600 to-violet-600" />
+              <Stat icon={Armchair} label="Desks occupied now" value={d.desksOccupied} total={d.desksTotal} hint="Live bookings on active desks" href={d.canSeeBookings ? "/desks" : undefined} gradient="from-accent-600 to-accent-700" />
             </StaggerItem>
             <StaggerItem>
               <Stat icon={UserCheck} label="Checked in today" value={d.checkedInToday} total={d.peopleTotal} hint="Across your labs" href={d.canViewReports ? "/reports" : undefined} gradient="from-emerald-600 to-teal-600" spark={d.attendanceTrend.map((t) => t.present)} sparkColor={CHART_COLORS.emerald} />
@@ -236,7 +236,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
         {d.mode === "team" && (
           <>
             <StaggerItem>
-              <Stat icon={ListTodo} label="My open todos" value={d.myTodos.length} hint="Assigned to me" href="/projects" gradient="from-indigo-600 to-violet-600" />
+              <Stat icon={ListTodo} label="My open todos" value={d.myTodos.length} hint="Assigned to me" href="/projects" gradient="from-accent-600 to-accent-700" />
             </StaggerItem>
             <StaggerItem>
               <Stat icon={AlertTriangle} label="Overdue in my projects" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="from-amber-500 to-orange-600" />
@@ -252,7 +252,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
         {d.mode === "personal" && (
           <>
             <StaggerItem>
-              <Stat icon={ListTodo} label="My open todos" value={d.myTodos.length} hint="Assigned to me" href="/projects" gradient="from-indigo-600 to-violet-600" />
+              <Stat icon={ListTodo} label="My open todos" value={d.myTodos.length} hint="Assigned to me" href="/projects" gradient="from-accent-600 to-accent-700" />
             </StaggerItem>
             <StaggerItem>
               <Stat icon={AlertTriangle} label="Overdue" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="from-amber-500 to-orange-600" />
@@ -273,7 +273,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
           <ChartCard
             title={d.mode === "full" ? "Project progress" : "My projects"}
             action={
-              <Link href="/projects" className="group inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
+              <Link href="/projects" className="group inline-flex items-center gap-1 text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400">
                 All projects <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </Link>
             }
@@ -314,7 +314,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
               {d.recentActivity.length === 0 && <p className="text-sm text-slate-400">No activity yet.</p>}
               {d.recentActivity.map((a) => (
                 <div key={a.id} className="flex items-start gap-3 rounded-xl px-2 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/60">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-600 dark:bg-accent-950 dark:text-accent-300">
                     <Activity className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
@@ -338,7 +338,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
           <ChartCard
             title="My open todos"
             action={
-              <Link href="/projects" className="group inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
+              <Link href="/projects" className="group inline-flex items-center gap-1 text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400">
                 All projects <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </Link>
             }
@@ -347,7 +347,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
               {d.myTodos.length === 0 && <p className="text-sm text-slate-400">Nothing assigned — enjoy the quiet.</p>}
               {d.myTodos.map((t, i) => (
                 <motion.div key={t.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.32 + i * 0.05, duration: 0.3 }}>
-                  <Link href={`/projects/${t.projectId}`} className="flex items-center gap-2 rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:-translate-y-px hover:border-indigo-200 hover:shadow-md dark:border-slate-800">
+                  <Link href={`/projects/${t.projectId}`} className="flex items-center gap-2 rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:-translate-y-px hover:border-accent-200 hover:shadow-md dark:border-slate-800">
                     <ListTodo className="h-4 w-4 shrink-0 text-slate-400" />
                     <span className="flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-200">{t.title}</span>
                     <Badge color={t.status === "IN_PROGRESS" ? "info" : "default"}>{t.status.replace("_", "")}</Badge>
@@ -367,7 +367,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
             <ChartCard
               title="Today's bookings"
               action={
-                <Link href="/desks" className="group inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
+                <Link href="/desks" className="group inline-flex items-center gap-1 text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400">
                   Desk booking <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               }

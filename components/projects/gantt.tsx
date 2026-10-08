@@ -50,7 +50,7 @@ interface DragState {
 
 const STATUS_BG: Record<string, string> = {
   TODO: "bg-slate-400",
-  IN_PROGRESS: "bg-indigo-500",
+  IN_PROGRESS: "bg-accent-500",
   DONE: "bg-emerald-500",
 };
 
@@ -342,7 +342,7 @@ export function GanttChart({
         </span>
         <div className="ml-auto flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
           <span className="flex items-center gap-1"><span className="h-2.5 w-6 rounded bg-amber-500/80" /> Milestone</span>
-          <span className="flex items-center gap-1"><span className="h-2.5 w-6 rounded bg-indigo-500" /> In progress</span>
+          <span className="flex items-center gap-1"><span className="h-2.5 w-6 rounded bg-accent-500" /> In progress</span>
           <span className="flex items-center gap-1"><span className="h-2.5 w-6 rounded bg-slate-400" /> To do</span>
           <span className="flex items-center gap-1"><span className="h-2.5 w-6 rounded bg-emerald-500" /> Done</span>
           <span className="flex items-center gap-1" title="Finish-to-Start dependency">
@@ -381,7 +381,7 @@ export function GanttChart({
                   key={i}
                   className={`absolute bottom-0 border-l border-slate-100 text-center text-[10px] leading-4 ${
                     d.weekend ? "bg-slate-100/70 text-slate-400" : "text-slate-500 dark:text-slate-400"
-                  } ${d.today ? "!bg-indigo-100 font-bold text-indigo-700 dark:text-indigo-300" : ""}`}
+                  } ${d.today ? "!bg-accent-100 font-bold text-accent-700 dark:text-accent-300" : ""}`}
                   style={{ left: d.left, width: dw, height: 24 }}
                   title={d.today ? "Today" : undefined}
                 >
@@ -437,7 +437,7 @@ export function GanttChart({
             const width = Math.max(dw * 0.7, xOf(e) - xOf(s) + dw);
             const isDone = t.status === "DONE";
             return (
-              <div key={t.id} className={`flex border-b border-slate-100 hover:bg-slate-50/60 ${pv ? "bg-indigo-50/40" : ""}`}>
+              <div key={t.id} className={`flex border-b border-slate-100 hover:bg-slate-50/60 ${pv ? "bg-accent-50/40" : ""}`}>
                 <div
                   className="flex shrink-0 cursor-pointer items-center gap-2 border-r border-slate-200 py-1 pl-8 pr-3 dark:border-slate-700"
                   style={{ width: LABEL_W, minHeight: ROW_H }}
@@ -455,7 +455,7 @@ export function GanttChart({
                 </div>
                 <div className="relative" style={{ width: timelineW, height: ROW_H }}>
                   {dayCells.map((d, i) => (
-                    <div key={i} className={`absolute inset-y-0 border-l border-slate-100 ${d.weekend ? "bg-slate-50 dark:bg-slate-800" : ""} ${d.today ? "bg-indigo-50/60" : ""}`} style={{ left: d.left, width: dw }} />
+                    <div key={i} className={`absolute inset-y-0 border-l border-slate-100 ${d.weekend ? "bg-slate-50 dark:bg-slate-800" : ""} ${d.today ? "bg-accent-50/60" : ""}`} style={{ left: d.left, width: dw }} />
                   ))}
                   {todayX !== null && <div className="absolute inset-y-0 z-10 w-px bg-red-400/70" style={{ left: todayX }} />}
                   <div
@@ -536,7 +536,7 @@ export function GanttChart({
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {undated.map((t) => (
-              <button key={t.id} onClick={() => onTodoClick(t)} className="rounded-full bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm ring-1 ring-slate-200 hover:ring-indigo-300 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700">
+              <button key={t.id} onClick={() => onTodoClick(t)} className="rounded-full bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm ring-1 ring-slate-200 hover:ring-accent-300 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700">
                 {t.title}
               </button>
             ))}

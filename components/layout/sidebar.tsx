@@ -113,7 +113,7 @@ export function Sidebar({
             <motion.span
               initial={{ opacity: 0, x: -6 }}
               animate={{ opacity: 1, x: 0 }}
-              className="whitespace-nowrap bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-xl font-extrabold tracking-tight text-transparent"
+              className="whitespace-nowrap bg-gradient-to-r from-accent-600 to-accent-700 bg-clip-text text-xl font-extrabold tracking-tight text-transparent"
             >
               {appName}
             </motion.span>
@@ -145,13 +145,13 @@ export function Sidebar({
                     !expanded && "justify-center px-0",
                     active
                       ? "text-white"
-                      : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+                      : "text-slate-600 hover:bg-accent-50 hover:text-accent-700 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
                   )}
                 >
                   {active && (
                     <motion.span
                       layoutId="sidebar-active"
-                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 shadow-[0_4px_14px_rgba(99,102,241,0.45)]"
+                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-accent-600 to-accent-700 shadow-glow"
                       transition={{ type: "spring", stiffness: 450, damping: 35 }}
                     />
                   )}
@@ -160,7 +160,7 @@ export function Sidebar({
                       "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
                       active
                         ? "bg-white/20"
-                        : "bg-slate-100 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600 dark:bg-white/5 dark:text-slate-400 dark:group-hover:bg-white/10 dark:group-hover:text-white"
+                        : "bg-slate-100 text-slate-500 group-hover:bg-accent-100 group-hover:text-accent-600 dark:bg-white/5 dark:text-slate-400 dark:group-hover:bg-white/10 dark:group-hover:text-white"
                     )}
                   >
                     <Icon className="h-[18px] w-[18px]" />
@@ -195,9 +195,9 @@ export function Sidebar({
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex items-center gap-2.5 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 p-2.5 ring-1 ring-indigo-100 dark:from-white/5 dark:to-white/10 dark:ring-white/10"
+            className="flex items-center gap-2.5 rounded-2xl bg-gradient-to-br from-accent-50 to-accent-100 p-2.5 ring-1 ring-accent-100 dark:from-white/5 dark:to-white/10 dark:ring-white/10"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-xs font-bold text-white">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent-600 to-accent-700 text-xs font-bold text-white">
               {actor.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
             </span>
             <span className="min-w-0 flex-1">
@@ -213,7 +213,7 @@ export function Sidebar({
             "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
             !expanded && "justify-center px-0",
             pinned
-              ? "bg-indigo-100 text-indigo-700 dark:bg-white/10 dark:text-white"
+              ? "bg-accent-100 text-accent-700 dark:bg-white/10 dark:text-white"
               : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
           )}
         >
@@ -247,10 +247,10 @@ export function MobileNav({ actor, pathname, showCheckIn }: { actor: SessionActo
             href={item.href}
             className={cn(
               "flex flex-1 flex-col items-center gap-1 py-2 text-[11px] font-medium transition-colors",
-              active ? "text-indigo-700 dark:text-indigo-300" : "text-slate-500 dark:text-slate-400"
+              active ? "text-accent-700 dark:text-accent-300" : "text-slate-500 dark:text-slate-400"
             )}
           >
-            <span className={cn("flex h-8 w-8 items-center justify-center rounded-xl", active && "bg-indigo-100 dark:bg-indigo-950")}>
+            <span className={cn("flex h-8 w-8 items-center justify-center rounded-xl", active && "bg-accent-100 dark:bg-accent-950")}>
               <Icon className="h-5 w-5" />
             </span>
             {item.label}

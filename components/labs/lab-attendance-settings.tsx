@@ -59,7 +59,7 @@ export function LabAttendanceSettings({
               name={`att-mode-${labId}`}
               checked={mode === m.id}
               onChange={() => setMode(m.id)}
-              className="mt-1 h-4 w-4 accent-indigo-600"
+              className="mt-1 h-4 w-4 accent-accent-600"
             />
             <span>
               <span className="block text-sm font-medium text-slate-800 dark:text-slate-200">{m.label}</span>

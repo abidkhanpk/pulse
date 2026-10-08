@@ -155,7 +155,7 @@ export function ManualRegister({ labId, labName }: { labId: string; labName: str
                             onClick={() => cycle(p.id, d)}
                             disabled={pending === key}
                             title={`${p.name} — ${d}: ${st}`}
-                            className={`h-9 w-9 rounded-lg text-xs font-bold transition active:scale-90 ${STATUS_STYLE[st]} ${pending === key ? "opacity-50" : "hover:ring-2 hover:ring-indigo-400"}`}
+                            className={`h-9 w-9 rounded-lg text-xs font-bold transition active:scale-90 ${STATUS_STYLE[st]} ${pending === key ? "opacity-50" : "hover:ring-2 hover:ring-accent-400"}`}
                           >
                             {STATUS_LABEL[st]}
                           </button>

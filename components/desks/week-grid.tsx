@@ -54,7 +54,7 @@ function fmtTime(iso: string): string {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  DESK: "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800",
+  DESK: "bg-accent-100 text-accent-800 border-accent-200 dark:bg-accent-950 dark:text-accent-300 dark:border-accent-800",
   REMOTE: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300",
 };
 
@@ -204,7 +204,7 @@ export function WeekGrid({
                 const dt = new Date(d + "T00:00:00Z");
                 const isToday = d === new Date().toISOString().slice(0, 10);
                 return (
-                  <th key={d} className={`border-b border-slate-200 px-2 py-2 text-center text-xs font-semibold ${isToday ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300" : "text-slate-500 dark:text-slate-400"}`}>
+                  <th key={d} className={`border-b border-slate-200 px-2 py-2 text-center text-xs font-semibold ${isToday ? "bg-accent-50 text-accent-700 dark:bg-accent-950 dark:text-accent-300" : "text-slate-500 dark:text-slate-400"}`}>
                     <div>{dt.toLocaleDateString("en-PK", { weekday: "short", timeZone: "Asia/Karachi" })}</div>
                     <div className="text-base">{dt.toLocaleDateString("en-PK", { day: "numeric", timeZone: "Asia/Karachi" })}</div>
                   </th>
@@ -225,7 +225,7 @@ export function WeekGrid({
                   return (
                     <td
                       key={day}
-                      className={`border-l border-slate-100 px-1 py-1 align-top ${canManage && desk.status === "ACTIVE" ? "cursor-pointer hover:bg-indigo-50/50" : ""}`}
+                      className={`border-l border-slate-100 px-1 py-1 align-top ${canManage && desk.status === "ACTIVE" ? "cursor-pointer hover:bg-accent-50/50" : ""}`}
                       onClick={() =>
                         canManage && desk.status === "ACTIVE" && cell.length === 0
                           ? (setEditInitial(null), setDrawer({ open: true, bookingId: null, defaults: { deskId: desk.id, date: day } }))

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Select } from "@/components/ui/input";
+import { Input, Label, Select, Checkbox } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
 import {
@@ -430,7 +430,7 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                     }}
                     className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                       tool === t
-                        ? "bg-indigo-600 text-white shadow"
+                        ? "bg-accent-600 text-white shadow"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
                     }`}
                   >
@@ -439,7 +439,7 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                 ))}
               </div>
               {tool === "polygon" && polyPoints.length > 0 && (
-                <div className="mb-2 flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                <div className="mb-2 flex items-center gap-2 rounded-lg bg-accent-50 px-3 py-1.5 text-xs text-accent-700 dark:bg-accent-950 dark:text-accent-300">
                   <span>{polyPoints.length} points — double-click or click near the start to close, Esc to cancel.</span>
                   <Button size="sm" variant="outline" className="ml-auto !py-0.5 !text-xs" onClick={finishPolygon}>
                     Finish
@@ -473,7 +473,7 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                   <div
                     key={s.id}
                     onMouseDown={(e) => onShapeMouseDown(e, s)}
-                    className={`absolute ${tool === "select" ? "cursor-move" : ""} ${selectedShape === s.id ? "ring-2 ring-indigo-500" : ""}`}
+                    className={`absolute ${tool === "select" ? "cursor-move" : ""} ${selectedShape === s.id ? "ring-2 ring-accent-500" : ""}`}
                     style={shapeStyle(s)}
                     title={s.label ?? KIND_LABEL[s.kind]}
                   >
@@ -544,14 +544,14 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                   polyPoints.map((p, i) => (
                     <div
                       key={i}
-                      className="pointer-events-none absolute z-10 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600 ring-2 ring-white"
+                      className="pointer-events-none absolute z-10 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-600 ring-2 ring-white"
                       style={{ left: `${p.x}%`, top: `${p.y}%` }}
                     />
                   ))}
                 {/* in-progress draw rect */}
                 {drawStart && drawCur && (
                   <div
-                    className="pointer-events-none absolute border-2 border-dashed border-indigo-500 bg-indigo-500/10"
+                    className="pointer-events-none absolute border-2 border-dashed border-accent-500 bg-accent-500/10"
                     style={{
                       left: `${Math.min(drawStart.x, drawCur.x)}%`,
                       top: `${Math.min(drawStart.y, drawCur.y)}%`,
@@ -577,8 +577,8 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                       if (tool === "select") e.stopPropagation();
                     }}
                     className={`absolute z-10 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center text-[10px] font-bold text-white shadow-lg transition-transform ${
-                      selectedDesk === d.id ? "ring-2 ring-indigo-500 ring-offset-2 scale-110" : "hover:scale-110"
-                    } ${markerRadius(d.markerShape)} ${d.status === "MAINTENANCE" ? "bg-amber-500" : "bg-indigo-600"}`}
+                      selectedDesk === d.id ? "ring-2 ring-accent-500 ring-offset-2 scale-110" : "hover:scale-110"
+                    } ${markerRadius(d.markerShape)} ${d.status === "MAINTENANCE" ? "bg-amber-500" : "bg-accent-600"}`}
                     style={{ left: `${d.xPct}%`, top: `${d.yPct}%`, cursor: tool === "select" ? "move" : "default" }}
                     title={d.label}
                   >
@@ -656,12 +656,12 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                           }}
                           className={`flex h-9 w-9 items-center justify-center rounded-lg border transition ${
                             selDesk.markerShape === m
-                              ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-950"
+                              ? "border-accent-600 bg-accent-50 dark:bg-accent-950"
                               : "border-slate-200 hover:border-slate-300 dark:border-slate-700"
                           }`}
                         >
                           <span
-                            className={`h-4 w-4 bg-indigo-600 ${m === "CIRCLE" ? "rounded-full" : m === "SQUARE" ? "rounded-[2px]" : "rounded-md"}`}
+                            className={`h-4 w-4 bg-accent-600 ${m === "CIRCLE" ? "rounded-full" : m === "SQUARE" ? "rounded-[2px]" : "rounded-md"}`}
                           />
                         </button>
                       ))}
@@ -730,7 +730,7 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                                 setShapes((ss) => ss.map((s) => (s.id === selShape.id ? { ...s, color: c } : s)));
                                 setDirty(true);
                               }}
-                              className={`h-7 w-7 rounded-full ${selShape.color === c ? "ring-2 ring-indigo-500 ring-offset-2" : ""}`}
+                              className={`h-7 w-7 rounded-full ${selShape.color === c ? "ring-2 ring-accent-500 ring-offset-2" : ""}`}
                               style={{ backgroundColor: c }}
                               title={c}
                             />
@@ -741,15 +741,13 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                   )}
                   {selShape.kind === "POLYGON" && (
                     <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={selShape.filled}
                         onChange={(e) => {
                           const v = e.target.checked;
                           setShapes((ss) => ss.map((s) => (s.id === selShape.id ? { ...s, filled: v } : s)));
                           setDirty(true);
                         }}
-                        className="h-4 w-4 accent-indigo-600"
                       />
                       Filled <span className="text-xs text-slate-400">(uncheck for outline only)</span>
                     </label>

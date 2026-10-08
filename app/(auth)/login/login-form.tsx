@@ -3,6 +3,7 @@
 import * as React from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input, Label, FieldError } from "@/components/ui/input";
 import { BrandLogo } from "@/components/brand-logo";
@@ -38,14 +39,41 @@ export function LoginForm({ appName }: { appName: string }) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 dark:bg-slate-800">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:bg-slate-900 dark:border-slate-700">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
+      {/* Immersive accent mesh background */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div className="absolute inset-0 bg-gradient-to-br from-accent-100 via-slate-100 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
+        <motion.div
+          className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-accent-400/30 blur-3xl dark:bg-accent-600/20"
+          animate={{ x: [0, 40, 0], y: [0, 30, 0] }}
+          transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute -bottom-40 -right-24 h-[28rem] w-[28rem] rounded-full bg-accent-500/20 blur-3xl dark:bg-accent-500/15"
+          animate={{ x: [0, -50, 0], y: [0, -30, 0] }}
+          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 28, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: "spring", stiffness: 260, damping: 26 }}
+        className="card-sheen relative w-full max-w-sm rounded-3xl border border-white/60 bg-white/80 p-8 shadow-pop backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/80"
+      >
         <div className="mb-6 text-center">
-          <div className="mb-4 flex justify-center">
-            <BrandLogo className="h-16 w-16" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{appName}</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Lab management system</p>
+          <motion.div
+            className="mb-4 flex justify-center"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
+          >
+            <BrandLogo className="h-16 w-16 drop-shadow-[0_8px_24px_var(--accent-500)]" />
+          </motion.div>
+          <h1 className="bg-gradient-to-r from-accent-600 to-accent-800 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent dark:from-accent-400 dark:to-accent-200">
+            {appName}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Lab Operations and Outcomes Management</p>
         </div>
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
@@ -73,12 +101,11 @@ export function LoginForm({ appName }: { appName: string }) {
             />
           </div>
           <FieldError message={error ?? undefined} />
-          <Button type="submit" className="w-full" disabled={pending}>
+          <Button type="submit" size="lg" className="w-full" disabled={pending}>
             {pending ? "Signing in…" : "Sign in"}
           </Button>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }
-

@@ -122,7 +122,7 @@ export function BookingDrawer({ open, onClose, onSaved, bookingId, defaults, peo
                   onClick={() => setType(t)}
                   className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
                     type === t
-                      ? "border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
+                      ? "border-accent-600 bg-accent-50 text-accent-700 dark:bg-accent-950 dark:text-accent-300"
                       : "border-slate-300 text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                   }`}
                 >
@@ -213,7 +213,7 @@ export function BookingDrawer({ open, onClose, onSaved, bookingId, defaults, peo
                       onClick={() => toggleDay(i)}
                       className={`flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-medium ${
                         daysOfWeek.includes(i)
-                          ? "border-indigo-600 bg-indigo-600 text-white"
+                          ? "border-accent-600 bg-accent-600 text-white"
                           : "border-slate-300 text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                       }`}
                     >

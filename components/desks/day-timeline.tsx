@@ -124,12 +124,12 @@ export function DayTimeline({
                     return (
                       <div
                         key={o.id}
-                        className="absolute top-1.5 bottom-1.5 overflow-hidden rounded-md border border-indigo-200 bg-indigo-100 px-2 py-0.5 text-xs dark:bg-indigo-950 dark:border-indigo-800"
+                        className="absolute top-1.5 bottom-1.5 overflow-hidden rounded-md border border-accent-200 bg-accent-100 px-2 py-0.5 text-xs dark:bg-accent-950 dark:border-accent-800"
                         style={{ left: `${left}%`, width: `${width}%` }}
                         title={`${o.booking.user.name} — ${fmtRange(o)}${o.booking.title ? ` — ${o.booking.title}` : ""}`}
                       >
-                        <span className="font-medium text-indigo-900">{o.booking.user.name}</span>
-                        <span className="ml-1 text-indigo-700 dark:text-indigo-300">{fmtRange(o)}</span>
+                        <span className="font-medium text-accent-900">{o.booking.user.name}</span>
+                        <span className="ml-1 text-accent-700 dark:text-accent-300">{fmtRange(o)}</span>
                       </div>
                     );
                   })}

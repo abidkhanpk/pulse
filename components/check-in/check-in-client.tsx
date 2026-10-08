@@ -128,7 +128,7 @@ export function CheckInClient() {
                       onClick={() => setWorkMode(m)}
                       className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
                         workMode === m
-                          ? "border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
+                          ? "border-accent-600 bg-accent-50 text-accent-700 dark:bg-accent-950 dark:text-accent-300"
                           : "border-slate-300 text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                       }`}
                     >

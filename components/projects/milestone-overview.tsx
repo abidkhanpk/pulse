@@ -95,7 +95,7 @@ function TodoRow({
     <div className="relative">
       {/* elbow connector from the tree spine */}
       <div className="absolute -left-5 top-1/2 h-px w-5 bg-slate-300" />
-      <div className="flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 shadow-[0_1px_3px_rgba(15,40,70,0.08)] ring-1 ring-slate-100 transition hover:ring-indigo-200 dark:bg-slate-900 dark:ring-slate-800">
+      <div className="flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 shadow-[0_1px_3px_rgba(15,40,70,0.08)] ring-1 ring-slate-100 transition hover:ring-accent-200 dark:bg-slate-900 dark:ring-slate-800">
         <Flag className="h-4 w-4 shrink-0 text-slate-300" />
         <button onClick={onOpen} className="min-w-0 flex-1 text-left" title={todo.startDate || todo.endDate ? `${fmt(todo.startDate)} → ${fmt(todo.endDate)}` : "No dates — click to add"}>
           <span className="block text-[10px] leading-tight text-slate-400">{projectName}</span>
@@ -204,7 +204,7 @@ function MilestoneCard({
     <div>
       {/* Milestone header card — clicking anywhere toggles expand/collapse */}
       <div
-        className="relative cursor-pointer overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(15,40,70,0.08)] ring-1 ring-slate-100 transition hover:ring-indigo-200 dark:bg-slate-900 dark:ring-slate-800"
+        className="relative cursor-pointer overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(15,40,70,0.08)] ring-1 ring-slate-100 transition hover:ring-accent-200 dark:bg-slate-900 dark:ring-slate-800"
         onClick={onToggle}
       >
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
@@ -300,7 +300,7 @@ function MilestoneCard({
                 {canManage && !isPseudo && (
                   <button
                     onClick={onAddTodo}
-                    className="flex items-center gap-1.5 px-1 py-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                    className="flex items-center gap-1.5 px-1 py-1.5 text-xs font-medium text-accent-600 hover:text-accent-800"
                   >
                     <Plus className="h-3.5 w-3.5 rounded-full border border-current" /> Add Task
                   </button>
@@ -467,11 +467,11 @@ export function MilestoneOverview({
       <div className="flex items-center justify-between px-1">
         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Milestones & todos</h3>
         <div className="flex items-center gap-2">
-          <button onClick={expandAll} className="text-xs font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400">
+          <button onClick={expandAll} className="text-xs font-medium text-slate-500 hover:text-accent-600 dark:text-slate-400">
             Expand all
           </button>
           <span className="text-slate-300">|</span>
-          <button onClick={collapseAll} className="text-xs font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400">
+          <button onClick={collapseAll} className="text-xs font-medium text-slate-500 hover:text-accent-600 dark:text-slate-400">
             Collapse all
           </button>
           {canManage && (
@@ -542,7 +542,7 @@ export function MilestoneOverview({
               <Input id="mo-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-36 px-2" />
             </div>
           </div>
-          <p className="rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+          <p className="rounded-lg bg-accent-50 px-3 py-2 text-xs text-accent-700 dark:bg-accent-950 dark:text-accent-300">
             Tip: leave dates empty to roll them up from the milestone&apos;s todos — start becomes the first
             todo&apos;s start and due becomes the last todo&apos;s end. If you set them, the milestone may start
             earlier or end later, but never narrower than its todos.

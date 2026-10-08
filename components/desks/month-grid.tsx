@@ -48,7 +48,7 @@ function fmtTime(iso: string): string {
 }
 
 const TYPE_STYLES: Record<string, string> = {
-  DESK: "bg-indigo-100 text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-300",
+  DESK: "bg-accent-100 text-accent-800 hover:bg-accent-200 dark:bg-accent-950 dark:text-accent-300",
   REMOTE: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-300",
 };
 
@@ -224,13 +224,13 @@ export function MonthGrid({ desks, people, projects, today, labId, canManage }: 
                 }
                 className={`min-h-[104px] border-b border-r border-slate-100 p-1.5 align-top transition [&:nth-child(7n)]:border-r-0 ${
                   cell.inMonth ? "bg-white dark:bg-slate-900" : "bg-slate-50/60"
-                } ${canManage ? "cursor-pointer hover:bg-indigo-50/40" : ""}`}
+                } ${canManage ? "cursor-pointer hover:bg-accent-50/40" : ""}`}
               >
                 <div className="mb-1 flex items-center justify-between">
                   <span
                     className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
                       cell.isToday
-                        ? "bg-indigo-600 font-bold text-white"
+                        ? "bg-accent-600 font-bold text-white"
                         : cell.inMonth
                           ? "text-slate-700 dark:text-slate-300"
                           : "text-slate-300"
@@ -297,9 +297,9 @@ export function MonthGrid({ desks, people, projects, today, labId, canManage }: 
                     setDayList(null);
                     setSelected(o);
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg border border-slate-100 px-3 py-2 text-left text-sm hover:border-indigo-200 hover:bg-indigo-50/40 dark:border-slate-800"
+                  className="flex w-full items-center gap-2 rounded-lg border border-slate-100 px-3 py-2 text-left text-sm hover:border-accent-200 hover:bg-accent-50/40 dark:border-slate-800"
                 >
-                  <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${o.booking.type === "DESK" ? "bg-indigo-500" : "bg-emerald-500"}`} />
+                  <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${o.booking.type === "DESK" ? "bg-accent-500" : "bg-emerald-500"}`} />
                   <span className="min-w-0 flex-1 truncate font-medium text-slate-800 dark:text-slate-200">{o.booking.user.name}</span>
                   <span className="shrink-0 text-xs text-slate-400">{o.desk ? o.desk.label : "WFH"}</span>
                   <span className="shrink-0 text-xs text-slate-400">

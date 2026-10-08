@@ -36,14 +36,14 @@ export default async function PeoplePage({
       {isAdmin && params.lab && (
         <Link
           href="/people"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-indigo-600 dark:text-slate-400"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-accent-600 dark:text-slate-400"
         >
           <ArrowLeft className="h-4 w-4" /> All labs
         </Link>
       )}
       {labName && (
         <p className="text-sm text-slate-400">
-          <Link href="/people" className="hover:text-indigo-600">People</Link>
+          <Link href="/people" className="hover:text-accent-600">People</Link>
           <span className="mx-1">›</span> {labName}
         </p>
       )}

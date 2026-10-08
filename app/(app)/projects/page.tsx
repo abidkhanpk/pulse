@@ -32,14 +32,14 @@ export default async function ProjectsPage({
       {isAdmin && params.lab && (
         <Link
           href="/projects"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-indigo-600 dark:text-slate-400"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-accent-600 dark:text-slate-400"
         >
           <ArrowLeft className="h-4 w-4" /> All labs
         </Link>
       )}
       {labName && (
         <p className="text-sm text-slate-400">
-          <Link href="/projects" className="hover:text-indigo-600">Projects</Link>
+          <Link href="/projects" className="hover:text-accent-600">Projects</Link>
           <span className="mx-1">›</span> {labName}
         </p>
       )}
