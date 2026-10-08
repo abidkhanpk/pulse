@@ -13,6 +13,37 @@ interface DeskPos {
   status: string;
   xPct: number | null;
   yPct: number | null;
+  markerShape: "CIRCLE" | "SQUARE" | "ROUNDED";
+}
+
+interface Shape {
+  id: string;
+  kind: string;
+  xPct: number;
+  yPct: number;
+  wPct: number;
+  hPct: number;
+  label: string | null;
+  color: string | null;
+  points: { x: number; y: number }[] | null;
+  filled: boolean;
+}
+
+function markerRadius(m: DeskPos["markerShape"]): string {
+  return m === "SQUARE" ? "rounded-md" : m === "ROUNDED" ? "rounded-xl" : "rounded-full";
+}
+
+function shapeDivStyle(s: Shape): React.CSSProperties {
+  const col = s.color ?? (s.kind === "WALL" ? "#475569" : "#6366f1");
+  return {
+    left: `${s.xPct}%`,
+    top: `${s.yPct}%`,
+    width: `${s.wPct}%`,
+    height: `${s.hPct}%`,
+    backgroundColor: s.kind === "ZONE" ? `${col}22` : s.kind === "RECTANGLE" ? `${col}14` : "transparent",
+    border: `3px solid ${col}`,
+    borderRadius: s.kind === "CIRCLE" ? "50%" : s.kind === "ZONE" ? 8 : s.kind === "RECTANGLE" ? 6 : 2,
+  };
 }
 
 interface Occ {
@@ -51,9 +82,7 @@ export function FloorplanView({
 }) {
   const [imageUrl, setImageUrl] = React.useState<string | null>(null);
   const [desks, setDesks] = React.useState<DeskPos[]>([]);
-  const [shapes, setShapes] = React.useState<
-    { id: string; kind: string; xPct: number; yPct: number; wPct: number; hPct: number; label: string | null; color: string | null }[]
-  >([]);
+  const [shapes, setShapes] = React.useState<Shape[]>([]);
   const [occs, setOccs] = React.useState<Occ[]>([]);
   const [hasImage, setHasImage] = React.useState(false);
   const [selected, setSelected] = React.useState<string | null>(null);
@@ -122,36 +151,45 @@ export function FloorplanView({
         <CardContent className="!p-3">
           <div className="relative w-full select-none overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800" style={{ aspectRatio: "16 / 10" }}>
             {imageUrl && <img src={imageUrl} alt={`${labName} floorplan`} className="absolute inset-0 h-full w-full object-contain" draggable={false} />}
-            {shapes.map((s) => (
-              <div
-                key={s.id}
-                className="pointer-events-none absolute"
-                style={{
-                  left: `${s.xPct}%`,
-                  top: `${s.yPct}%`,
-                  width: `${s.wPct}%`,
-                  height: `${s.hPct}%`,
-                  backgroundColor: s.kind === "ZONE" ? `${s.color ?? "#6366f1"}22` : "transparent",
-                  border: `3px solid ${s.color ?? "#475569"}`,
-                  borderRadius: s.kind === "ZONE" ? 8 : 2,
-                }}
-              >
-                {s.kind === "ZONE" && s.label && (
+            {shapes.filter((s) => s.kind !== "POLYGON").map((s) => (
+              <div key={s.id} className="pointer-events-none absolute" style={shapeDivStyle(s)}>
+                {(s.kind === "ZONE" || s.kind === "RECTANGLE") && s.label && (
                   <span className="absolute left-1 top-1 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                     {s.label}
                   </span>
                 )}
               </div>
             ))}
+            <svg
+              className="pointer-events-none absolute inset-0 h-full w-full"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+            >
+              {shapes.filter((s) => s.kind === "POLYGON").map((s) => {
+                const col = s.color ?? "#6366f1";
+                const pts = (s.points ?? []).map((p) => `${p.x},${p.y}`).join(" ");
+                return (
+                  <polygon
+                    key={s.id}
+                    points={pts}
+                    fill={s.filled ? `${col}22` : "none"}
+                    stroke={col}
+                    strokeWidth={3}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                );
+              })}
+            </svg>
             {placed.map((d) => {
               const st = statusOf(d);
+              const rad = markerRadius(d.markerShape);
               const color =
                 st === "occupied" ? "bg-red-500" : st === "upcoming" ? "bg-sky-500" : st === "maintenance" ? "bg-amber-500" : "bg-emerald-500";
               return (
                 <button
                   key={d.id}
                   onClick={() => setSelected(selected === d.id ? null : d.id)}
-                  className={`absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-lg transition-transform hover:scale-110 ${
+                  className={`absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center ${rad} text-[10px] font-bold text-white shadow-lg transition-transform hover:scale-110 ${
                     selected === d.id ? "ring-2 ring-indigo-500 ring-offset-2" : ""
                   }`}
                   style={{ left: `${d.xPct}%`, top: `${d.yPct}%` }}
@@ -160,11 +198,11 @@ export function FloorplanView({
                   {/* Roomer-style ripple on currently occupied stations */}
                   {st === "occupied" && (
                     <span className="absolute inset-0">
-                      <span className="ripple-ring absolute inset-0 rounded-full bg-red-500" />
-                      <span className="ripple-ring ripple-delay absolute inset-0 rounded-full bg-red-500" />
+                      <span className={`ripple-ring absolute inset-0 ${rad} bg-red-500`} />
+                      <span className={`ripple-ring ripple-delay absolute inset-0 ${rad} bg-red-500`} />
                     </span>
                   )}
-                  <span className={`${color} absolute inset-0 rounded-full`} />
+                  <span className={`${color} absolute inset-0 ${rad}`} />
                   <span className="relative">{d.label.slice(0, 4)}</span>
                 </button>
               );
