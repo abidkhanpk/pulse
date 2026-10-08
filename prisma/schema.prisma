@@ -223,6 +223,8 @@ model Desk {
   // Floorplan position as % of image dimensions (null = not placed).
   xPct        Float?
   yPct        Float?
+  // Marker shape on the floorplan layout.
+  markerShape DeskMarkerShape @default(CIRCLE)
   bookings    Booking[]
   occurrences BookingOccurrence[]
 
@@ -244,9 +246,20 @@ model FloorplanImage {
 enum FloorplanShapeKind {
   WALL
   ZONE
+  RECTANGLE
+  CIRCLE
+  POLYGON
 }
 
-// Walls and zones drawn on a lab's floorplan (rectangles, % coordinates).
+enum DeskMarkerShape {
+  CIRCLE
+  SQUARE
+  ROUNDED
+}
+
+// Shapes drawn on a lab's floorplan (% coordinates).
+// Rect-likes (WALL/ZONE/RECTANGLE/CIRCLE) use x/y/w/h; POLYGON additionally
+// stores its vertices in `points` ([{x, y}, ...], % coords).
 model FloorplanShape {
   id     String             @id @default(cuid())
   labId  String
@@ -258,6 +271,9 @@ model FloorplanShape {
   hPct   Float
   label  String?
   color  String?
+  points Json?
+  // Polygon style: filled (like a zone) or outline only (like a wall).
+  filled Boolean           @default(true)
 }
 
 // ─── Bookings ───
