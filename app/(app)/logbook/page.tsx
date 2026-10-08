@@ -13,6 +13,8 @@ function ser(e: Entry) {
     details: e.details,
     status: e.status,
     reviewComment: e.reviewComment,
+    revisionCount: e.revisionCount,
+    deleted: !!e.deletedAt,
     user: e.user,
     project: e.project,
     reviewedBy: e.reviewedBy,

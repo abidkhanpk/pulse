@@ -13,11 +13,16 @@ import {
   updateEntry,
   submitEntry,
   deleteEntry,
+  restoreEntry,
   reviewEntry,
   listEntries,
   reviewQueue,
   weeklyDigest,
+  getRevisions,
+  type RevisionView,
 } from "@/app/(app)/logbook/actions";
+import { RevisionDrawer } from "./revision-drawer";
+import { History as HistoryIcon, RotateCcw } from "lucide-react";
 import { thisWeekMonday } from "@/lib/bookings";
 
 interface Entry {
@@ -27,6 +32,8 @@ interface Entry {
   details: string | null;
   status: string;
   reviewComment: string | null;
+  revisionCount: number;
+  deleted: boolean;
   user: { id: string; name: string };
   project: { id: string; name: string } | null;
   reviewedBy: { id: string; name: string } | null;
@@ -41,27 +48,34 @@ const STATUS_COLORS: Record<string, "default" | "info" | "success" | "warning"> 
 function EntryCard({
   entry,
   mine,
+  canRestore,
   onEdit,
   onSubmit,
   onDelete,
+  onRestore,
+  onHistory,
   onReview,
 }: {
   entry: Entry;
   mine: boolean;
+  canRestore: boolean;
   onEdit: () => void;
   onSubmit: () => void;
   onDelete: () => void;
+  onRestore: () => void;
+  onHistory: () => void;
   onReview: (approved: boolean, comment: string) => void;
 }) {
   const [reviewing, setReviewing] = React.useState(false);
   const [comment, setComment] = React.useState("");
   return (
-    <Card>
+    <Card className={entry.deleted ? "border-red-200 bg-red-50/40 dark:border-red-900 dark:bg-red-950/20" : undefined}>
       <CardContent className="!py-4">
         <div className="flex flex-wrap items-start gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <Badge color={STATUS_COLORS[entry.status] ?? "default"}>{entry.status}</Badge>
+              {entry.deleted && <Badge color="danger">Deleted</Badge>}
               <span className="text-xs text-slate-400">{entry.date}</span>
               {!mine && <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{entry.user.name}</span>}
               {entry.project && <span className="text-xs text-indigo-600">{entry.project.name}</span>}
@@ -79,30 +93,48 @@ function EntryCard({
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          {mine && entry.status !== "REVIEWED" && (
+          <Button variant="outline" size="sm" onClick={onHistory} title="View revision history">
+            <HistoryIcon className="mr-1.5 h-3.5 w-3.5" />
+            History
+            <span className="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              {entry.revisionCount}
+            </span>
+          </Button>
+          {entry.deleted ? (
+            canRestore && (
+              <Button variant="outline" size="sm" onClick={onRestore}>
+                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                Restore
+              </Button>
+            )
+          ) : (
             <>
-              <Button variant="outline" size="sm" onClick={onEdit}>Edit</Button>
-              {entry.status === "DRAFT" && (
+              {mine && entry.status !== "REVIEWED" && (
                 <>
-                  <Button size="sm" onClick={onSubmit}>Submit for review</Button>
-                  <Button variant="ghost" size="sm" className="text-red-600" onClick={onDelete}>Delete</Button>
+                  <Button variant="outline" size="sm" onClick={onEdit}>Edit</Button>
+                  {entry.status === "DRAFT" && (
+                    <>
+                      <Button size="sm" onClick={onSubmit}>Submit for review</Button>
+                      <Button variant="ghost" size="sm" className="text-red-600" onClick={onDelete}>Delete</Button>
+                    </>
+                  )}
                 </>
               )}
-            </>
-          )}
-          {!mine && entry.status === "SUBMITTED" && (
-            <>
-              {!reviewing ? (
-                <Button variant="outline" size="sm" onClick={() => setReviewing(true)}>Review</Button>
-              ) : (
-                <div className="flex w-full flex-col gap-2">
-                  <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Reviewer note (optional)" rows={2} />
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => onReview(true, comment)}>Approve</Button>
-                    <Button size="sm" variant="secondary" onClick={() => onReview(false, comment)}>Return to draft</Button>
-                    <Button size="sm" variant="ghost" onClick={() => setReviewing(false)}>Cancel</Button>
-                  </div>
-                </div>
+              {!mine && entry.status === "SUBMITTED" && (
+                <>
+                  {!reviewing ? (
+                    <Button variant="outline" size="sm" onClick={() => setReviewing(true)}>Review</Button>
+                  ) : (
+                    <div className="flex w-full flex-col gap-2">
+                      <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Reviewer note (optional)" rows={2} />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => onReview(true, comment)}>Approve</Button>
+                        <Button size="sm" variant="secondary" onClick={() => onReview(false, comment)}>Return to draft</Button>
+                        <Button size="sm" variant="ghost" onClick={() => setReviewing(false)}>Cancel</Button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}
@@ -147,12 +179,39 @@ export function LogbookClient({
   const [fProject, setFProject] = React.useState("");
   const [fSummary, setFSummary] = React.useState("");
   const [fDetails, setFDetails] = React.useState("");
+  const [fNote, setFNote] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
 
+  // revision history + delete/restore
+  const [historyEntry, setHistoryEntry] = React.useState<Entry | null>(null);
+  const [historyRevisions, setHistoryRevisions] = React.useState<RevisionView[] | null>(null);
+  const [historyError, setHistoryError] = React.useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<Entry | null>(null);
+  const [deleteReason, setDeleteReason] = React.useState("");
+  const [showDeleted, setShowDeleted] = React.useState(false);
+
+  async function openHistory(e: Entry) {
+    setHistoryEntry(e);
+    setHistoryRevisions(null);
+    setHistoryError(null);
+    try {
+      setHistoryRevisions(await getRevisions(e.id));
+    } catch (err) {
+      setHistoryError(err instanceof Error ? err.message : "Could not load history.");
+    }
+  }
+
   async function refresh() {
     const [e, q] = await Promise.all([
-      listEntries({ search: search.trim() || undefined, projectId: projectId || undefined, userId: personId || undefined, status: (status as never) || undefined, mineOnly: tab === "mine" }),
+      listEntries({
+        search: search.trim() || undefined,
+        projectId: projectId || undefined,
+        userId: personId || undefined,
+        status: (status as never) || undefined,
+        mineOnly: tab === "mine",
+        includeDeleted: tab === "all" ? showDeleted || undefined : undefined,
+      }),
       canReview ? reviewQueue() : Promise.resolve([]),
     ]);
     setEntries(e.map(ser));
@@ -169,6 +228,8 @@ export function LogbookClient({
       details: e.details,
       status: e.status,
       reviewComment: e.reviewComment,
+      revisionCount: e.revisionCount,
+      deleted: !!e.deletedAt,
       user: e.user,
       project: e.project,
       reviewedBy: e.reviewedBy,
@@ -178,7 +239,7 @@ export function LogbookClient({
   React.useEffect(() => {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
+  }, [tab, showDeleted]);
 
   async function loadDigest() {
     setDigest(await weeklyDigest(weekStart));
@@ -195,6 +256,7 @@ export function LogbookClient({
     setFProject("");
     setFSummary("");
     setFDetails("");
+    setFNote("");
     setError(null);
     setFormOpen(true);
   }
@@ -205,6 +267,7 @@ export function LogbookClient({
     setFProject(e.project?.id ?? "");
     setFSummary(e.summary);
     setFDetails(e.details ?? "");
+    setFNote("");
     setError(null);
     setFormOpen(true);
   }
@@ -215,7 +278,13 @@ export function LogbookClient({
     if (!fSummary.trim()) return setError("Summary is required.");
     setPending(true);
     try {
-      const payload = { projectId: fProject || null, date: fDate, summary: fSummary.trim(), details: fDetails.trim() || null };
+      const payload = {
+        projectId: fProject || null,
+        date: fDate,
+        summary: fSummary.trim(),
+        details: fDetails.trim() || null,
+        note: editing ? fNote.trim() || null : null,
+      };
       const res = editing ? await updateEntry(editing.id, payload) : await createEntry(payload);
       if (!res.ok) setError(res.error);
       else {
@@ -233,9 +302,24 @@ export function LogbookClient({
     else refresh();
   }
 
-  async function doDelete(id: string) {
-    if (!confirm("Delete this draft?")) return;
-    const res = await deleteEntry(id);
+  async function doDelete() {
+    if (!deleteTarget) return;
+    setPending(true);
+    try {
+      const res = await deleteEntry(deleteTarget.id, deleteReason.trim() || null);
+      if (!res.ok) alert(res.error);
+      else {
+        setDeleteTarget(null);
+        setDeleteReason("");
+        refresh();
+      }
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function doRestore(id: string) {
+    const res = await restoreEntry(id);
     if (!res.ok) alert(res.error);
     else refresh();
   }
@@ -254,10 +338,13 @@ export function LogbookClient({
     ...(canReview
       ? [
           { id: "review", label: "Review queue", badge: queue.length },
+          { id: "all", label: "All entries" },
           { id: "digest", label: "Weekly digest" },
         ]
       : []),
   ];
+
+  const visibleEntries = tab === "mine" || tab === "all" ? entries : queue;
 
   return (
     <div className="space-y-4">
@@ -318,7 +405,7 @@ export function LogbookClient({
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </Select>
-            {canReview && tab === "review" && (
+            {canReview && tab === "all" && (
               <Select value={personId} onChange={(e) => setPersonId(e.target.value)} className="w-44">
                 <option value="">Everyone</option>
                 {people.map((p) => (
@@ -332,25 +419,48 @@ export function LogbookClient({
               <option value="SUBMITTED">Submitted</option>
               <option value="REVIEWED">Reviewed</option>
             </Select>
+            {canReview && tab === "all" && (
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={showDeleted}
+                  onChange={(e) => setShowDeleted(e.target.checked)}
+                  className="h-4 w-4 accent-red-600"
+                />
+                Show deleted
+              </label>
+            )}
             <Button size="sm" onClick={refresh}>Filter</Button>
           </div>
 
-          {(tab === "mine" ? entries : queue).length === 0 ? (
+          {visibleEntries.length === 0 ? (
             <EmptyState
-              title={tab === "mine" ? "No entries yet" : "Review queue is empty"}
-              description={tab === "mine" ? "Write your first logbook entry for today." : "Nothing waiting for review."}
+              title={tab === "mine" ? "No entries yet" : tab === "all" ? "No entries found" : "Review queue is empty"}
+              description={
+                tab === "mine"
+                  ? "Write your first logbook entry for today."
+                  : tab === "all"
+                    ? "Try adjusting the filters."
+                    : "Nothing waiting for review."
+              }
               action={tab === "mine" ? <Button onClick={startCreate}>New entry</Button> : undefined}
             />
           ) : (
             <div className="space-y-3">
-              {(tab === "mine" ? entries : queue).map((e) => (
+              {visibleEntries.map((e) => (
                 <EntryCard
                   key={e.id}
                   entry={e}
                   mine={e.user.id === userId}
+                  canRestore={e.user.id === userId || canReview}
                   onEdit={() => startEdit(e)}
                   onSubmit={() => doSubmit(e.id)}
-                  onDelete={() => doDelete(e.id)}
+                  onDelete={() => {
+                    setDeleteTarget(e);
+                    setDeleteReason("");
+                  }}
+                  onRestore={() => doRestore(e.id)}
+                  onHistory={() => openHistory(e)}
                   onReview={(approved, comment) => doReview(e.id, approved, comment)}
                 />
               ))}
@@ -386,6 +496,19 @@ export function LogbookClient({
             <Label htmlFor="le-details">Details (optional)</Label>
             <Textarea id="le-details" value={fDetails} onChange={(e) => setFDetails(e.target.value)} rows={4} placeholder="Findings, blockers, next steps…" />
           </div>
+          {editing && (
+            <div>
+              <Label htmlFor="le-note">What changed? (optional)</Label>
+              <Input
+                id="le-note"
+                value={fNote}
+                onChange={(e) => setFNote(e.target.value)}
+                placeholder="e.g. issue resolved — pump realigned, vibration normal"
+                maxLength={500}
+              />
+              <p className="mt-1 text-xs text-slate-400">Saved with this revision so the history tells the story.</p>
+            </div>
+          )}
           <FieldError message={error ?? undefined} />
           <div className="flex justify-end gap-2">
             <Button variant="outline" type="button" onClick={() => setFormOpen(false)}>Cancel</Button>
@@ -393,6 +516,43 @@ export function LogbookClient({
           </div>
         </form>
       </Dialog>
+
+      {/* Delete confirmation (soft delete — kept as a revision) */}
+      <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} className="max-w-md">
+        <DialogTitle>Delete this entry?</DialogTitle>
+        <div className="mt-3 space-y-3">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            The entry won&apos;t be erased — it stays in the revision history as a deleted
+            record, visible to reviewers. You can restore it later.
+          </p>
+          <div>
+            <Label htmlFor="del-reason">Reason (optional)</Label>
+            <Textarea
+              id="del-reason"
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
+              rows={2}
+              placeholder="e.g. duplicate of yesterday's entry"
+              maxLength={500}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" type="button" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="danger" disabled={pending} onClick={doDelete}>
+              {pending ? "Deleting…" : "Delete entry"}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <RevisionDrawer
+        key={historyEntry?.id ?? "none"}
+        entry={historyEntry}
+        revisions={historyRevisions}
+        error={historyError}
+        open={!!historyEntry}
+        onClose={() => setHistoryEntry(null)}
+      />
     </div>
   );
 }
