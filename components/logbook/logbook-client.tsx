@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label, Select, FieldError } from "@/components/ui/input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { Card, CardHeader, CardTitle, CardContent, Badge } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/misc";
@@ -406,12 +407,13 @@ export function LogbookClient({
               ))}
             </Select>
             {canReview && tab === "all" && (
-              <Select value={personId} onChange={(e) => setPersonId(e.target.value)} className="w-44">
-                <option value="">Everyone</option>
-                {people.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </Select>
+              <SearchableSelect
+                value={personId}
+                onChange={setPersonId}
+                options={[{ value: "", label: "Everyone" }, ...people.map((p) => ({ value: p.id, label: p.name }))]}
+                placeholder="Everyone"
+                className="w-44"
+              />
             )}
             <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-36">
               <option value="">All statuses</option>

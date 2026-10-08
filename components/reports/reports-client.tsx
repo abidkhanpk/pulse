@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
@@ -146,12 +147,13 @@ export function ReportsClient({
             )}
             <div>
               <Label htmlFor="rep-person">Person</Label>
-              <Select id="rep-person" value={userId} onChange={(e) => setUserId(e.target.value)}>
-                <option value="">Everyone</option>
-                {people.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </Select>
+              <SearchableSelect
+                id="rep-person"
+                value={userId}
+                onChange={setUserId}
+                options={[{ value: "", label: "Everyone" }, ...people.map((p) => ({ value: p.id, label: p.name }))]}
+                placeholder="Everyone"
+              />
             </div>
             <Button onClick={run} disabled={loading}>
               {loading ? "Loading…" : "Run report"}

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label, Select, FieldError } from "@/components/ui/input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { createTodo, updateTodo, deleteTodo, todoDependencyCandidates, setTodoDependencies } from "@/app/(app)/projects/actions";
 import { DependencyPicker, type DependencyCandidate } from "./dependency-picker";
@@ -142,12 +143,14 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
           </div>
           <div>
             <Label htmlFor="td-assignee">Assignee</Label>
-            <Select id="td-assignee" value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} disabled={!canManage}>
-              <option value="">Unassigned</option>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </Select>
+            <SearchableSelect
+              id="td-assignee"
+              value={assigneeId}
+              onChange={setAssigneeId}
+              options={[{ value: "", label: "Unassigned" }, ...members.map((m) => ({ value: m.id, label: m.name }))]}
+              placeholder="Unassigned"
+              disabled={!canManage}
+            />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">

@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Input, Textarea, Label, Select, Checkbox, FieldError } from "@/components/ui/input";
+import { Input, Textarea, Label, Checkbox, FieldError } from "@/components/ui/input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Sheet, SheetHeader, SheetTitle, SheetBody, SheetFooter } from "@/components/ui/overlay";
 import { createBookingAction, updateBookingAction } from "@/app/(app)/desks/actions";
 
@@ -133,26 +134,25 @@ export function BookingDrawer({ open, onClose, onSaved, bookingId, defaults, peo
 
           <div>
             <Label htmlFor="bk-person">Person</Label>
-            <Select id="bk-person" value={userId} onChange={(e) => setUserId(e.target.value)}>
-              {people.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </Select>
+            <SearchableSelect
+              id="bk-person"
+              value={userId}
+              onChange={setUserId}
+              options={people.map((p) => ({ value: p.id, label: p.name }))}
+              placeholder="Select a person…"
+            />
           </div>
 
           {type === "DESK" && (
             <div>
               <Label htmlFor="bk-desk">Desk</Label>
-              <Select id="bk-desk" value={deskId} onChange={(e) => setDeskId(e.target.value)}>
-                <option value="">Select a desk…</option>
-                {activeDesks.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.label}
-                  </option>
-                ))}
-              </Select>
+              <SearchableSelect
+                id="bk-desk"
+                value={deskId}
+                onChange={setDeskId}
+                options={activeDesks.map((d) => ({ value: d.id, label: d.label }))}
+                placeholder="Select a desk…"
+              />
             </div>
           )}
 
@@ -169,14 +169,13 @@ export function BookingDrawer({ open, onClose, onSaved, bookingId, defaults, peo
           {projects.length > 0 && (
             <div>
               <Label htmlFor="bk-project">Project (optional)</Label>
-              <Select id="bk-project" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-                <option value="">None</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </Select>
+              <SearchableSelect
+                id="bk-project"
+                value={projectId}
+                onChange={setProjectId}
+                options={[{ value: "", label: "None" }, ...projects.map((p) => ({ value: p.id, label: p.name }))]}
+                placeholder="None"
+              />
             </div>
           )}
 

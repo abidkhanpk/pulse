@@ -3,7 +3,8 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input, Textarea, Label, Select, FieldError } from "@/components/ui/input";
+import { Input, Textarea, Label, FieldError } from "@/components/ui/input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { Card, CardHeader, CardTitle, CardContent, Badge } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
@@ -319,14 +320,13 @@ export function LabsClient({
                 </div>
               ))}
               <div className="flex gap-2">
-                <Select value={candidateId} onChange={(e) => setCandidateId(e.target.value)} className="flex-1">
-                  <option value="">Select a person…</option>
-                  {candidates.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.email})
-                    </option>
-                  ))}
-                </Select>
+                <SearchableSelect
+                  value={candidateId}
+                  onChange={setCandidateId}
+                  options={candidates.map((c) => ({ value: c.id, label: `${c.name} (${c.email})` }))}
+                  placeholder="Select a person…"
+                  className="flex-1"
+                />
                 <Button size="sm" onClick={addIncharge} disabled={!candidateId}>
                   Assign
                 </Button>

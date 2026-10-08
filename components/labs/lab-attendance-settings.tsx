@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Label, Select, FieldError } from "@/components/ui/input";
+import { Label, FieldError } from "@/components/ui/input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { ATTENDANCE_MODES, type AttendanceMode } from "@/lib/attendance";
 import {
   updateLabAttendanceSettings,
@@ -70,18 +71,13 @@ export function LabAttendanceSettings({
       {mode === "MANUAL" && (
         <div className="mt-2">
           <Label htmlFor={`att-marker-${labId}`}>Designated person (marks attendance with incharges)</Label>
-          <Select
+          <SearchableSelect
             id={`att-marker-${labId}`}
             value={markerId}
-            onChange={(e) => setMarkerId(e.target.value)}
-          >
-            <option value="">None — incharges only</option>
-            {candidates.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
+            onChange={setMarkerId}
+            options={[{ value: "", label: "None — incharges only" }, ...candidates.map((c) => ({ value: c.id, label: c.name }))]}
+            placeholder="None — incharges only"
+          />
         </div>
       )}
       <FieldError message={error ?? undefined} />
