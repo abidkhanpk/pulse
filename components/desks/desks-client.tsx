@@ -89,8 +89,13 @@ export function DesksClient({
           active={view}
           onChange={setView}
         />
+        {canManageDesks && (
+          <Button size="sm" variant="outline" onClick={() => setManagerOpen(true)} className="ml-auto">
+            Manage desks
+          </Button>
+        )}
         {view === "layout" && canManageDesks && (
-          <Button size="sm" variant="outline" onClick={() => setEditingLayout((v) => !v)} className="ml-auto">
+          <Button size="sm" variant="outline" onClick={() => setEditingLayout((v) => !v)}>
             {editingLayout ? "Done editing" : "Edit layout"}
           </Button>
         )}
@@ -105,8 +110,6 @@ export function DesksClient({
           initialOccurrences={initialOccurrences}
           weekStart={weekStart}
           canManage={canManage}
-          canManageDesks={canManageDesks}
-          onManageDesks={() => setManagerOpen(true)}
         />
       ) : view === "month" ? (
         <MonthGrid

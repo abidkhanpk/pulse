@@ -12,7 +12,6 @@ import {
   saveDeskPositions,
   saveFloorplanShapes,
   updateDesk,
-  deleteDesk,
   setDeskStatus,
 } from "@/app/(app)/desks/actions";
 
@@ -176,11 +175,12 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
   async function onSave() {
     setSaving(true);
     try {
-      const placed = desks.filter((d) => d.xPct != null && d.yPct != null);
+      // Send every station: placed ones with coordinates, unplaced with nulls
+      // so "Remove from layout" actually clears them server-side.
       const [r1, r2] = await Promise.all([
         saveDeskPositions({
           labId,
-          positions: placed.map((d) => ({ id: d.id, xPct: d.xPct!, yPct: d.yPct! })),
+          positions: desks.map((d) => ({ id: d.id, xPct: d.xPct ?? null, yPct: d.yPct ?? null })),
         }),
         saveFloorplanShapes({
           labId,
@@ -418,20 +418,10 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                     >
                       Remove from layout
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-red-600"
-                      onClick={async () => {
-                        if (!confirm(`Delete station ${selDesk.label}?`)) return;
-                        const r = await deleteDesk(selDesk.id);
-                        if (!r.ok) alert(r.error);
-                        else load();
-                      }}
-                    >
-                      Delete
-                    </Button>
                   </div>
+                  <p className="text-xs text-slate-400">
+                    To delete the station itself, use Manage desks.
+                  </p>
                 </CardContent>
               </Card>
             )}

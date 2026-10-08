@@ -35,8 +35,6 @@ interface Props {
   initialOccurrences: Occurrence[];
   weekStart: string; // YYYY-MM-DD (Monday)
   canManage: boolean;
-  canManageDesks: boolean;
-  onManageDesks: () => void;
 }
 
 function addDays(iso: string, n: number): string {
@@ -67,8 +65,6 @@ export function WeekGrid({
   initialOccurrences,
   weekStart,
   canManage,
-  canManageDesks,
-  onManageDesks,
 }: Props) {
   const [start, setStart] = React.useState(weekStart);
   const [occurrences, setOccurrences] = React.useState<Occurrence[]>(initialOccurrences);
@@ -189,11 +185,6 @@ export function WeekGrid({
         <span className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">{weekLabel}</span>
         {loading && <span className="text-xs text-slate-400">Loading…</span>}
         <div className="ml-auto flex gap-2">
-          {canManageDesks && (
-            <Button variant="outline" size="sm" onClick={onManageDesks}>
-              Manage desks
-            </Button>
-          )}
           {canManage && (
             <Button size="sm" onClick={() => { setEditInitial(null); setDrawer({ open: true, bookingId: null }); }}>
               New booking

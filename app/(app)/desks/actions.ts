@@ -441,10 +441,13 @@ export async function floorplanMeta(labId: string) {
 
 const positionsSchema = z.object({
   labId: z.string().min(1),
-  positions: z.array(z.object({ id: z.string().min(1), xPct: z.number().min(0).max(100), yPct: z.number().min(0).max(100) })),
+  // xPct/yPct null = station removed from the layout (coordinates cleared).
+  positions: z.array(
+    z.object({ id: z.string().min(1), xPct: z.number().min(0).max(100).nullable(), yPct: z.number().min(0).max(100).nullable() })
+  ),
 });
 
-/** Persist station positions on the floorplan canvas. */
+/** Persist station positions on the floorplan canvas (null clears the position). */
 export async function saveDeskPositions(input: z.infer<typeof positionsSchema>): Promise<ActionResult> {
   const actor = await requireUser();
   const parsed = positionsSchema.safeParse(input);
