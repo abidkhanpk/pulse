@@ -60,6 +60,16 @@ enum LogStatus {
   REVIEWED
 }
 
+enum RevisionKind {
+  CREATED
+  EDITED
+  SUBMITTED
+  REVIEWED
+  RETURNED
+  DELETED
+  RESTORED
+}
+
 enum ProjectStatus {
   PLANNING
   ACTIVE
@@ -123,6 +133,7 @@ model User {
   attendance      AttendanceRecord[]
   logEntries      LogEntry[]
   reviewedEntries LogEntry[]         @relation("ReviewedEntries")
+  revisionsAuthored LogEntryRevision[] @relation("RevisionActor")
   assignedTodos   Todo[]             @relation("AssignedTodos")
   createdTodos    Todo[]             @relation("CreatedTodos")
   ledProjects     Project[]          @relation("LedProjects")
@@ -334,9 +345,41 @@ model LogEntry {
   reviewComment String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  // Soft delete: entries are never hard-deleted; deletion is a revision.
+  deletedAt     DateTime? @db.Timestamptz()
+  revisionCount Int       @default(0)
+  revisions     LogEntryRevision[]
 
   @@index([userId, date])
   @@index([projectId, date])
+}
+
+// Immutable snapshot of a log entry at one point in its history.
+// A revision is recorded for every create, edit, status transition,
+// deletion, and restore — so the full story of an entry is preserved.
+model LogEntryRevision {
+  id          String       @id @default(cuid())
+  entryId     String
+  entry       LogEntry     @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  revisionNo  Int
+  kind        RevisionKind
+  // Snapshot of the entry *after* this revision was applied.
+  summary     String
+  details     String?      @db.Text
+  projectId   String?
+  projectName String?
+  date        DateTime     @db.Date
+  status      LogStatus
+  // Who made this change (name snapshotted so history survives user deletion).
+  actorId     String?
+  actor       User?        @relation("RevisionActor", fields: [actorId], references: [id], onDelete: SetNull)
+  actorName   String
+  // Optional editor note / delete reason / review comment.
+  note        String?
+  createdAt   DateTime     @default(now()) @db.Timestamptz()
+
+  @@unique([entryId, revisionNo])
+  @@index([entryId])
 }
 
 // ─── Projects ───
