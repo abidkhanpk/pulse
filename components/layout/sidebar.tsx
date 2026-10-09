@@ -131,9 +131,9 @@ export function Sidebar({
     >
       <aside className="flex h-full flex-col overflow-hidden border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         {/* Brand */}
-        <div className={cn("flex h-16 shrink-0 items-center border-b border-slate-100 dark:border-slate-800", expanded ? "px-5" : "justify-center px-2")}>
+        <div className={cn("flex h-16 shrink-0 items-center border-b border-slate-100 dark:border-slate-800", expanded ? "px-3" : "justify-center px-2")}>
           <Tooltip content={appName} disabled={expanded} prefer="right">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
+          <Link href="/dashboard" className="flex items-center gap-2">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center">
               <BrandLogo className="h-9 w-9" />
             </span>
@@ -142,7 +142,7 @@ export function Sidebar({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.15 }}
-                className="font-wordmark whitespace-nowrap text-[21px] leading-none tracking-[0.06em] text-slate-900 dark:text-white"
+                className="font-wordmark whitespace-nowrap text-[50px] leading-none tracking-[-0.015em] text-slate-900 dark:text-white"
               >
                 {appName}
               </motion.span>
