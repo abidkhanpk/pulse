@@ -7,11 +7,8 @@ import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { fmtFullDate } from "@/lib/dates";
 import { Tooltip } from "@/components/ui/tooltip";
 import { BookingTipContent } from "./booking-tip";
-import { Input, Label, Textarea } from "@/components/ui/input";
 import {
   listOccurrences,
-  cancelOccurrenceAction,
-  cancelBookingAction,
   getBooking,
 } from "@/app/(app)/desks/actions";
 import { BookingDrawer, type BookingFormDefaults } from "./booking-drawer";
@@ -76,9 +73,8 @@ export function WeekGrid({
     open: false,
   });
   const [editInitial, setEditInitial] = React.useState<React.ComponentProps<typeof BookingDrawer>["initial"]>(null);
+  const [editOccurrence, setEditOccurrence] = React.useState<{ id: string; date: string } | null>(null);
   const [selected, setSelected] = React.useState<Occurrence | null>(null);
-  const [cancelNote, setCancelNote] = React.useState("");
-  const [cancelling, setCancelling] = React.useState<"one" | "series" | null>(null);
 
   const days = React.useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(start, i)), [start]);
 
@@ -153,26 +149,6 @@ export function WeekGrid({
     });
     setSelected(null);
     setDrawer({ open: true, bookingId });
-  }
-
-  async function doCancel(kind: "one" | "series") {
-    if (!selected) return;
-    setCancelling(kind);
-    try {
-      const res =
-        kind === "one"
-          ? await cancelOccurrenceAction(selected.id, cancelNote.trim() || undefined)
-          : await cancelBookingAction(selected.booking.id, cancelNote.trim() || undefined);
-      if (!res.ok) {
-        alert(res.error);
-      } else {
-        setSelected(null);
-        setCancelNote("");
-        refresh(start);
-      }
-    } finally {
-      setCancelling(null);
-    }
   }
 
   const weekLabel = `${new Date(days[0] + "T00:00:00Z").toLocaleDateString("en-PK", { day: "numeric", month: "short", timeZone: "Asia/Karachi" })} – ${new Date(days[6] + "T00:00:00Z").toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Karachi" })}`;
@@ -301,41 +277,29 @@ export function WeekGrid({
         </table>
       </div>
 
-      {/* Booking detail dialog */}
-      <Dialog open={!!selected} onClose={() => { setSelected(null); setCancelNote(""); }}>
+      {/* Booking detail dialog — view-only; alteration and cancellation
+          live inside Edit series (the booking drawer). Close with the ✕. */}
+      <Dialog open={!!selected} onClose={() => setSelected(null)}>
         {selected && (
           <div className="space-y-4">
             <DialogTitle>Booking</DialogTitle>
             <div className="space-y-1 text-sm">
               <p><span className="font-medium">Person:</span> {selected.booking.user.name}</p>
-              <p><span className="font-medium">When:</span> {fmtFullDate(selected.date)} · {fmtTime(selected.startsAt)}–{fmtTime(selected.endsAt)}</p>
+              <p><span className="font-medium">When:</span> {new Date(selected.date + "T00:00:00Z").toLocaleDateString("en-PK", { weekday: "short", timeZone: "Asia/Karachi" })}, {fmtFullDate(selected.date)} · {fmtTime(selected.startsAt)}–{fmtTime(selected.endsAt)}</p>
               <p><span className="font-medium">Where:</span> {selected.desk ? selected.desk.label : "Remote / WFH"}</p>
               {selected.booking.title && <p><span className="font-medium">Title:</span> {selected.booking.title}</p>}
             </div>
-            <div>
-              <Label htmlFor="cancel-note">Cancellation note (optional)</Label>
-              <Textarea id="cancel-note" value={cancelNote} onChange={(e) => setCancelNote(e.target.value)} rows={2} />
-            </div>
             {canManage && (
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={() => openEdit(selected.booking.id)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditOccurrence({ id: selected.id, date: selected.date });
+                    openEdit(selected.booking.id);
+                  }}
+                >
                   Edit series
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  disabled={!!cancelling}
-                  onClick={() => doCancel("one")}
-                >
-                  {cancelling === "one" ? "Cancelling…" : "Cancel this day"}
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  disabled={!!cancelling}
-                  onClick={() => doCancel("series")}
-                >
-                  {cancelling === "series" ? "Cancelling…" : "Cancel whole series"}
                 </Button>
               </div>
             )}
@@ -346,9 +310,10 @@ export function WeekGrid({
       {/* Create / edit drawer */}
       <BookingDrawer
         open={drawer.open}
-        onClose={() => { setDrawer({ open: false }); setEditInitial(null); }}
+        onClose={() => { setDrawer({ open: false }); setEditInitial(null); setEditOccurrence(null); }}
         onSaved={() => refresh(start)}
         bookingId={drawer.bookingId}
+        occurrence={editOccurrence}
         defaults={drawer.defaults}
         people={people}
         desks={desks}

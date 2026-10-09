@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label, Checkbox, FieldError } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Sheet, SheetHeader, SheetTitle, SheetBody, SheetFooter } from "@/components/ui/overlay";
-import { createBookingAction, updateBookingAction } from "@/app/(app)/desks/actions";
+import {
+  createBookingAction,
+  updateBookingAction,
+  cancelOccurrenceAction,
+  cancelBookingAction,
+} from "@/app/(app)/desks/actions";
+import { fmtFullDate } from "@/lib/dates";
 
 export interface BookingFormDefaults {
   userId?: string;
@@ -20,6 +26,8 @@ interface Props {
   onClose: () => void;
   onSaved: () => void;
   bookingId?: string | null;
+  /** The specific day that was clicked to open this editor — enables "Cancel this day". */
+  occurrence?: { id: string; date: string } | null;
   defaults?: BookingFormDefaults;
   people: { id: string; name: string }[];
   desks: { id: string; label: string; status: string }[];
@@ -43,7 +51,7 @@ interface Props {
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function BookingDrawer({ open, onClose, onSaved, bookingId, defaults, people, desks, projects, initial }: Props) {
+export function BookingDrawer({ open, onClose, onSaved, bookingId, occurrence, defaults, people, desks, projects, initial }: Props) {
   const [type, setType] = React.useState<"DESK" | "REMOTE">(initial?.type ?? "DESK");
   const [userId, setUserId] = React.useState(initial?.userId ?? defaults?.userId ?? people[0]?.id ?? "");
   const [deskId, setDeskId] = React.useState(initial?.deskId ?? defaults?.deskId ?? "");
@@ -59,6 +67,43 @@ export function BookingDrawer({ open, onClose, onSaved, bookingId, defaults, peo
   const [notes, setNotes] = React.useState(initial?.notes ?? "");
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
+  // Cancellation lives here — inside the deliberate Edit flow, never on the
+  // view-only details dialog — and always asks for an explicit confirm.
+  const [cancelNote, setCancelNote] = React.useState("");
+  const [confirmKind, setConfirmKind] = React.useState<"one" | "series" | null>(null);
+  const [cancelling, setCancelling] = React.useState(false);
+
+  function resetDanger() {
+    setCancelNote("");
+    setConfirmKind(null);
+    setCancelling(false);
+  }
+
+  function close() {
+    resetDanger();
+    onClose();
+  }
+
+  async function doCancel() {
+    if (!bookingId || !confirmKind) return;
+    setCancelling(true);
+    setError(null);
+    try {
+      const res =
+        confirmKind === "one" && occurrence
+          ? await cancelOccurrenceAction(occurrence.id, cancelNote.trim() || undefined)
+          : await cancelBookingAction(bookingId, cancelNote.trim() || undefined);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      resetDanger();
+      onSaved();
+      onClose();
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   const activeDesks = desks.filter((d) => d.status === "ACTIVE");
 
@@ -97,6 +142,7 @@ export function BookingDrawer({ open, onClose, onSaved, bookingId, defaults, peo
       if (!res.ok) {
         setError(res.error);
       } else {
+        resetDanger();
         onSaved();
         onClose();
       }
@@ -106,7 +152,7 @@ export function BookingDrawer({ open, onClose, onSaved, bookingId, defaults, peo
   }
 
   return (
-    <Sheet open={open} onClose={onClose}>
+    <Sheet open={open} onClose={close}>
       <SheetHeader>
         <SheetTitle>{bookingId ? "Edit booking" : "New booking"}</SheetTitle>
       </SheetHeader>
@@ -257,9 +303,74 @@ export function BookingDrawer({ open, onClose, onSaved, bookingId, defaults, peo
           </div>
 
           <FieldError message={error ?? undefined} />
+
+          {bookingId && (
+            <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
+              <p className="text-sm font-semibold text-red-600 dark:text-red-400">Cancel booking</p>
+              {confirmKind === null ? (
+                <>
+                  <div className="mt-2">
+                    <Label htmlFor="bk-cancel-note">Cancellation note (optional)</Label>
+                    <Textarea
+                      id="bk-cancel-note"
+                      value={cancelNote}
+                      onChange={(e) => setCancelNote(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {occurrence && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
+                        onClick={() => setConfirmKind("one")}
+                      >
+                        Cancel this day
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
+                      onClick={() => setConfirmKind("series")}
+                    >
+                      Cancel whole series
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="mt-2 rounded-sm border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/40">
+                  <p className="text-sm text-red-700 dark:text-red-300">
+                    {confirmKind === "one" ? (
+                      <>
+                        Cancel <strong>{occurrence ? fmtFullDate(occurrence.date) : "this day"}</strong> for this
+                        booking? This can&apos;t be undone.
+                      </>
+                    ) : (
+                      <>
+                        Cancel the <strong>whole series</strong>? Every remaining day will be cancelled. This
+                        can&apos;t be undone.
+                      </>
+                    )}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" size="sm" disabled={cancelling} onClick={() => setConfirmKind(null)}>
+                      Keep booking
+                    </Button>
+                    <Button type="button" variant="danger" size="sm" disabled={cancelling} onClick={doCancel}>
+                      {cancelling ? "Cancelling…" : confirmKind === "one" ? "Yes, cancel this day" : "Yes, cancel series"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </SheetBody>
         <SheetFooter>
-          <Button variant="outline" onClick={onClose} type="button">
+          <Button variant="outline" onClick={close} type="button">
             Cancel
           </Button>
           <Button type="submit" disabled={pending}>
