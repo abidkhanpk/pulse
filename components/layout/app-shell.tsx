@@ -13,11 +13,16 @@ export function AppShell({
   actor,
   appName,
   showCheckIn,
+  accentChoice,
+  defaultAccent,
   children,
 }: {
   actor: SessionActorLike;
   appName: string;
   showCheckIn: boolean;
+  /** The user's own accent choice; null = following the org default. */
+  accentChoice: string | null;
+  defaultAccent: string;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -71,7 +76,7 @@ export function AppShell({
             })}
           </div>
           <div className="flex items-center gap-3">
-            <UserMenu actor={actor} />
+            <UserMenu actor={actor} accentChoice={accentChoice} defaultAccent={defaultAccent} />
           </div>
         </header>
         <main className="flex-1 p-4 pb-20 md:p-6 md:pb-6">

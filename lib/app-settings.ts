@@ -47,6 +47,17 @@ export async function setDefaultAccentColor(id: string): Promise<void> {
   });
 }
 
+/** The user's own stored accent choice, or null when they follow the org default. */
+export async function getUserAccentChoice(userId: string): Promise<string | null> {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { accentColor: true } });
+    const { isAccentId } = await import("./accent");
+    return user?.accentColor && isAccentId(user.accentColor) ? user.accentColor : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Effective accent for a user: their choice, else the admin default. */
 export async function getUserAccentColor(userId: string): Promise<string> {
   try {

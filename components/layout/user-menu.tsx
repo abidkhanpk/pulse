@@ -18,7 +18,15 @@ function initials(name: string): string {
     .toUpperCase();
 }
 
-export function UserMenu({ actor }: { actor: SessionActorLike }) {
+export function UserMenu({
+  actor,
+  accentChoice,
+  defaultAccent,
+}: {
+  actor: SessionActorLike;
+  accentChoice: string | null;
+  defaultAccent: string;
+}) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
 
@@ -111,10 +119,7 @@ export function UserMenu({ actor }: { actor: SessionActorLike }) {
               <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 Accent color
               </div>
-              <AccentPicker
-                initial={typeof document !== "undefined" ? document.documentElement.dataset.accent || "indigo" : "indigo"}
-                onPick={setMyAccentAction}
-              />
+              <AccentPicker initial={accentChoice} defaultId={defaultAccent} onPick={setMyAccentAction} />
               {isIncharge && (
                 <Link
                   href="/labs"
