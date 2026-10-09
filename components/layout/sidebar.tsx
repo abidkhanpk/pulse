@@ -132,7 +132,7 @@ export function Sidebar({
       <aside className="flex h-full flex-col overflow-hidden border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         {/* Brand */}
         <div className={cn("flex h-16 shrink-0 items-center border-b border-slate-100 dark:border-slate-800", expanded ? "px-5" : "justify-center px-2")}>
-          <Tooltip content={appName} disabled={expanded}>
+          <Tooltip content={appName} disabled={expanded} prefer="right">
           <Link href="/dashboard" className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center">
               <BrandLogo className="h-9 w-9" />
@@ -157,7 +157,7 @@ export function Sidebar({
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
             return (
-              <Tooltip key={item.href} content={item.label} disabled={expanded}>
+              <Tooltip key={item.href} content={item.label} disabled={expanded} prefer="right">
               <Link
                 href={item.href}
                 className={cn(
@@ -211,7 +211,7 @@ export function Sidebar({
               </motion.span>
             )}
           </div>
-          <Tooltip content={pinned ? "Unpin sidebar" : "Pin sidebar open"} disabled={expanded}>
+          <Tooltip content={pinned ? "Unpin sidebar" : "Pin sidebar open"} disabled={expanded} prefer="right">
           <button
             onClick={handlePinClick}
             aria-label={pinned ? "Unpin sidebar" : "Pin sidebar open"}
@@ -241,7 +241,7 @@ export function Sidebar({
 
       {/* Edge arrow — only in pinned mode: collapse/expand the pinned sidebar */}
       {pinned && (
-        <Tooltip content={pinCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
+        <Tooltip content={pinCollapsed ? "Expand sidebar" : "Collapse sidebar"} prefer="right">
           <button
             onClick={() => setPinCollapsed((v) => !v)}
             aria-label={pinCollapsed ? "Expand sidebar" : "Collapse sidebar"}

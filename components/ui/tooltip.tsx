@@ -70,11 +70,30 @@ interface FixedPos {
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), Math.max(lo, hi));
 
 /** Adaptive placement in viewport coordinates for a bubble of size (bw, bh) anchored to rect. */
-export function placeInViewport(rect: DOMRect, bw: number, bh: number): FixedPos {
+export function placeInViewport(rect: DOMRect, bw: number, bh: number, prefer?: TipPlacement): FixedPos {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
+  const toRight = (): FixedPos => {
+    const top = clamp(cy - bh / 2, EDGE, vh - bh - EDGE);
+    return { left: rect.right + GAP, top, placement: "right", notch: clamp(cy - top, 12, bh - 12) };
+  };
+  const toLeft = (): FixedPos => {
+    const top = clamp(cy - bh / 2, EDGE, vh - bh - EDGE);
+    return { left: rect.left - GAP - bw, top, placement: "left", notch: clamp(cy - top, 12, bh - 12) };
+  };
+  // Preferred side first, when it fits (e.g. the sidebar wants "right").
+  if (prefer === "right" && rect.right + GAP + bw <= vw - EDGE) return toRight();
+  if (prefer === "left" && rect.left - GAP - bw >= EDGE) return toLeft();
+  if (prefer === "above" && rect.top - GAP - bh >= EDGE) {
+    const left = clamp(cx - bw / 2, EDGE, vw - bw - EDGE);
+    return { left, top: rect.top - GAP - bh, placement: "above", notch: clamp(cx - left, 12, bw - 12) };
+  }
+  if (prefer === "below" && rect.bottom + GAP + bh <= vh - EDGE) {
+    const left = clamp(cx - bw / 2, EDGE, vw - bw - EDGE);
+    return { left, top: rect.bottom + GAP, placement: "below", notch: clamp(cx - left, 12, bw - 12) };
+  }
   // Above
   if (rect.top - GAP - bh >= EDGE) {
     const left = clamp(cx - bw / 2, EDGE, vw - bw - EDGE);
@@ -86,11 +105,8 @@ export function placeInViewport(rect: DOMRect, bw: number, bh: number): FixedPos
     return { left, top: rect.bottom + GAP, placement: "below", notch: clamp(cx - left, 12, bw - 12) };
   }
   // Left or right — whichever side has more room
-  const top = clamp(cy - bh / 2, EDGE, vh - bh - EDGE);
-  if (rect.left >= vw - rect.right) {
-    return { left: rect.left - GAP - bw, top, placement: "left", notch: clamp(cy - top, 12, bh - 12) };
-  }
-  return { left: rect.right + GAP, top, placement: "right", notch: clamp(cy - top, 12, bh - 12) };
+  if (rect.left >= vw - rect.right) return toLeft();
+  return toRight();
 }
 
 /**
@@ -102,10 +118,13 @@ export function Tooltip({
   content,
   children,
   disabled,
+  prefer,
 }: {
   content: React.ReactNode;
   children: React.ReactElement;
   disabled?: boolean;
+  /** Preferred side; used when it fits, otherwise placement stays adaptive. */
+  prefer?: TipPlacement;
 }) {
   const [open, setOpen] = React.useState(false);
   const [pos, setPos] = React.useState<FixedPos | null>(null);
@@ -126,8 +145,8 @@ export function Tooltip({
     const bubble = bubbleRef.current;
     if (!trigger || !bubble) return;
     const rect = trigger.getBoundingClientRect();
-    setPos(placeInViewport(rect, bubble.offsetWidth, bubble.offsetHeight));
-  }, [open, content ]);
+    setPos(placeInViewport(rect, bubble.offsetWidth, bubble.offsetHeight, prefer));
+  }, [open, content, prefer]);
 
   if (disabled) return children;
 
