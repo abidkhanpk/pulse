@@ -384,6 +384,30 @@ export function DashboardClient({ d }: { d: DashboardData }) {
             </ChartCard>
           </FadeIn>
           <FadeIn delay={0.3}>
+            <ChartCard title={d.mode === "full" ? "Recent activity" : d.mode === "team" ? "Team activity" : "My activity"}>
+              <div className="max-h-72 space-y-1 overflow-y-auto">
+                {d.recentActivity.length === 0 && <p className="text-sm text-slate-400">No activity yet.</p>}
+                {d.recentActivity.map((a) => (
+                  <div key={a.id} className="flex items-start gap-3 rounded-xl px-2 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-600 dark:bg-accent-950 dark:text-accent-300">
+                      <Activity className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {a.userName} <span className="font-normal text-slate-400">· {a.action.replace(/\./g, " ")}</span>
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {a.entity} · {fmtDateTime(a.at)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ChartCard>
+          </FadeIn>
+        </div>
+        <div className="flex min-w-0 flex-col gap-4">
+          <FadeIn delay={0.26}>
             <ChartCard
               title="My open todos"
               action={
@@ -406,30 +430,6 @@ export function DashboardClient({ d }: { d: DashboardData }) {
                       {t.endDate ? ` · due ${fmtFullDate(t.endDate)}` : ""}
                     </p>
                   </motion.div>
-                ))}
-              </div>
-            </ChartCard>
-          </FadeIn>
-        </div>
-        <div className="flex min-w-0 flex-col gap-4">
-          <FadeIn delay={0.26}>
-            <ChartCard title={d.mode === "full" ? "Recent activity" : d.mode === "team" ? "Team activity" : "My activity"}>
-              <div className="max-h-72 space-y-1 overflow-y-auto">
-                {d.recentActivity.length === 0 && <p className="text-sm text-slate-400">No activity yet.</p>}
-                {d.recentActivity.map((a) => (
-                  <div key={a.id} className="flex items-start gap-3 rounded-xl px-2 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/60">
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-600 dark:bg-accent-950 dark:text-accent-300">
-                      <Activity className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-300">
-                        {a.userName} <span className="font-normal text-slate-400">· {a.action.replace(/\./g, " ")}</span>
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        {a.entity} · {fmtDateTime(a.at)}
-                      </p>
-                    </div>
-                  </div>
                 ))}
               </div>
             </ChartCard>
