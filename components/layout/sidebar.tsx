@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, animate, useMotionValue, useMotionValueEvent } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/brand-logo";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { PermissionKey, ActorRole } from "@/lib/permissions";
 import {
   LayoutDashboard,
@@ -131,7 +132,8 @@ export function Sidebar({
       <aside className="flex h-full flex-col overflow-hidden border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         {/* Brand */}
         <div className={cn("flex h-16 shrink-0 items-center border-b border-slate-100 dark:border-slate-800", expanded ? "px-5" : "justify-center px-2")}>
-          <Link href="/dashboard" className="flex items-center gap-2.5" title={appName}>
+          <Tooltip content={appName} disabled={expanded}>
+          <Link href="/dashboard" className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center">
               <BrandLogo className="h-9 w-9" />
             </span>
@@ -146,6 +148,7 @@ export function Sidebar({
               </motion.span>
             )}
           </Link>
+          </Tooltip>
         </div>
 
         {/* Nav — flat list, clean icons: muted when idle, accent on the active button itself */}
@@ -154,10 +157,9 @@ export function Sidebar({
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
             return (
+              <Tooltip key={item.href} content={item.label} disabled={expanded}>
               <Link
-                key={item.href}
                 href={item.href}
-                title={expanded ? undefined : item.label}
                 className={cn(
                   "flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors duration-150",
                   !expanded && "justify-center px-0",
@@ -186,6 +188,7 @@ export function Sidebar({
                   </motion.span>
                 )}
               </Link>
+              </Tooltip>
             );
           })}
         </nav>
@@ -208,9 +211,10 @@ export function Sidebar({
               </motion.span>
             )}
           </div>
+          <Tooltip content={pinned ? "Unpin sidebar" : "Pin sidebar open"} disabled={expanded}>
           <button
             onClick={handlePinClick}
-            title={pinned ? "Unpin sidebar (auto-collapse on hover)" : "Pin sidebar open"}
+            aria-label={pinned ? "Unpin sidebar" : "Pin sidebar open"}
             className={cn(
               "flex w-full items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors",
               !expanded && "justify-center px-0",
@@ -231,19 +235,22 @@ export function Sidebar({
               </motion.span>
             )}
           </button>
+          </Tooltip>
         </div>
       </aside>
 
       {/* Edge arrow — only in pinned mode: collapse/expand the pinned sidebar */}
       {pinned && (
-        <button
-          onClick={() => setPinCollapsed((v) => !v)}
-          title={pinCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          aria-expanded={!pinCollapsed}
-          className="absolute -right-3 top-20 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md transition-colors hover:text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
-        >
-          {pinCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
-        </button>
+        <Tooltip content={pinCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
+          <button
+            onClick={() => setPinCollapsed((v) => !v)}
+            aria-label={pinCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-expanded={!pinCollapsed}
+            className="absolute -right-3 top-20 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md transition-colors hover:text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
+          >
+            {pinCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+          </button>
+        </Tooltip>
       )}
     </motion.div>
   );
