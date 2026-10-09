@@ -7,7 +7,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { createTodo, updateTodo, deleteTodo, todoDependencyCandidates, setTodoDependencies } from "@/app/(app)/projects/actions";
 import { DependencyPicker, type DependencyCandidate } from "./dependency-picker";
-import type { KanbanTodo } from "./kanban";
+import type { KanbanTodo, TodoPriority } from "./kanban";
 
 interface TodoWithDeps extends KanbanTodo {
   description: string | null;
@@ -27,12 +27,15 @@ interface Props {
   milestones: { id: string; title: string }[];
   members: { id: string; name: string }[];
   canManage: boolean;
+  /** Lab feature toggle: when false the priority field is not shown at all. */
+  showPriority?: boolean;
 }
 
-export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultStatus, defaultMilestoneId, milestones, members, canManage }: Props) {
+export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultStatus, defaultMilestoneId, milestones, members, canManage, showPriority }: Props) {
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [status, setStatus] = React.useState<KanbanTodo["status"]>("TODO");
+  const [priority, setPriority] = React.useState<TodoPriority>("MEDIUM");
   const [milestoneId, setMilestoneId] = React.useState("");
   const [assigneeId, setAssigneeId] = React.useState("");
   const [startDate, setStartDate] = React.useState("");
@@ -49,6 +52,7 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
       setTitle(todo?.title ?? "");
       setDescription(todo?.description ?? "");
       setStatus(todo?.status ?? defaultStatus);
+      setPriority(todo?.priority ?? "MEDIUM");
       setMilestoneId(todo?.milestoneId ?? defaultMilestoneId ?? "");
       setAssigneeId(todo?.assignee?.id ?? "");
       setStartDate(todo?.startDate ? todo.startDate.slice(0, 10) : "");
@@ -73,6 +77,9 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
         title: title.trim(),
         description: description.trim() || null,
         status,
+        // Only sent when the lab has the priority feature on — otherwise the
+        // stored value (if any) is left untouched.
+        ...(showPriority ? { priority } : {}),
         assigneeId: assigneeId || null,
         startDate: startDate || null,
         endDate: endDate || null,
@@ -153,6 +160,18 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
             />
           </div>
         </div>
+        {showPriority && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="td-priority">Priority</Label>
+              <Select id="td-priority" value={priority} onChange={(e) => setPriority(e.target.value as TodoPriority)} disabled={!canManage}>
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+              </Select>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label htmlFor="td-ms">Milestone</Label>

@@ -272,6 +272,26 @@ const attendanceSettingsSchema = z.object({
 });
 
 /**
+ * Turn todo priority on/off for a lab (kanban pills + priority field in
+ * the todo form). Same gate as attendance settings: the lab's incharges
+ * or admins.
+ */
+export async function updateLabTodoPriority(labId: string, enabled: boolean): Promise<ActionResult> {
+  const actor = await requireUser();
+  const isIncharge = actor.inchargeOf.some((l) => l.labId === labId);
+  if (!isIncharge && !can(actor, "labs.manage", labId)) {
+    return { ok: false as const, error: "Only the lab incharge or an admin can change this setting." };
+  }
+  const lab = await prisma.lab.findUnique({ where: { id: labId }, select: { id: true } });
+  if (!lab) return { ok: false, error: "Lab not found." };
+  await prisma.lab.update({ where: { id: labId }, data: { todoPriorityEnabled: enabled } });
+  await logAudit(actor.id, "lab.todo_priority", "Lab", labId, { enabled });
+  revalidatePath("/labs");
+  revalidatePath("/projects");
+  return { ok: true };
+}
+
+/**
  * Set a lab's attendance mode + designated marker.
  * Allowed for the lab's incharges and admins (labs.manage scoped).
  */

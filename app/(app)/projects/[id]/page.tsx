@@ -26,6 +26,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           id: t.id,
           title: t.title,
           description: t.description,
+          priority: t.priority,
           status: t.status,
           sortOrder: t.sortOrder,
           startDate: t.startDate ? t.startDate.toISOString().slice(0, 10) : null,

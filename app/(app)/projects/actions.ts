@@ -30,7 +30,7 @@ export async function listProjects(filters: { labId?: string; status?: string } 
       ...mine,
     },
     include: {
-      lab: { select: { id: true, name: true } },
+      lab: { select: { id: true, name: true, todoPriorityEnabled: true } },
       lead: { select: { id: true, name: true } },
       _count: { select: { todos: true, members: true } },
     },
@@ -44,7 +44,7 @@ export async function getProject(id: string) {
   const project = await prisma.project.findUnique({
     where: { id },
     include: {
-      lab: { select: { id: true, name: true } },
+      lab: { select: { id: true, name: true, todoPriorityEnabled: true } },
       lead: { select: { id: true, name: true } },
       members: {
         include: { user: { select: { id: true, name: true, email: true } } },
@@ -302,6 +302,7 @@ const todoSchema = z.object({
   title: z.string().trim().min(1).max(300),
   description: z.string().trim().max(2000).optional().nullable(),
   status: z.enum(["TODO", "IN_PROGRESS", "DONE"]),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
   assigneeId: z.string().min(1).nullable().optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
@@ -330,6 +331,7 @@ export async function createTodo(input: z.infer<typeof todoSchema>): Promise<Act
       title: parsed.data.title,
       description: parsed.data.description || null,
       status: parsed.data.status,
+      priority: parsed.data.priority ?? "MEDIUM",
       assigneeId: parsed.data.assigneeId || null,
       startDate: parsed.data.startDate ? new Date(parsed.data.startDate) : null,
       endDate: parsed.data.endDate ? new Date(parsed.data.endDate) : null,
@@ -366,6 +368,7 @@ export async function updateTodo(id: string, input: z.infer<typeof todoSchema>):
     Object.assign(data, {
       title: parsed.data.title,
       description: parsed.data.description || null,
+      ...(parsed.data.priority ? { priority: parsed.data.priority } : {}),
       milestoneId: parsed.data.milestoneId || null,
       assigneeId: parsed.data.assigneeId || null,
       startDate: parsed.data.startDate ? new Date(parsed.data.startDate) : null,

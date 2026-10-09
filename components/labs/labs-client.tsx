@@ -20,6 +20,7 @@ import {
   inchargeCandidates,
 } from "@/app/(app)/labs/actions";
 import { LabAttendanceSettings } from "./lab-attendance-settings";
+import { LabPrioritySettings } from "./lab-priority-settings";
 import type { AttendanceMode } from "@prisma/client";
 
 interface Lab {
@@ -27,6 +28,7 @@ interface Lab {
   name: string;
   description: string | null;
   attendanceMode: AttendanceMode;
+  todoPriorityEnabled: boolean;
   attendanceMarker: { id: string; name: string } | null;
   _count: { desks: number; projects: number };
   incharges: { user: { id: string; name: string; email: string } }[];
@@ -241,11 +243,14 @@ export function LabsClient({
                   )}
                 </div>
                 {canRename(lab) && (
-                  <LabAttendanceSettings
-                    labId={lab.id}
-                    initialMode={lab.attendanceMode}
-                    initialMarker={lab.attendanceMarker}
-                  />
+                  <>
+                    <LabAttendanceSettings
+                      labId={lab.id}
+                      initialMode={lab.attendanceMode}
+                      initialMarker={lab.attendanceMarker}
+                    />
+                    <LabPrioritySettings labId={lab.id} initialEnabled={lab.todoPriorityEnabled} />
+                  </>
                 )}
               </CardContent>
             </Card>

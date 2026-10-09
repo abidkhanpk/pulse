@@ -193,6 +193,8 @@ model Lab {
   updatedAt      DateTime     @updatedAt
 
   attendanceMode     AttendanceMode @default(SELF)
+  // Per-lab feature toggle: todo priorities on kanban + in the todo form.
+  todoPriorityEnabled Boolean      @default(false)
   attendanceMarkerId String?
   attendanceMarker   User?          @relation("LabAttendanceMarker", fields: [attendanceMarkerId], references: [id], onDelete: SetNull)
 
@@ -467,6 +469,12 @@ model Milestone {
   dependents    MilestoneDependency[] @relation("MilestonePrerequisites")
 }
 
+enum TodoPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
 model Todo {
   id          String     @id @default(cuid())
   projectId   String
@@ -476,6 +484,8 @@ model Todo {
   title       String
   description String?    @db.Text
   status      TodoStatus @default(TODO)
+  // Only surfaced in UI when the project's lab enables todo priority.
+  priority    TodoPriority @default(MEDIUM)
   assigneeId  String?
   assignee    User?      @relation("AssignedTodos", fields: [assigneeId], references: [id], onDelete: SetNull)
   startDate   DateTime?  @db.Date

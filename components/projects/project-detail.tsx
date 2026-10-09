@@ -46,7 +46,7 @@ interface Project {
   startDate: string | null;
   endDate: string | null;
   kanbanOrdered: boolean;
-  lab: { id: string; name: string };
+  lab: { id: string; name: string; todoPriorityEnabled: boolean };
   lead: { id: string; name: string } | null;
   members: { user: { id: string; name: string; email: string }; role: string }[];
   milestones: Milestone[];
@@ -187,6 +187,7 @@ export function ProjectDetail({
           projectId={project.id}
           initialTodos={project.todos}
           kanbanOrdered={project.kanbanOrdered}
+          showPriority={project.lab.todoPriorityEnabled}
           canManage={canManage}
           onTodoClick={(t) => openTodoDialog(t)}
           onNewTodo={(status) => setTodoDialog({ open: true, todo: null, defaultStatus: status })}
@@ -268,6 +269,7 @@ export function ProjectDetail({
         milestones={project.milestones}
         members={project.members.map((m) => ({ id: m.user.id, name: m.user.name }))}
         canManage={canManage}
+        showPriority={project.lab.todoPriorityEnabled}
       />
     </div>
   );
