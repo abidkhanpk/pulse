@@ -17,6 +17,7 @@ interface Desk {
   label: string;
   status: string;
   notes: string | null;
+  amenities: string[];
   lab: { id: string; name: string };
 }
 

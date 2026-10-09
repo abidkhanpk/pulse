@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { fmtFullDate } from "@/lib/dates";
+import { amenitySummary } from "@/lib/amenities";
 import { Tooltip } from "@/components/ui/tooltip";
 import { BookingTipContent } from "./booking-tip";
 import {
@@ -19,7 +20,7 @@ export interface Occurrence {
   startsAt: string;
   endsAt: string;
   deskId: string | null;
-  desk: { id: string; label: string } | null;
+  desk: { id: string; label: string; amenities?: string[] } | null;
   booking: {
     id: string;
     type: "DESK" | "REMOTE";
@@ -29,7 +30,7 @@ export interface Occurrence {
 }
 
 interface Props {
-  desks: { id: string; label: string; status: string; lab: { id: string; name: string } }[];
+  desks: { id: string; label: string; status: string; amenities?: string[]; lab: { id: string; name: string } }[];
   people: { id: string; name: string }[];
   projects: { id: string; name: string }[];
   initialOccurrences: Occurrence[];
@@ -197,6 +198,9 @@ export function WeekGrid({
                 <td className="sticky left-0 z-10 border-r border-slate-200 bg-white px-3 py-2 dark:bg-slate-900 dark:border-slate-700">
                   <div className="font-medium text-slate-800 dark:text-slate-200">{desk.label}</div>
                   <div className="text-xs text-slate-400">{desk.lab.name}</div>
+                  {amenitySummary(desk.amenities) && (
+                    <div className="text-[11px] text-slate-400">{amenitySummary(desk.amenities)}</div>
+                  )}
                   {desk.status === "MAINTENANCE" && <Badge color="warning">Maintenance</Badge>}
                 </td>
                 {days.map((day) => {

@@ -7,12 +7,14 @@ import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { Badge } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { createDesk, updateDesk, setDeskStatus, deleteDesk } from "@/app/(app)/desks/actions";
+import { DESK_AMENITIES, amenitySummary } from "@/lib/amenities";
 
 interface Desk {
   id: string;
   label: string;
   status: string;
   notes: string | null;
+  amenities: string[];
   lab: { id: string; name: string };
 }
 
@@ -34,14 +36,20 @@ export function DesksManager({
   const [labId, setLabId] = React.useState(labs[0]?.id ?? "");
   const [label, setLabel] = React.useState("");
   const [notes, setNotes] = React.useState("");
+  const [amenities, setAmenities] = React.useState<string[]>([]);
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
+
+  function toggleAmenity(id: string) {
+    setAmenities((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   function startCreate() {
     setEditing(null);
     setLabId(labs[0]?.id ?? "");
     setLabel("");
     setNotes("");
+    setAmenities([]);
     setError(null);
     setFormOpen(true);
   }
@@ -51,6 +59,7 @@ export function DesksManager({
     setLabId(d.lab.id);
     setLabel(d.label);
     setNotes(d.notes ?? "");
+    setAmenities(d.amenities ?? []);
     setError(null);
     setFormOpen(true);
   }
@@ -62,8 +71,8 @@ export function DesksManager({
     setPending(true);
     try {
       const res = editing
-        ? await updateDesk(editing.id, { labId, label: label.trim(), notes: notes.trim() || null })
-        : await createDesk({ labId, label: label.trim(), notes: notes.trim() || null });
+        ? await updateDesk(editing.id, { labId, label: label.trim(), notes: notes.trim() || null, amenities })
+        : await createDesk({ labId, label: label.trim(), notes: notes.trim() || null, amenities });
       if (!res.ok) setError(res.error);
       else {
         setFormOpen(false);
@@ -118,6 +127,28 @@ export function DesksManager({
               <Label>Notes (optional)</Label>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
             </div>
+            <div>
+              <Label>Amenities at this desk</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {DESK_AMENITIES.map((a) => {
+                  const on = amenities.includes(a.id);
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => toggleAmenity(a.id)}
+                      className={`rounded-sm border px-2 py-1 text-xs font-medium transition-colors ${
+                        on
+                          ? "border-accent-600 bg-accent-600 text-white"
+                          : "border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400"
+                      }`}
+                    >
+                      {a.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <FieldError message={error ?? undefined} />
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" type="button" onClick={() => setFormOpen(false)}>
@@ -141,7 +172,12 @@ export function DesksManager({
             <TBody>
               {desks.map((d) => (
                 <TR key={d.id}>
-                  <TD className="font-medium">{d.label}</TD>
+                  <TD className="font-medium">
+                    {d.label}
+                    {amenitySummary(d.amenities) && (
+                      <span className="block text-[11px] font-normal text-slate-400">{amenitySummary(d.amenities)}</span>
+                    )}
+                  </TD>
                   <TD>{d.lab.name}</TD>
                   <TD>
                     <Badge color={d.status === "ACTIVE" ? "success" : "warning"}>{d.status}</Badge>

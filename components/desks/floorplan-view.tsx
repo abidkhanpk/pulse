@@ -4,6 +4,7 @@ import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
 import { Tooltip } from "@/components/ui/tooltip";
+import { amenitySummary } from "@/lib/amenities";
 import { getFloorplan, layoutOccupancy } from "@/app/(app)/desks/actions";
 import { BookingDrawer } from "./booking-drawer";
 
@@ -14,6 +15,7 @@ interface DeskPos {
   xPct: number | null;
   yPct: number | null;
   markerShape: "CIRCLE" | "SQUARE" | "ROUNDED";
+  amenities: string[];
 }
 
 interface Shape {
@@ -202,6 +204,9 @@ export function FloorplanView({
                       <p className="font-bold text-slate-800 dark:text-slate-100">
                         {d.label} <span className="ml-1 font-medium text-slate-400">{statusText}</span>
                       </p>
+                      {amenitySummary(d.amenities) && (
+                        <p className="mt-0.5 text-slate-500 dark:text-slate-400">{amenitySummary(d.amenities)}</p>
+                      )}
                       {list.length > 0 ? (
                         <ul className="mt-1 space-y-0.5 text-slate-600 dark:text-slate-300">
                           {list.map((o, i) => (
@@ -259,6 +264,9 @@ export function FloorplanView({
                 <span className="ml-2 text-xs font-normal text-slate-400">
                   {statusOf(selDesk) === "occupied" ? "Occupied now" : statusOf(selDesk) === "upcoming" ? "Booked later today" : statusOf(selDesk) === "maintenance" ? "Under maintenance" : "Free"}
                 </span>
+                {amenitySummary(selDesk.amenities) && (
+                  <span className="ml-2 text-xs font-normal text-slate-400">· {amenitySummary(selDesk.amenities)}</span>
+                )}
               </p>
             </div>
             {selOccs.length > 0 ? (

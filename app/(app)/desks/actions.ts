@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-helpers";
 import { can, scopeFilter, type PermissionKey } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
+import { sanitizeAmenities } from "@/lib/amenities";
 import {
   createBooking,
   todayPKT,
@@ -42,6 +43,7 @@ const deskSchema = z.object({
   label: z.string().trim().min(1).max(60),
   notes: z.string().trim().max(300).optional().nullable(),
   markerShape: z.enum(["CIRCLE", "SQUARE", "ROUNDED"]).optional(),
+  amenities: z.array(z.string().max(30)).max(20).optional(),
 });
 
 export async function createDesk(input: z.infer<typeof deskSchema>): Promise<ActionResult<{ id: string }>> {
@@ -54,7 +56,12 @@ export async function createDesk(input: z.infer<typeof deskSchema>): Promise<Act
   });
   if (dup) return { ok: false, error: `Desk ${parsed.data.label} already exists in this lab.` };
   const desk = await prisma.desk.create({
-    data: { labId: parsed.data.labId, label: parsed.data.label, notes: parsed.data.notes ?? null },
+    data: {
+      labId: parsed.data.labId,
+      label: parsed.data.label,
+      notes: parsed.data.notes ?? null,
+      amenities: sanitizeAmenities(parsed.data.amenities),
+    },
   });
   await logAudit(actor.id, "desk.created", "Desk", desk.id, { label: desk.label, labId: desk.labId });
   revalidatePath("/desks");
@@ -79,6 +86,7 @@ export async function updateDesk(
       label: parsed.data.label,
       notes: parsed.data.notes ?? null,
       ...(parsed.data.markerShape ? { markerShape: parsed.data.markerShape } : {}),
+      ...(parsed.data.amenities ? { amenities: sanitizeAmenities(parsed.data.amenities) } : {}),
     },
   });
   await logAudit(actor.id, "desk.updated", "Desk", id, { label: parsed.data.label });
@@ -244,7 +252,7 @@ export async function getBooking(id: string) {
     where: { id },
     include: {
       user: { select: { id: true, name: true, labId: true } },
-      desk: { select: { id: true, label: true, labId: true } },
+      desk: { select: { id: true, label: true, labId: true, amenities: true } },
       project: { select: { id: true, name: true } },
     },
   });
@@ -280,7 +288,7 @@ export async function listOccurrences({ from, to, labId }: OccurrenceRange) {
           : {}),
     },
     include: {
-      desk: { select: { id: true, label: true, labId: true } },
+      desk: { select: { id: true, label: true, labId: true, amenities: true } },
       booking: {
         select: {
           id: true,
@@ -533,7 +541,7 @@ export async function getFloorplan(labId: string) {
     prisma.floorplanImage.findUnique({ where: { labId }, select: { id: true, updatedAt: true } }),
     prisma.desk.findMany({
       where: { labId },
-      select: { id: true, label: true, status: true, xPct: true, yPct: true, markerShape: true },
+      select: { id: true, label: true, status: true, xPct: true, yPct: true, markerShape: true, amenities: true },
       orderBy: { label: "asc" },
     }),
     prisma.floorplanShape.findMany({ where: { labId } }),

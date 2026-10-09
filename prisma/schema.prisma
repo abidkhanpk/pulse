@@ -227,6 +227,8 @@ model Desk {
   yPct        Float?
   // Marker shape on the floorplan layout.
   markerShape DeskMarkerShape @default(CIRCLE)
+  // Amenity ids available at this desk (see lib/amenities.ts).
+  amenities   String[]   @default([])
   bookings    Booking[]
   occurrences BookingOccurrence[]
 
