@@ -40,6 +40,22 @@ export async function createAmenity(label: string): Promise<ActionResult<{ items
   return { ok: true, data: { items: await listAmenities() } };
 }
 
+/** Rename an amenity in place — desks reference it by id, so the new name shows everywhere it is used. */
+export async function updateAmenity(id: string, label: string): Promise<ActionResult<{ items: AmenityOption[] }>> {
+  const actor = await requireUser();
+  if (!can(actor, "org.manage")) return deny("org.manage");
+  const clean = label.trim().replace(/\s+/g, " ");
+  if (!clean || clean.length > 40) return { ok: false, error: "Amenity name must be 1–40 characters." };
+  const existing = await prisma.deskAmenity.findUnique({ where: { id } });
+  if (!existing) return { ok: false, error: "Amenity not found." };
+  const dup = await prisma.deskAmenity.findUnique({ where: { label: clean } });
+  if (dup && dup.id !== id) return { ok: false, error: `"${clean}" already exists.` };
+  await prisma.deskAmenity.update({ where: { id }, data: { label: clean } });
+  await logAudit(actor.id, "desk.amenity_renamed", "DeskAmenity", id, { from: existing.label, to: clean });
+  revalidatePath("/desks");
+  return { ok: true, data: { items: await listAmenities() } };
+}
+
 export async function deleteAmenity(id: string): Promise<ActionResult<{ items: AmenityOption[] }>> {
   const actor = await requireUser();
   if (!can(actor, "org.manage")) return deny("org.manage");

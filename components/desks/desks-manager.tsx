@@ -12,8 +12,10 @@ import {
   setDeskStatus,
   deleteDesk,
   createAmenity,
+  updateAmenity,
   deleteAmenity,
 } from "@/app/(app)/desks/actions";
+import { Pencil } from "lucide-react";
 
 interface AmenityOption {
   id: string;
@@ -49,8 +51,26 @@ export function DesksManager({
   onAmenitiesChanged: (items: AmenityOption[]) => void;
 }) {
   const [newAmenity, setNewAmenity] = React.useState("");
+  const [editingAmenity, setEditingAmenity] = React.useState<AmenityOption | null>(null);
   const [amenityError, setAmenityError] = React.useState<string | null>(null);
   const [amenityPending, setAmenityPending] = React.useState(false);
+
+  async function saveAmenityEdit() {
+    if (!editingAmenity) return;
+    setAmenityPending(true);
+    setAmenityError(null);
+    try {
+      const res = await updateAmenity(editingAmenity.id, editingAmenity.label);
+      if (!res.ok) setAmenityError(res.error);
+      else if (res.data) {
+        onAmenitiesChanged(res.data.items);
+        setEditingAmenity(null);
+        onChanged();
+      }
+    } finally {
+      setAmenityPending(false);
+    }
+  }
 
   const labelOf = (id: string) => amenityOptions.find((a) => a.id === id)?.label ?? id;
   const summaryOf = (ids: string[]) => (ids.length ? ids.map(labelOf).join(" · ") : null);
@@ -260,26 +280,75 @@ export function DesksManager({
           <div className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-700">
             <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Amenities catalogue</p>
             <p className="mt-0.5 text-xs text-slate-400">
-              The amenities desks can offer. Deleting one also removes it from every desk that lists it.
+              The amenities desks can offer. Rename one with the pencil — desks keep it under the new name. Deleting one also removes it from every desk that lists it.
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {amenityOptions.map((a) => (
-                <span
-                  key={a.id}
-                  className="inline-flex items-center gap-1 rounded-sm border border-slate-200 px-2 py-1 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300"
-                >
-                  {a.label}
-                  <button
-                    type="button"
-                    onClick={() => removeAmenity(a)}
-                    disabled={amenityPending}
-                    className="px-0.5 text-slate-400 transition-colors hover:text-red-600"
-                    aria-label={`Delete ${a.label}`}
+              {amenityOptions.map((a) =>
+                editingAmenity?.id === a.id ? (
+                  <span
+                    key={a.id}
+                    className="inline-flex items-center gap-1 rounded-sm border border-accent-400 px-1.5 py-0.5 dark:border-accent-600"
                   >
-                    ×
-                  </button>
-                </span>
-              ))}
+                    <input
+                      autoFocus
+                      value={editingAmenity.label}
+                      onChange={(e) => setEditingAmenity({ ...editingAmenity, label: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          saveAmenityEdit();
+                        }
+                        if (e.key === "Escape") setEditingAmenity(null);
+                      }}
+                      className="w-32 bg-transparent text-xs text-slate-700 outline-none dark:text-slate-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={saveAmenityEdit}
+                      disabled={amenityPending || !editingAmenity.label.trim()}
+                      className="px-1 text-xs font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-300"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingAmenity(null)}
+                      disabled={amenityPending}
+                      className="px-0.5 text-xs text-slate-400 hover:text-slate-600"
+                    >
+                      Cancel
+                    </button>
+                  </span>
+                ) : (
+                  <span
+                    key={a.id}
+                    className="inline-flex items-center gap-1 rounded-sm border border-slate-200 px-2 py-1 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300"
+                  >
+                    {a.label}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingAmenity(a);
+                        setAmenityError(null);
+                      }}
+                      disabled={amenityPending}
+                      className="px-0.5 text-slate-400 transition-colors hover:text-accent-600"
+                      aria-label={`Rename ${a.label}`}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeAmenity(a)}
+                      disabled={amenityPending}
+                      className="px-0.5 text-slate-400 transition-colors hover:text-red-600"
+                      aria-label={`Delete ${a.label}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                )
+              )}
               {amenityOptions.length === 0 && <span className="text-xs text-slate-400">None defined yet.</span>}
             </div>
             <div className="mt-3 flex items-start gap-2">
