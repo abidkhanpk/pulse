@@ -10,22 +10,22 @@ export function Table({ className, ...props }: React.TableHTMLAttributes<HTMLTab
 }
 
 export function THead({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn("bg-slate-50/80 backdrop-blur dark:bg-slate-800/50", className)} {...props} />;
+  return <thead className={cn("bg-slate-50 dark:bg-slate-800/50", className)} {...props} />;
 }
 
 export function TBody({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <tbody className={cn("divide-y divide-slate-100 bg-white dark:divide-slate-800/80 dark:bg-slate-900", className)} {...props} />;
+  return <tbody className={cn("divide-y divide-slate-200/80 bg-white dark:divide-slate-800 dark:bg-slate-900", className)} {...props} />;
 }
 
 export function TR({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
-  return <tr className={cn("transition-colors duration-150 hover:bg-accent-50/60 dark:hover:bg-accent-950/30", className)} {...props} />;
+  return <tr className={cn("transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-800/60", className)} {...props} />;
 }
 
 export function TH({ className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
   return (
     <th
       className={cn(
-        "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400",
+        "border-b border-slate-200 px-4 py-3 text-left text-[13px] font-medium text-slate-600 dark:border-slate-700 dark:text-slate-300",
         className
       )}
       {...props}
@@ -34,5 +34,5 @@ export function TH({ className, ...props }: React.ThHTMLAttributes<HTMLTableCell
 }
 
 export function TD({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn("px-4 py-3 text-slate-700 dark:text-slate-300", className)} {...props} />;
+  return <td className={cn("px-4 py-3.5 text-slate-700 dark:text-slate-300", className)} {...props} />;
 }
