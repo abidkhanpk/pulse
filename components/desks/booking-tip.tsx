@@ -1,5 +1,4 @@
 import { fmtFullDate } from "@/lib/dates";
-import { deskDisplayLabel } from "@/lib/desks";
 import { AmenityChips } from "./amenity-chips";
 import type { Occurrence } from "./week-grid";
 
@@ -18,7 +17,7 @@ export function BookingTipContent({ o }: { o: Occurrence }) {
     <div className="min-w-[170px]">
       <p className="font-bold text-slate-800 dark:text-slate-100">{o.booking.user.name}</p>
       <p className="mt-0.5 text-slate-500 dark:text-slate-400">
-        {o.desk ? deskDisplayLabel(o.desk) : "Remote / WFH"} · {fmtFullDate(o.date)}
+        {o.desk ? o.desk.label : "Remote / WFH"} · {fmtFullDate(o.date)}
       </p>
       <p className="text-slate-600 dark:text-slate-300">
         {fmtTime(o.startsAt)}–{fmtTime(o.endsAt)}

@@ -12,7 +12,6 @@ import {
   cancelBookingAction,
 } from "@/app/(app)/desks/actions";
 import { fmtFullDate } from "@/lib/dates";
-import { deskDisplayLabel } from "@/lib/desks";
 
 export interface BookingFormDefaults {
   userId?: string;
@@ -31,7 +30,7 @@ interface Props {
   occurrence?: { id: string; date: string } | null;
   defaults?: BookingFormDefaults;
   people: { id: string; name: string }[];
-  desks: { id: string; label: string; displayName?: string | null; status: string }[];
+  desks: { id: string; label: string; status: string }[];
   projects: { id: string; name: string }[];
   initial?: {
     userId: string;
@@ -197,7 +196,7 @@ export function BookingDrawer({ open, onClose, onSaved, bookingId, occurrence, d
                 id="bk-desk"
                 value={deskId}
                 onChange={setDeskId}
-                options={activeDesks.map((d) => ({ value: d.id, label: d.displayName?.trim() ? `${deskDisplayLabel(d)} (${d.label})` : d.label }))}
+                options={activeDesks.map((d) => ({ value: d.id, label: d.label }))}
                 placeholder="Select a desk…"
               />
             </div>

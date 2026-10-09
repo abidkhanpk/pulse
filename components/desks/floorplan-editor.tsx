@@ -15,6 +15,7 @@ import {
   setDeskStatus,
 } from "@/app/(app)/desks/actions";
 import { FONT_OPTIONS, textShapeStyle } from "@/lib/floorplan-text";
+import { deskLayoutLabel } from "@/lib/desks";
 
 type Tool = "select" | "station" | "wall" | "zone" | "rectangle" | "circle" | "polygon" | "text";
 type ShapeKind = "WALL" | "ZONE" | "RECTANGLE" | "CIRCLE" | "POLYGON" | "TEXT";
@@ -23,6 +24,7 @@ type MarkerShape = "CIRCLE" | "SQUARE" | "ROUNDED";
 interface DeskPos {
   id: string;
   label: string;
+  layoutLabel: string | null;
   status: string;
   xPct: number | null;
   yPct: number | null;
@@ -754,7 +756,7 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                     style={{ left: `${d.xPct}%`, top: `${d.yPct}%`, cursor: tool === "select" ? "move" : "default" }}
                     title={d.label}
                   >
-                    {d.label.slice(0, 4)}
+                    {deskLayoutLabel(d).slice(0, 4)}
                   </button>
                 ))}
               </div>
@@ -813,6 +815,38 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                         ✓
                       </Button>
                     </div>
+                  </div>
+                  <div>
+                    <Label>Layout label</Label>
+                    <div className="flex gap-1.5">
+                      <Input
+                        key={selDesk.id}
+                        id={`desk-layout-label-${selDesk.id}`}
+                        defaultValue={selDesk.layoutLabel ?? ""}
+                        placeholder={selDesk.label}
+                        maxLength={20}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          const el = document.getElementById(`desk-layout-label-${selDesk.id}`) as HTMLInputElement;
+                          const r = await updateDesk(selDesk.id, {
+                            labId,
+                            label: selDesk.label,
+                            layoutLabel: el.value.trim() || null,
+                          });
+                          if (!r.ok) alert(r.error);
+                          else load();
+                        }}
+                      >
+                        ✓
+                      </Button>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Short text shown inside the station box on the layout — e.g. 1, 2, 3 within a group of desks.
+                      Empty = the desk name. The real name ({selDesk.label}) is still used everywhere else.
+                    </p>
                   </div>
                   <div>
                     <Label>Marker shape</Label>

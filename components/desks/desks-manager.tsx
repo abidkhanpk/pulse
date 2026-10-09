@@ -16,6 +16,8 @@ import {
   deleteAmenity,
 } from "@/app/(app)/desks/actions";
 import { Pencil } from "lucide-react";
+import { Tooltip } from "@/components/ui/tooltip";
+import { AmenityChips } from "./amenity-chips";
 
 interface AmenityOption {
   id: string;
@@ -25,7 +27,6 @@ interface AmenityOption {
 interface Desk {
   id: string;
   label: string;
-  displayName: string | null;
   status: string;
   notes: string | null;
   amenities: string[];
@@ -74,7 +75,6 @@ export function DesksManager({
   }
 
   const labelOf = (id: string) => amenityOptions.find((a) => a.id === id)?.label ?? id;
-  const summaryOf = (ids: string[]) => (ids.length ? ids.map(labelOf).join(" · ") : null);
 
   async function addAmenity() {
     const label = newAmenity.trim();
@@ -112,7 +112,6 @@ export function DesksManager({
   const [formOpen, setFormOpen] = React.useState(false);
   const [labId, setLabId] = React.useState(labs[0]?.id ?? "");
   const [label, setLabel] = React.useState("");
-  const [displayName, setDisplayName] = React.useState("");
   const [notes, setNotes] = React.useState("");
   const [amenities, setAmenities] = React.useState<string[]>([]);
   const [error, setError] = React.useState<string | null>(null);
@@ -126,7 +125,6 @@ export function DesksManager({
     setEditing(null);
     setLabId(labs[0]?.id ?? "");
     setLabel("");
-    setDisplayName("");
     setNotes("");
     setAmenities([]);
     setError(null);
@@ -137,7 +135,6 @@ export function DesksManager({
     setEditing(d);
     setLabId(d.lab.id);
     setLabel(d.label);
-    setDisplayName(d.displayName ?? "");
     setNotes(d.notes ?? "");
     setAmenities(d.amenities ?? []);
     setError(null);
@@ -151,8 +148,8 @@ export function DesksManager({
     setPending(true);
     try {
       const res = editing
-        ? await updateDesk(editing.id, { labId, label: label.trim(), displayName: displayName.trim() || null, notes: notes.trim() || null, amenities })
-        : await createDesk({ labId, label: label.trim(), displayName: displayName.trim() || null, notes: notes.trim() || null, amenities });
+        ? await updateDesk(editing.id, { labId, label: label.trim(), notes: notes.trim() || null, amenities })
+        : await createDesk({ labId, label: label.trim(), notes: notes.trim() || null, amenities });
       if (!res.ok) setError(res.error);
       else {
         setFormOpen(false);
@@ -204,17 +201,6 @@ export function DesksManager({
               </div>
             </div>
             <div>
-              <Label>Display text (optional)</Label>
-              <Input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="e.g. Window desk near the shaker table"
-              />
-              <p className="mt-1 text-xs text-slate-400">
-                Shown in the booking views (week, month, day, layout) instead of the label. Leave empty to show the label.
-              </p>
-            </div>
-            <div>
               <Label>Notes (optional)</Label>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
             </div>
@@ -264,13 +250,20 @@ export function DesksManager({
               {desks.map((d) => (
                 <TR key={d.id}>
                   <TD className="font-medium">
-                    {d.label}
-                    {d.displayName && (
-                      <span className="block text-[11px] font-normal text-slate-400">Display: {d.displayName}</span>
-                    )}
-                    {summaryOf(d.amenities) && (
-                      <span className="block text-[11px] font-normal text-slate-400">{summaryOf(d.amenities)}</span>
-                    )}
+                    <Tooltip
+                      prefer="right"
+                      disabled={!d.amenities || d.amenities.length === 0}
+                      content={
+                        <div className="min-w-[150px]">
+                          <p className="font-bold text-slate-800 dark:text-slate-100">{d.label}</p>
+                          <div className="mt-1.5">
+                            <AmenityChips labels={(d.amenities ?? []).map(labelOf)} />
+                          </div>
+                        </div>
+                      }
+                    >
+                      <span>{d.label}</span>
+                    </Tooltip>
                   </TD>
                   <TD>{d.lab.name}</TD>
                   <TD>

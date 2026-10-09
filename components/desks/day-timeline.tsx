@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Badge } from "@/components/ui/card";
 import { listOccurrences } from "@/app/(app)/desks/actions";
-import { deskDisplayLabel } from "@/lib/desks";
 import type { Occurrence } from "./week-grid";
 import { Tooltip } from "@/components/ui/tooltip";
 import { BookingTipContent } from "./booking-tip";
@@ -31,7 +30,7 @@ export function DayTimeline({
   initialOccurrences,
   initialDate,
 }: {
-  desks: { id: string; label: string; displayName?: string | null; status: string; lab: { id: string; name: string } }[];
+  desks: { id: string; label: string; status: string; lab: { id: string; name: string } }[];
   initialOccurrences: Occurrence[];
   initialDate: string;
 }) {
@@ -107,7 +106,7 @@ export function DayTimeline({
             return (
               <div key={desk.id} className="flex border-b border-slate-100 last:border-0 dark:border-slate-800">
                 <div className="w-40 shrink-0 border-r border-slate-200 px-3 py-2 dark:border-slate-700">
-                  <div className="text-sm font-medium text-slate-800 dark:text-slate-200">{deskDisplayLabel(desk)}</div>
+                  <div className="text-sm font-medium text-slate-800 dark:text-slate-200">{desk.label}</div>
                   {desk.status === "MAINTENANCE" && <Badge color="warning">Maintenance</Badge>}
                 </div>
                 <div className="relative flex-1" style={{ minHeight: 40 }}>
