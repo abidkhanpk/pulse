@@ -86,11 +86,16 @@ function SparkTooltip({
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const nice = mm && dd ? `${dd} ${MONTHS[mm - 1]}` : label;
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs shadow-pop dark:border-slate-700 dark:bg-slate-800">
+    <div className="relative rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs shadow-pop dark:border-slate-700 dark:bg-slate-800">
       <p className="font-bold text-slate-800 dark:text-slate-100">
         {value} <span className="font-medium text-slate-400">present</span>
       </p>
       <p className="text-slate-400">{nice}</p>
+      {/* notch — little pointer at the bottom of the bubble */}
+      <span
+        aria-hidden
+        className="absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-[5px] rotate-45 border-b border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+      />
     </div>
   );
 }
@@ -144,8 +149,11 @@ function Stat({
               <XAxis dataKey="label" hide />
               <Tooltip
                 content={<SparkTooltip />}
+                // Pin the bubble above the chart strip; x still follows the point.
+                position={{ y: -62 }}
+                allowEscapeViewBox={{ y: true }}
                 cursor={{ stroke: sparkColor ?? "#6366f1", strokeOpacity: 0.35, strokeDasharray: "3 3" }}
-                wrapperStyle={{ zIndex: 20 }}
+                wrapperStyle={{ zIndex: 20, pointerEvents: "none" }}
               />
               <Area
                 type="monotone"
