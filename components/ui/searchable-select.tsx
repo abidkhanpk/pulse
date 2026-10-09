@@ -94,7 +94,7 @@ export function SearchableSelect({
           }
         }}
         className={cn(
-          "flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100",
+          "flex h-10 w-full items-center justify-between gap-2 rounded-sm border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100",
           "shadow-[inset_0_1px_2px_rgb(15,23,42,0.05)] transition-all duration-200 ease-liquid hover:border-slate-300 dark:hover:border-slate-600",
           open && "border-accent-400 ring-4 ring-accent-500/15 dark:border-accent-500",
           "disabled:cursor-not-allowed disabled:bg-slate-50 dark:disabled:bg-slate-800/60",
@@ -105,7 +105,7 @@ export function SearchableSelect({
         <ChevronDown className={cn("h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200", open && "rotate-180")} />
       </button>
       {open && (
-        <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200/70 bg-white/95 shadow-pop backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/95">
+        <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-sm border border-slate-200 bg-white shadow-xl dark:border-slate-700/60 dark:bg-slate-900">
           <div className="border-b border-slate-100 p-2 dark:border-slate-800">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -130,7 +130,7 @@ export function SearchableSelect({
                   }
                 }}
                 placeholder="Type to search…"
-                className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-2 text-sm text-slate-900 focus:border-accent-400 focus:outline-none focus:ring-4 focus:ring-accent-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                className="h-9 w-full rounded-sm border border-slate-200 bg-slate-50 pl-8 pr-2 text-sm text-slate-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               />
             </div>
           </div>
@@ -145,7 +145,7 @@ export function SearchableSelect({
                   onClick={() => choose(o.value)}
                   onMouseEnter={() => setHi(i)}
                   className={cn(
-                    "flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm transition-colors duration-100",
+                    "flex w-full items-center justify-between gap-2 rounded-sm px-3 py-2 text-left text-sm transition-colors duration-100",
                     i === hi
                       ? "bg-accent-50 text-accent-900 dark:bg-accent-950 dark:text-accent-100"
                       : "text-slate-700 dark:text-slate-300"

@@ -59,7 +59,7 @@ export function LoginForm({ appName }: { appName: string }) {
         initial={{ opacity: 0, y: 28, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 26 }}
-        className="card-sheen relative w-full max-w-sm rounded-3xl border border-white/60 bg-white/80 p-8 shadow-pop backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/80"
+        className="relative w-full max-w-sm rounded-sm border border-slate-200 bg-white p-8 shadow-xl dark:border-slate-700/60 dark:bg-slate-900"
       >
         <div className="mb-6 text-center">
           <motion.div

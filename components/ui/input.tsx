@@ -2,12 +2,12 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const fieldBase =
-  "flex w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 " +
-  "shadow-[inset_0_1px_2px_rgb(15,23,42,0.05)] transition-all duration-200 ease-liquid " +
+  "flex w-full rounded-sm border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 " +
+  "transition-colors duration-150 " +
   "placeholder:text-slate-400 hover:border-slate-300 " +
-  "focus:border-accent-400 focus:outline-none focus:ring-4 focus:ring-accent-500/15 focus:shadow-[0_0_0_4px_var(--accent-100),inset_0_1px_2px_rgb(15,23,42,0.05)] " +
+  "focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25 " +
   "dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600 " +
-  "dark:focus:border-accent-500 dark:focus:ring-accent-500/20 dark:focus:shadow-[0_0_0_4px_rgb(99,102,241,0.12)] " +
+  "dark:focus:border-accent-500 " +
   "disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 dark:disabled:bg-slate-800/60 dark:disabled:text-slate-500";
 
 export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
@@ -43,8 +43,8 @@ export function Checkbox({
     <input
       type="checkbox"
       className={cn(
-        "h-[18px] w-[18px] shrink-0 cursor-pointer rounded-md border-slate-300 accent-accent-600",
-        "transition-all duration-150 focus:ring-4 focus:ring-accent-500/20",
+        "h-[18px] w-[18px] shrink-0 cursor-pointer rounded-[3px] border-slate-300 accent-accent-600",
+        "transition-colors duration-150 focus:ring-2 focus:ring-accent-500/25",
         className
       )}
       {...props}
@@ -72,15 +72,15 @@ export function Switch({
       aria-label={label}
       onClick={() => onChange(!checked)}
       className={cn(
-        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ease-liquid",
+        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-sm transition-colors duration-200",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600",
-        checked ? "bg-gradient-to-b from-accent-500 to-accent-700 shadow-glow-sm" : "bg-slate-200 dark:bg-slate-700",
+        checked ? "bg-accent-600" : "bg-slate-200 dark:bg-slate-700",
         className
       )}
     >
       <span
         className={cn(
-          "inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow-md transition-transform duration-300 ease-spring",
+          "inline-block h-[18px] w-[18px] transform rounded-[3px] bg-white shadow-sm transition-transform duration-200",
           checked ? "translate-x-[22px]" : "translate-x-[3px]"
         )}
       />

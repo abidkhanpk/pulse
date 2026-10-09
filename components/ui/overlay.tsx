@@ -35,7 +35,7 @@ function Backdrop({ onClose }: { onClose: () => void }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="absolute inset-0 bg-slate-950/45 backdrop-blur-md dark:bg-slate-950/60"
+      className="absolute inset-0 bg-slate-950/50 dark:bg-slate-950/60"
       onClick={onClose}
       aria-hidden
     />
@@ -47,7 +47,7 @@ function CloseButton({ onClose }: { onClose: () => void }) {
     <button
       onClick={onClose}
       aria-label="Close"
-      className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-slate-400 transition-all duration-200 hover:rotate-90 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+      className="absolute right-4 top-4 z-10 rounded-sm p-1.5 text-slate-400 transition-all duration-200 hover:rotate-90 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
     >
       <X className="h-4 w-4" />
     </button>
@@ -69,7 +69,7 @@ export function Dialog({ open, onClose, children, className }: OverlayProps) {
             exit={{ opacity: 0, scale: 0.96, y: 12 }}
             transition={{ type: "spring", stiffness: 420, damping: 34 }}
             className={cn(
-              "card-sheen relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200/70 bg-white p-6 shadow-pop dark:border-slate-700/60 dark:bg-slate-900",
+              "relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-sm border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700/60 dark:bg-slate-900",
               className
             )}
           >
@@ -101,7 +101,7 @@ export function Sheet({ open, onClose, children, className }: OverlayProps) {
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 360, damping: 36 }}
             className={cn(
-              "absolute right-0 top-0 flex h-full w-full max-w-md flex-col rounded-l-3xl border-l border-slate-200/70 bg-white shadow-pop dark:border-slate-700/60 dark:bg-slate-900",
+              "absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-xl dark:border-slate-700/60 dark:bg-slate-900",
               className
             )}
           >

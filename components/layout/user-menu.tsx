@@ -55,7 +55,7 @@ export function UserMenu({ actor }: { actor: SessionActorLike }) {
         title={actor.name}
         aria-expanded={open}
       >
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-accent-600 to-accent-700 text-xs font-bold text-white shadow-glow-sm ring-2 ring-white transition group-hover:shadow-glow">
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-600 text-xs font-bold text-white ring-2 ring-white">
           {initials(actor.name)}
         </span>
         <span className="hidden text-left lg:block">
@@ -72,13 +72,13 @@ export function UserMenu({ actor }: { actor: SessionActorLike }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl bg-white shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700"
+            className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-sm bg-white shadow-xl ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700"
           >
             {/* Identity header */}
-            <div className="bg-gradient-to-r from-accent-600 to-accent-700 px-4 py-3.5 text-white">
+            <div className="bg-accent-600 px-4 py-3.5 text-white">
               <p className="truncate text-sm font-bold">{actor.name}</p>
               <p className="truncate text-xs text-accent-100">{actor.email}</p>
-              <span className="mt-1.5 inline-block rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+              <span className="mt-1.5 inline-block rounded-sm bg-white/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
                 {roleDisplayName(actor.role.key)}
               </span>
             </div>
@@ -87,7 +87,7 @@ export function UserMenu({ actor }: { actor: SessionActorLike }) {
               <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 Appearance
               </div>
-              <div className="mb-1 grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+              <div className="mb-1 grid grid-cols-3 gap-1 rounded-sm bg-slate-100 p-1 dark:bg-slate-800">
                 {themeOptions.map((opt) => {
                   const Icon = opt.icon;
                   const activeOpt = theme === opt.id;
@@ -95,9 +95,9 @@ export function UserMenu({ actor }: { actor: SessionActorLike }) {
                     <button
                       key={opt.id}
                       onClick={() => setTheme(opt.id)}
-                      className={`flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition ${
+                      className={`flex items-center justify-center gap-1.5 rounded-sm px-2 py-1.5 text-xs font-medium transition ${
                         activeOpt
-                          ? "bg-white text-accent-700 shadow-sm dark:bg-slate-700 dark:text-accent-300"
+                          ? "bg-white text-accent-700 dark:bg-slate-700 dark:text-accent-300"
                           : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
                       }`}
                     >
@@ -119,9 +119,9 @@ export function UserMenu({ actor }: { actor: SessionActorLike }) {
                 <Link
                   href="/labs"
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-accent-50 hover:text-accent-700 dark:text-slate-300 dark:hover:bg-accent-950 dark:hover:text-accent-300"
+                  className="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-accent-50 hover:text-accent-700 dark:text-slate-300 dark:hover:bg-accent-950 dark:hover:text-accent-300"
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-sm bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
                     <FlaskConical className="h-4 w-4" />
                   </span>
                   My Lab
@@ -131,9 +131,9 @@ export function UserMenu({ actor }: { actor: SessionActorLike }) {
                 <Link
                   href="/settings"
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-accent-50 hover:text-accent-700 dark:text-slate-300 dark:hover:bg-accent-950 dark:hover:text-accent-300"
+                  className="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-accent-50 hover:text-accent-700 dark:text-slate-300 dark:hover:bg-accent-950 dark:hover:text-accent-300"
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-sm bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                     <Settings className="h-4 w-4" />
                   </span>
                   Settings
@@ -142,9 +142,9 @@ export function UserMenu({ actor }: { actor: SessionActorLike }) {
               <form action={signOutAction}>
                 <button
                   type="submit"
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-red-50 hover:text-red-700 dark:text-slate-300 dark:hover:bg-red-950 dark:hover:text-red-300"
+                  className="flex w-full items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-red-50 hover:text-red-700 dark:text-slate-300 dark:hover:bg-red-950 dark:hover:text-red-300"
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-100 text-red-600 dark:bg-red-950">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-sm bg-red-100 text-red-600 dark:bg-red-950">
                     <LogOut className="h-4 w-4" />
                   </span>
                   Sign out

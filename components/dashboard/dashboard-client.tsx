@@ -134,9 +134,8 @@ function Stat({
 
   const inner = (
     <Card hover={!!href} data-tip-bound className="relative h-full overflow-hidden p-5">
-      <div className={`pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br ${gradient} opacity-[0.14] blur-2xl`} />
       <div className="flex items-start justify-between">
-        <span className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-white shadow-lg`}>
+        <span className={`flex h-12 w-12 items-center justify-center rounded-sm ${gradient} text-white`}>
           <Icon className="h-6 w-6" />
         </span>
         {href && <ArrowRight className="h-4 w-4 text-slate-300 transition-transform duration-200 group-hover:translate-x-0.5" />}
@@ -237,7 +236,7 @@ function BookingRows({
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.38 + i * 0.04, duration: 0.3 }}
-          className="flex items-center gap-2 rounded-xl border border-slate-100 px-3 py-2.5 text-sm transition-shadow hover:shadow-sm dark:border-slate-800"
+          className="flex items-center gap-2 rounded-sm border border-slate-100 px-3 py-2.5 text-sm transition-colors hover:border-slate-200 dark:border-slate-800"
         >
           <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
           <span className="text-slate-600 dark:text-slate-300">
@@ -267,7 +266,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
       <FadeIn>
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h1 className="bg-gradient-to-r from-accent-600 via-accent-700 to-accent-600 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent">
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               Dashboard
             </h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -279,7 +278,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
             </p>
           </div>
           {d.myMonthPct !== null && (
-            <div className="flex items-center gap-2 rounded-2xl border border-accent-200 bg-accent-50 px-4 py-2 dark:border-accent-800 dark:bg-accent-950">
+            <div className="flex items-center gap-2 rounded-sm border border-accent-200 bg-accent-50 px-4 py-2 dark:border-accent-800 dark:bg-accent-950">
               <CalendarCheck className="h-5 w-5 text-accent-600 dark:text-accent-300" />
               <div>
                 <p className="text-lg font-extrabold leading-none text-accent-700 dark:text-accent-300">{d.myMonthPct}%</p>
@@ -295,48 +294,48 @@ export function DashboardClient({ d }: { d: DashboardData }) {
         {d.mode === "full" && (
           <>
             <StaggerItem>
-              <Stat icon={Armchair} label="Desks occupied now" value={d.desksOccupied} total={d.desksTotal} hint="Live bookings on active desks" href={d.canSeeBookings ? "/desks" : undefined} gradient="from-accent-600 to-accent-700" />
+              <Stat icon={Armchair} label="Desks occupied now" value={d.desksOccupied} total={d.desksTotal} hint="Live bookings on active desks" href={d.canSeeBookings ? "/desks" : undefined} gradient="bg-accent-600" />
             </StaggerItem>
             <StaggerItem>
-              <Stat icon={UserCheck} label="Checked in today" value={d.checkedInToday} total={d.peopleTotal} hint="Across your labs" href={d.canViewReports ? "/reports" : undefined} gradient="from-emerald-600 to-teal-600" spark={d.attendanceTrend.map((t) => ({ label: t.date, value: t.present }))} sparkColor={CHART_COLORS.emerald} />
+              <Stat icon={UserCheck} label="Checked in today" value={d.checkedInToday} total={d.peopleTotal} hint="Across your labs" href={d.canViewReports ? "/reports" : undefined} gradient="bg-emerald-600" spark={d.attendanceTrend.map((t) => ({ label: t.date, value: t.present }))} sparkColor={CHART_COLORS.emerald} />
             </StaggerItem>
             <StaggerItem>
-              <Stat icon={AlertTriangle} label="Overdue todos" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="from-amber-500 to-orange-600" />
+              <Stat icon={AlertTriangle} label="Overdue todos" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="bg-amber-500" />
             </StaggerItem>
             <StaggerItem>
-              <Stat icon={ClipboardCheck} label="Awaiting review" value={d.pendingReviews} hint="Logbook entries" href="/logbook" gradient="from-sky-600 to-blue-600" />
+              <Stat icon={ClipboardCheck} label="Awaiting review" value={d.pendingReviews} hint="Logbook entries" href="/logbook" gradient="bg-sky-600" />
             </StaggerItem>
           </>
         )}
         {d.mode === "team" && (
           <>
             <StaggerItem>
-              <Stat icon={ListTodo} label="My open todos" value={d.myTodos.length} hint="Assigned to me" href="/projects" gradient="from-accent-600 to-accent-700" />
+              <Stat icon={ListTodo} label="My open todos" value={d.myTodos.length} hint="Assigned to me" href="/projects" gradient="bg-accent-600" />
             </StaggerItem>
             <StaggerItem>
-              <Stat icon={AlertTriangle} label="Overdue in my projects" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="from-amber-500 to-orange-600" />
+              <Stat icon={AlertTriangle} label="Overdue in my projects" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="bg-amber-500" />
             </StaggerItem>
             <StaggerItem>
-              <Stat icon={Users} label="Team checked in today" value={d.teamCheckedInToday} total={d.teamSize} hint="My project teams" href={d.canViewReports ? "/reports" : undefined} gradient="from-emerald-600 to-teal-600" spark={d.attendanceTrend.map((t) => ({ label: t.date, value: t.present }))} sparkColor={CHART_COLORS.emerald} />
+              <Stat icon={Users} label="Team checked in today" value={d.teamCheckedInToday} total={d.teamSize} hint="My project teams" href={d.canViewReports ? "/reports" : undefined} gradient="bg-emerald-600" spark={d.attendanceTrend.map((t) => ({ label: t.date, value: t.present }))} sparkColor={CHART_COLORS.emerald} />
             </StaggerItem>
             <StaggerItem>
-              <Stat icon={ClipboardCheck} label="Awaiting review" value={d.pendingReviews} hint="My teams' logbooks" href="/logbook" gradient="from-sky-600 to-blue-600" />
+              <Stat icon={ClipboardCheck} label="Awaiting review" value={d.pendingReviews} hint="My teams' logbooks" href="/logbook" gradient="bg-sky-600" />
             </StaggerItem>
           </>
         )}
         {d.mode === "personal" && (
           <>
             <StaggerItem>
-              <Stat icon={ListTodo} label="My open todos" value={d.myTodos.length} hint="Assigned to me" href="/projects" gradient="from-accent-600 to-accent-700" />
+              <Stat icon={ListTodo} label="My open todos" value={d.myTodos.length} hint="Assigned to me" href="/projects" gradient="bg-accent-600" />
             </StaggerItem>
             <StaggerItem>
-              <Stat icon={AlertTriangle} label="Overdue" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="from-amber-500 to-orange-600" />
+              <Stat icon={AlertTriangle} label="Overdue" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="bg-amber-500" />
             </StaggerItem>
             <StaggerItem>
-              <Stat icon={CalendarDays} label="My bookings today" value={d.myBookingsToday.length} hint="Desk & remote" gradient="from-emerald-600 to-teal-600" />
+              <Stat icon={CalendarDays} label="My bookings today" value={d.myBookingsToday.length} hint="Desk & remote" gradient="bg-emerald-600" />
             </StaggerItem>
             <StaggerItem>
-              <Stat icon={FolderKanban} label="My projects" value={d.myProjectsCount} hint="Where I'm lead or member" href="/projects" gradient="from-sky-600 to-blue-600" />
+              <Stat icon={FolderKanban} label="My projects" value={d.myProjectsCount} hint="Where I'm lead or member" href="/projects" gradient="bg-sky-600" />
             </StaggerItem>
           </>
         )}
@@ -388,8 +387,8 @@ export function DashboardClient({ d }: { d: DashboardData }) {
               <div className="max-h-72 space-y-1 overflow-y-auto">
                 {d.recentActivity.length === 0 && <p className="text-sm text-slate-400">No activity yet.</p>}
                 {d.recentActivity.map((a) => (
-                  <div key={a.id} className="flex items-start gap-3 rounded-xl px-2 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/60">
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-600 dark:bg-accent-950 dark:text-accent-300">
+                  <div key={a.id} className="flex items-start gap-3 rounded-sm px-2 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-accent-100 text-accent-600 dark:bg-accent-950 dark:text-accent-300">
                       <Activity className="h-4 w-4" />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -420,7 +419,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
                 {d.myTodos.length === 0 && <p className="text-sm text-slate-400">Nothing assigned — enjoy the quiet.</p>}
                 {d.myTodos.map((t, i) => (
                   <motion.div key={t.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.32 + i * 0.05, duration: 0.3 }}>
-                    <Link href={`/projects/${t.projectId}`} className="flex items-center gap-2 rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:-translate-y-px hover:border-accent-200 hover:shadow-md dark:border-slate-800">
+                    <Link href={`/projects/${t.projectId}`} className="flex items-center gap-2 rounded-sm border border-slate-100 px-3 py-2.5 transition-colors hover:border-accent-300 dark:border-slate-800">
                       <ListTodo className="h-4 w-4 shrink-0 text-slate-400" />
                       <span className="flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-200">{t.title}</span>
                       <Badge color={t.status === "IN_PROGRESS" ? "info" : "default"}>{t.status.replace("_", "")}</Badge>
@@ -452,7 +451,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.38 + i * 0.04, duration: 0.3 }}
-                      className="flex items-center gap-2 rounded-xl border border-slate-100 px-3 py-2.5 text-sm transition-shadow hover:shadow-sm dark:border-slate-800"
+                      className="flex items-center gap-2 rounded-sm border border-slate-100 px-3 py-2.5 text-sm transition-colors hover:border-slate-200 dark:border-slate-800"
                     >
                       <span className="font-medium text-slate-800 dark:text-slate-200">{b.personName}</span>
                       <span className="text-slate-400">
