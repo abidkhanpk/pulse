@@ -3,7 +3,6 @@
 import * as React from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { Sidebar, MobileNav, type SessionActorLike } from "./sidebar";
 import { UserMenu } from "./user-menu";
 import { BrandLogo } from "@/components/brand-logo";
@@ -54,12 +53,9 @@ export function AppShell({
         onTogglePin={togglePin}
         showCheckIn={showCheckIn}
       />
-      <div
-        className={cn(
-          "flex min-w-0 flex-1 flex-col transition-[padding] duration-300 ease-out",
-          pinned ? "md:pl-[260px]" : "md:pl-[72px]"
-        )}
-      >
+      {/* The sidebar is in normal flow: as it expands/collapses this column
+          reflows — the page is pushed, never overlaid. */}
+      <div className="flex min-w-0 flex-1 flex-col">
         <header className="relative z-40 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 md:px-6">
           <span className="flex items-center gap-2 md:hidden">
             <BrandLogo className="h-7 w-7" />

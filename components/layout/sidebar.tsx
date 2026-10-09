@@ -19,6 +19,8 @@ import {
   Settings,
   Pin,
   PinOff,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 export interface SessionActorLike {
@@ -36,17 +38,17 @@ export function roleDisplayName(key: string): string {
     .join("");
 }
 
-const NAV: { href: string; label: string; icon: typeof LayoutDashboard; perm: PermissionKey | null; section: string }[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, perm: null, section: "Main" },
-  { href: "/desks", label: "Desks", icon: Armchair, perm: "bookings.view_all", section: "Main" },
-  { href: "/projects", label: "Projects", icon: FolderKanban, perm: null, section: "Main" },
-  { href: "/logbook", label: "Logbook", icon: BookOpenText, perm: null, section: "Main" },
-  { href: "/people", label: "People", icon: Users, perm: "users.manage", section: "Main" },
-  { href: "/check-in", label: "Check-in", icon: ClipboardList, perm: null, section: "Main" },
-  { href: "/reports", label: "Reports", icon: BarChart3, perm: "attendance.view_reports", section: "Main" },
-  { href: "/labs", label: "Labs", icon: FlaskConical, perm: "labs.manage", section: "Manage" },
-  { href: "/audit", label: "Audit", icon: ShieldCheck, perm: "audit.view", section: "Manage" },
-  { href: "/settings", label: "Settings", icon: Settings, perm: "org.manage", section: "Manage" },
+const NAV: { href: string; label: string; icon: typeof LayoutDashboard; perm: PermissionKey | null }[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, perm: null },
+  { href: "/desks", label: "Desks", icon: Armchair, perm: "bookings.view_all" },
+  { href: "/projects", label: "Projects", icon: FolderKanban, perm: null },
+  { href: "/logbook", label: "Logbook", icon: BookOpenText, perm: null },
+  { href: "/people", label: "People", icon: Users, perm: "users.manage" },
+  { href: "/check-in", label: "Check-in", icon: ClipboardList, perm: null },
+  { href: "/reports", label: "Reports", icon: BarChart3, perm: "attendance.view_reports" },
+  { href: "/labs", label: "Labs", icon: FlaskConical, perm: "labs.manage" },
+  { href: "/audit", label: "Audit", icon: ShieldCheck, perm: "audit.view" },
+  { href: "/settings", label: "Settings", icon: Settings, perm: "org.manage" },
 ];
 
 function canSee(actor: SessionActorLike, item: (typeof NAV)[number]) {
@@ -73,8 +75,11 @@ export function Sidebar({
   showCheckIn: boolean;
 }) {
   const [hovered, setHovered] = React.useState(false);
+  // When pinned, the edge arrow can collapse the sidebar to icons (and back);
+  // in auto mode the arrow is hidden and hover alone drives expansion.
+  const [pinCollapsed, setPinCollapsed] = React.useState(false);
   const leaveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const expanded = pinned || hovered;
+  const expanded = pinned ? !pinCollapsed : hovered;
 
   // Width is driven by a motion value, and text visibility is DERIVED from
   // the actual rendered width — labels only exist once the sidebar is
@@ -95,7 +100,7 @@ export function Sidebar({
     setShowText(w > 150);
   });
 
-  const items = NAV.filter((n) => canSee(actor, n));
+  const items = NAV.filter((n) => canSee(actor, n) && (n.href !== "/check-in" || showCheckIn));
 
   function onEnter() {
     if (leaveTimer.current) clearTimeout(leaveTimer.current);
@@ -110,151 +115,134 @@ export function Sidebar({
     if (leaveTimer.current) clearTimeout(leaveTimer.current);
   }, []);
 
+  function handlePinClick() {
+    // Leaving pinned mode always restores the full-width pinned state first.
+    if (pinned) setPinCollapsed(false);
+    onTogglePin();
+  }
+
   return (
-    <motion.aside
+    <motion.div
       style={{ width: widthMV }}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
-      className="fixed bottom-0 left-0 top-0 z-40 hidden flex-col overflow-hidden border-r border-slate-200/70 bg-white shadow-[4px_0_24px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#0a0a0e] dark:shadow-[4px_0_24px_rgba(0,0,0,0.5)] md:flex"
+      className="relative z-40 hidden shrink-0 md:block"
     >
-      {/* Brand */}
-      <div className={cn("flex h-16 shrink-0 items-center border-b border-slate-100 dark:border-white/10", expanded ? "px-5" : "justify-center px-2")}>
-        <Link href="/dashboard" className="flex items-center gap-2.5" title={appName}>
-          <motion.span
-            whileHover={{ rotate: -8, scale: 1.06 }}
-            className="flex h-9 w-9 shrink-0 items-center justify-center"
-          >
-            <BrandLogo className="h-9 w-9" />
-          </motion.span>
-          {showText && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.15 }}
-              className="whitespace-nowrap text-xl font-extrabold tracking-tight text-accent-700 dark:text-accent-400"
-            >
-              {appName}
-            </motion.span>
-          )}
-        </Link>
-      </div>
+      <aside className="flex h-full flex-col overflow-hidden border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        {/* Brand */}
+        <div className={cn("flex h-16 shrink-0 items-center border-b border-slate-100 dark:border-slate-800", expanded ? "px-5" : "justify-center px-2")}>
+          <Link href="/dashboard" className="flex items-center gap-2.5" title={appName}>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center">
+              <BrandLogo className="h-9 w-9" />
+            </span>
+            {showText && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.15 }}
+                className="whitespace-nowrap text-lg font-extrabold tracking-tight text-slate-900 dark:text-white"
+              >
+                {appName}
+              </motion.span>
+            )}
+          </Link>
+        </div>
 
-      {/* Nav */}
-      <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden p-3">
-        {(() => {
-          let lastSection = "";
-          return items.map((item) => {
+        {/* Nav — flat list, clean icons: muted when idle, accent on the active button itself */}
+        <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden p-3">
+          {items.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
-            const sectionHeader = item.section !== lastSection ? item.section : null;
-            lastSection = item.section;
             return (
-              <React.Fragment key={item.href}>
-                {sectionHeader && showText && (
-                  <motion.p
+              <Link
+                key={item.href}
+                href={item.href}
+                title={expanded ? undefined : item.label}
+                className={cn(
+                  "flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors duration-150",
+                  !expanded && "justify-center px-0",
+                  active
+                    ? "bg-accent-50 text-accent-700 dark:bg-accent-500/10 dark:text-accent-300"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
+                )}
+              >
+                <Icon
+                  className={cn(
+                    "h-[18px] w-[18px] shrink-0",
+                    active ? "text-accent-600 dark:text-accent-400" : "text-slate-400 dark:text-slate-500"
+                  )}
+                />
+                {showText && (
+                  <motion.span
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.15 }}
-                    className="whitespace-nowrap px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500"
+                    className="truncate whitespace-nowrap"
                   >
-                    {sectionHeader}
-                  </motion.p>
+                    {item.label}
+                  </motion.span>
                 )}
-                <Link
-                  href={item.href}
-                  title={expanded ? undefined : item.label}
-                  className={cn(
-                    "group relative flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium transition-colors duration-150",
-                    !expanded && "justify-center px-0",
-                    active
-                      ? "text-white"
-                      : "text-slate-600 hover:bg-accent-50 hover:text-accent-700 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
-                  )}
-                >
-                  {active && (
-                    <motion.span
-                      layoutId="sidebar-active"
-                      className="absolute inset-0 rounded-sm bg-accent-600"
-                      transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-sm transition-colors",
-                      active
-                        ? "bg-white/20"
-                        : "bg-slate-100 text-slate-500 group-hover:bg-accent-100 group-hover:text-accent-600 dark:bg-white/5 dark:text-slate-400 dark:group-hover:bg-white/10 dark:group-hover:text-white"
-                    )}
-                  >
-                    <Icon className="h-[18px] w-[18px]" />
-                  </span>
-                  {showText && (
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.15 }}
-                      className="relative z-10 truncate whitespace-nowrap"
-                    >
-                      {item.label}
-                    </motion.span>
-                  )}
-                  {showText && active && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="relative z-10 ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-white"
-                    />
-                  )}
-                </Link>
-              </React.Fragment>
+              </Link>
             );
-          });
-        })()}
-      </nav>
+          })}
+        </nav>
 
-      {/* Profile + pin */}
-      <div className="space-y-2 border-t border-slate-100 p-3 dark:border-white/10">
-        {showText && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.15 }}
-            className="flex items-center gap-2.5 rounded-sm bg-accent-50 p-2.5 ring-1 ring-accent-100 dark:bg-white/5 dark:ring-white/10"
-          >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-accent-600 text-xs font-bold text-white">
+        {/* Profile + pin (the pin button is always visible) */}
+        <div className="space-y-1 border-t border-slate-100 p-3 dark:border-slate-800">
+          <div className={cn("flex items-center gap-2.5 rounded-sm px-2 py-1.5", !expanded && "justify-center px-0")}>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-600 text-[11px] font-bold text-white">
               {actor.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
             </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-slate-800 dark:text-white">{actor.name}</span>
-              <span className="block truncate text-[11px] text-slate-500 dark:text-slate-400">{roleDisplayName(actor.role.key)}</span>
-            </span>
-          </motion.div>
-        )}
+            {showText && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.15 }}
+                className="min-w-0 flex-1"
+              >
+                <span className="block truncate text-sm font-medium text-slate-800 dark:text-slate-100">{actor.name}</span>
+                <span className="block truncate text-[11px] text-slate-400">{roleDisplayName(actor.role.key)}</span>
+              </motion.span>
+            )}
+          </div>
+          <button
+            onClick={handlePinClick}
+            title={pinned ? "Unpin sidebar (auto-collapse on hover)" : "Pin sidebar open"}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors",
+              !expanded && "justify-center px-0",
+              pinned
+                ? "bg-accent-50 text-accent-700 dark:bg-accent-500/10 dark:text-accent-300"
+                : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white"
+            )}
+          >
+            {pinned ? <PinOff className="h-[18px] w-[18px] shrink-0" /> : <Pin className="h-[18px] w-[18px] shrink-0" />}
+            {showText && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.15 }}
+                className="whitespace-nowrap"
+              >
+                {pinned ? "Unpin" : "Pin open"}
+              </motion.span>
+            )}
+          </button>
+        </div>
+      </aside>
+
+      {/* Edge arrow — only in pinned mode: collapse/expand the pinned sidebar */}
+      {pinned && (
         <button
-          onClick={onTogglePin}
-          title={pinned ? "Unpin sidebar (auto-collapse on hover)" : "Pin sidebar open"}
-          className={cn(
-            "flex w-full items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium transition",
-            !expanded && "justify-center px-0",
-            pinned
-              ? "bg-accent-100 text-accent-700 dark:bg-white/10 dark:text-white"
-              : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
-          )}
+          onClick={() => setPinCollapsed((v) => !v)}
+          title={pinCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!pinCollapsed}
+          className="absolute -right-3 top-20 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md transition-colors hover:text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
         >
-          {pinned ? <PinOff className="h-[18px] w-[18px] shrink-0" /> : <Pin className="h-[18px] w-[18px] shrink-0" />}
-          {showText && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.15 }}
-              className="whitespace-nowrap"
-            >
-              {pinned ? "Unpin" : "Pin open"}
-            </motion.span>
-          )}
+          {pinCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
         </button>
-      </div>
-    </motion.aside>
+      )}
+    </motion.div>
   );
 }
 
