@@ -187,6 +187,7 @@ export function ProjectDetail({
           projectId={project.id}
           initialTodos={project.todos}
           kanbanOrdered={project.kanbanOrdered}
+          canManage={canManage}
           onTodoClick={(t) => openTodoDialog(t)}
           onNewTodo={(status) => setTodoDialog({ open: true, todo: null, defaultStatus: status })}
         />
