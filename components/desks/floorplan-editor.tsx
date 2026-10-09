@@ -12,7 +12,6 @@ import {
   saveDeskPositions,
   saveFloorplanShapes,
   updateDesk,
-  setDeskStatus,
 } from "@/app/(app)/desks/actions";
 import { FONT_OPTIONS, textShapeStyle } from "@/lib/floorplan-text";
 import { deskLayoutLabel } from "@/lib/desks";
@@ -799,24 +798,6 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div>
-                    <Label>Rename</Label>
-                    <div className="flex gap-1.5">
-                      <Input id={`desk-rename-${selDesk.id}`} defaultValue={selDesk.label} />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          const el = document.getElementById(`desk-rename-${selDesk.id}`) as HTMLInputElement;
-                          const r = await updateDesk(selDesk.id, { labId, label: el.value.trim() });
-                          if (!r.ok) alert(r.error);
-                          else load();
-                        }}
-                      >
-                        ✓
-                      </Button>
-                    </div>
-                  </div>
-                  <div>
                     <Label>Layout label</Label>
                     <div className="flex gap-1.5">
                       <Input
@@ -872,20 +853,6 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                         </button>
                       ))}
                     </div>
-                  </div>
-                  <div>
-                    <Label>Status</Label>
-                    <Select
-                      value={selDesk.status}
-                      onChange={async (e) => {
-                        const r = await setDeskStatus(selDesk.id, e.target.value as "ACTIVE" | "MAINTENANCE");
-                        if (!r.ok) alert(r.error);
-                        else load();
-                      }}
-                    >
-                      <option value="ACTIVE">Active</option>
-                      <option value="MAINTENANCE">Maintenance</option>
-                    </Select>
                   </div>
                   <div className="flex gap-2">
                     <Button
