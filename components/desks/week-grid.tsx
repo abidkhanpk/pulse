@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { fmtFullDate } from "@/lib/dates";
+import { Tooltip } from "@/components/ui/tooltip";
+import { BookingTipContent } from "./booking-tip";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import {
   listOccurrences,
@@ -235,20 +237,20 @@ export function WeekGrid({
                     >
                       <div className="min-h-[44px] space-y-1">
                         {cell.map((o) => (
-                          <button
-                            key={o.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelected(o);
-                            }}
-                            className={`block w-full rounded-md border px-1.5 py-1 text-left text-xs ${TYPE_COLORS[o.booking.type]}`}
-                            title={`${o.booking.user.name} — ${fmtTime(o.startsAt)}–${fmtTime(o.endsAt)}`}
-                          >
-                            <div className="truncate font-medium">{o.booking.user.name}</div>
-                            <div className="text-[11px] opacity-80">
-                              {fmtTime(o.startsAt)}–{fmtTime(o.endsAt)}
-                            </div>
-                          </button>
+                          <Tooltip key={o.id} content={<BookingTipContent o={o} />}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelected(o);
+                              }}
+                              className={`block w-full rounded-md border px-1.5 py-1 text-left text-xs ${TYPE_COLORS[o.booking.type]}`}
+                            >
+                              <div className="truncate font-medium">{o.booking.user.name}</div>
+                              <div className="text-[11px] opacity-80">
+                                {fmtTime(o.startsAt)}–{fmtTime(o.endsAt)}
+                              </div>
+                            </button>
+                          </Tooltip>
                         ))}
                       </div>
                     </td>

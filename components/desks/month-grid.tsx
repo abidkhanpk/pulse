@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { Label, Textarea } from "@/components/ui/input";
 import { fmtFullDate } from "@/lib/dates";
+import { Tooltip } from "@/components/ui/tooltip";
+import { BookingTipContent } from "./booking-tip";
 import {
   listOccurrences,
   cancelOccurrenceAction,
@@ -245,17 +247,17 @@ export function MonthGrid({ desks, people, projects, today, labId, canManage }: 
                 </div>
                 <div className="space-y-1">
                   {visible.map((o) => (
-                    <button
-                      key={o.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelected(o);
-                      }}
-                      className={`block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium ${TYPE_STYLES[o.booking.type]}`}
-                      title={`${o.booking.user.name} · ${o.desk ? o.desk.label : "WFH"} · ${fmtTime(o.startsAt)}–${fmtTime(o.endsAt)}`}
-                    >
-                      {o.booking.user.name} · {o.desk ? o.desk.label : "WFH"}
-                    </button>
+                    <Tooltip key={o.id} content={<BookingTipContent o={o} />}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelected(o);
+                        }}
+                        className={`block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium ${TYPE_STYLES[o.booking.type]}`}
+                      >
+                        {o.booking.user.name} · {o.desk ? o.desk.label : "WFH"}
+                      </button>
+                    </Tooltip>
                   ))}
                   {extra > 0 && (
                     <button

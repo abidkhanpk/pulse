@@ -128,8 +128,14 @@ function Stat({
   function handleSparkMove(s: ChartHoverState) {
     const el = stripRef.current;
     if (!el || !s?.isTooltipActive || !s.activeCoordinate || s.activeTooltipIndex == null) return;
-    const { x, y } = s.activeCoordinate;
-    setTip({ x, y, idx: Number(s.activeTooltipIndex), pos: computeTipPos(el, x, y) });
+    const idx = Number(s.activeTooltipIndex);
+    const datum = spark?.[idx];
+    if (!datum) return;
+    // recharts' activeCoordinate.y is the MOUSE y, not the point's — compute
+    // the true point y from the value (domain is pinned to [0, max] below).
+    const maxV = Math.max(1, ...(spark ?? []).map((p) => p.value));
+    const y = 4 + (1 - datum.value / maxV) * (el.clientHeight - 6);
+    setTip({ x: s.activeCoordinate.x, y, idx, pos: computeTipPos(el, s.activeCoordinate.x, y) });
   }
 
   const inner = (
@@ -161,6 +167,7 @@ function Stat({
                   <stop offset="100%" stopColor={sparkColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
+              <YAxis hide domain={[0, (dataMax: number) => Math.max(1, dataMax)]} />
               <Area
                 type="monotone"
                 dataKey="value"
@@ -257,8 +264,15 @@ export function DashboardClient({ d }: { d: DashboardData }) {
   function handleAttMove(s: ChartHoverState) {
     const el = attRef.current;
     if (!el || !s?.isTooltipActive || !s.activeCoordinate || s.activeTooltipIndex == null) return;
-    const { x, y } = s.activeCoordinate;
-    setAttTip({ x, y, idx: Number(s.activeTooltipIndex), pos: computeTipPos(el, x, y) });
+    const idx = Number(s.activeTooltipIndex);
+    const datum = d.attendanceTrend[idx];
+    if (!datum) return;
+    // True point y from the value (recharts reports the mouse y instead);
+    // the Y domain is pinned below to the same formula used here.
+    const maxPresent = Math.max(0, ...d.attendanceTrend.map((t) => t.present));
+    const domainMax = Math.max(5, Math.ceil(maxPresent * 1.15));
+    const y = 8 + (1 - datum.present / domainMax) * (el.clientHeight - 8 - 30);
+    setAttTip({ x: s.activeCoordinate.x, y, idx, pos: computeTipPos(el, s.activeCoordinate.x, y) });
   }
 
   return (
@@ -500,7 +514,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#1e293b" : "#e2e8f0"} vertical={false} />
                   <XAxis dataKey="date" tickFormatter={(v: string) => fmtDayMonth(v)} tick={{ fontSize: 11, fill: dark ? "#94a3b8" : "#64748b" }} tickLine={false} axisLine={false} interval={2} />
-                  <YAxis tick={{ fontSize: 11, fill: dark ? "#94a3b8" : "#64748b" }} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <YAxis domain={[0, (dataMax: number) => Math.max(5, Math.ceil(dataMax * 1.15))]} tick={{ fontSize: 11, fill: dark ? "#94a3b8" : "#64748b" }} tickLine={false} axisLine={false} allowDecimals={false} />
                   <Area type="monotone" dataKey="present" name="Present" stroke={CHART_COLORS.emerald} strokeWidth={2.5} fill="url(#attTrend)" activeDot={false} />
                 </AreaChart>
               </ResponsiveContainer>

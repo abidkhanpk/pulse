@@ -1,20 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { TipSurface, type TipPlacement } from "@/components/ui/tooltip";
 
 /**
- * Shared chart tooltip: one bubble style for every chart in the app.
- * Placement is adaptive — above the point by default, below when there
- * is no room above, and left/right when neither fits — and the notch
- * (the little pointer) always aims at the hovered point.
+ * Chart tooltip positioning: the bubble is anchored to a chart POINT
+ * (not an element), placed adaptively — above the point by default,
+ * below when there is no room above, and left/right when neither fits.
+ * The bubble itself is the shared app-wide TipSurface.
  */
 
 export const TIP_W = 118;
 export const TIP_H = 54;
 const GAP = 10;
 
-export type TipPlacement = "above" | "below" | "left" | "right";
+export type { TipPlacement };
 
 export interface TipBounds {
   left: number;
@@ -56,9 +56,6 @@ export function placeTip(cx: number, cy: number, b: TipBounds, bw = TIP_W, bh = 
   return { left: cx + GAP, top, placement: "right", notch: clamp(cy - top, 14, bh - 14) };
 }
 
-const NOTCH_BASE =
-  "absolute h-2.5 w-2.5 rotate-45 border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800";
-
 export function ChartTipBubble({
   title,
   sub,
@@ -68,29 +65,16 @@ export function ChartTipBubble({
   sub: string;
   pos: TipPos;
 }) {
-  const notchStyle: React.CSSProperties =
-    pos.placement === "above" || pos.placement === "below"
-      ? { left: pos.notch }
-      : { top: pos.notch };
-  const notchClass =
-    pos.placement === "above"
-      ? "top-full -translate-x-1/2 -translate-y-[5px] border-b border-r"
-      : pos.placement === "below"
-        ? "bottom-full -translate-x-1/2 translate-y-[5px] border-l border-t"
-        : pos.placement === "left"
-          ? "left-full -translate-y-1/2 -translate-x-[5px] border-r border-t"
-          : "right-full -translate-y-1/2 translate-x-[5px] border-b border-l";
   return (
     <div
       className="pointer-events-none absolute z-30"
       style={{ left: pos.left, top: pos.top, width: TIP_W }}
       aria-hidden
     >
-      <div className="relative rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs shadow-pop dark:border-slate-700 dark:bg-slate-800">
+      <TipSurface placement={pos.placement} notch={pos.notch} className="text-center">
         <p className="font-bold leading-tight text-slate-800 dark:text-slate-100">{title}</p>
         <p className="leading-tight text-slate-400">{sub}</p>
-        <span aria-hidden style={notchStyle} className={cn(NOTCH_BASE, notchClass)} />
-      </div>
+      </TipSurface>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
+import { Tooltip } from "@/components/ui/tooltip";
 import { getFloorplan, layoutOccupancy } from "@/app/(app)/desks/actions";
 import { BookingDrawer } from "./booking-drawer";
 
@@ -188,36 +189,61 @@ export function FloorplanView({
               const st = statusOf(d);
               const rad = markerRadius(d.markerShape);
               const bookable = canBook && d.status !== "MAINTENANCE";
+              const list = occByDesk.get(d.id) ?? [];
+              const statusText =
+                st === "occupied" ? "Occupied now" : st === "upcoming" ? "Booked later today" : st === "maintenance" ? "Under maintenance" : "Free";
               const color =
                 st === "occupied" ? "bg-red-500" : st === "upcoming" ? "bg-sky-500" : st === "maintenance" ? "bg-amber-500" : "bg-emerald-500";
               return (
-                <button
+                <Tooltip
                   key={d.id}
-                  onClick={() => {
-                    if (bookable) {
-                      // Bookers go straight to the booking dialog with this station preselected.
-                      setBookingDeskId(d.id);
-                    } else {
-                      // Everyone else (and maintenance stations) gets the inspection card.
-                      setSelected(selected === d.id ? null : d.id);
-                    }
-                  }}
-                  className={`absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center ${rad} text-[10px] font-bold text-white shadow-lg transition-transform hover:scale-110 ${
-                    selected === d.id ? "ring-2 ring-accent-500 ring-offset-2" : ""
-                  }`}
-                  style={{ left: `${d.xPct}%`, top: `${d.yPct}%` }}
-                  title={`${d.label} — ${st}`}
+                  content={
+                    <div className="min-w-[180px]">
+                      <p className="font-bold text-slate-800 dark:text-slate-100">
+                        {d.label} <span className="ml-1 font-medium text-slate-400">{statusText}</span>
+                      </p>
+                      {list.length > 0 ? (
+                        <ul className="mt-1 space-y-0.5 text-slate-600 dark:text-slate-300">
+                          {list.map((o, i) => (
+                            <li key={i}>
+                              {o.personName} · {fmtTime(o.timeStart)}–{fmtTime(o.timeEnd)}
+                              {o.title ? ` · ${o.title}` : ""}
+                              {o.occupiedNow && <span className="ml-1 font-semibold text-red-500">● now</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-0.5 text-slate-400">{st === "maintenance" ? "Out of service" : "No bookings today"}</p>
+                      )}
+                    </div>
+                  }
                 >
-                  {/* Roomer-style ripple on currently occupied stations */}
-                  {st === "occupied" && (
-                    <span className="absolute inset-0">
-                      <span className={`ripple-ring absolute inset-0 ${rad} bg-red-500`} />
-                      <span className={`ripple-ring ripple-delay absolute inset-0 ${rad} bg-red-500`} />
-                    </span>
-                  )}
-                  <span className={`${color} absolute inset-0 ${rad}`} />
-                  <span className="relative">{d.label.slice(0, 4)}</span>
-                </button>
+                  <button
+                    onClick={() => {
+                      if (bookable) {
+                        // Bookers go straight to the booking dialog with this station preselected.
+                        setBookingDeskId(d.id);
+                      } else {
+                        // Everyone else (and maintenance stations) gets the inspection card.
+                        setSelected(selected === d.id ? null : d.id);
+                      }
+                    }}
+                    className={`absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center ${rad} text-[10px] font-bold text-white shadow-lg transition-transform hover:scale-110 ${
+                      selected === d.id ? "ring-2 ring-accent-500 ring-offset-2" : ""
+                    }`}
+                    style={{ left: `${d.xPct}%`, top: `${d.yPct}%` }}
+                  >
+                    {/* Roomer-style ripple on currently occupied stations */}
+                    {st === "occupied" && (
+                      <span className="absolute inset-0">
+                        <span className={`ripple-ring absolute inset-0 ${rad} bg-red-500`} />
+                        <span className={`ripple-ring ripple-delay absolute inset-0 ${rad} bg-red-500`} />
+                      </span>
+                    )}
+                    <span className={`${color} absolute inset-0 ${rad}`} />
+                    <span className="relative">{d.label.slice(0, 4)}</span>
+                  </button>
+                </Tooltip>
               );
             })}
           </div>

@@ -6,6 +6,8 @@ import { Input, Label } from "@/components/ui/input";
 import { Badge } from "@/components/ui/card";
 import { listOccurrences } from "@/app/(app)/desks/actions";
 import type { Occurrence } from "./week-grid";
+import { Tooltip } from "@/components/ui/tooltip";
+import { BookingTipContent } from "./booking-tip";
 
 const DAY_START_MIN = 7 * 60; // 07:00
 const DAY_END_MIN = 19 * 60; // 19:00
@@ -122,15 +124,15 @@ export function DayTimeline({
                     const left = ((s - DAY_START_MIN) / totalMin) * 100;
                     const width = ((e - s) / totalMin) * 100;
                     return (
-                      <div
-                        key={o.id}
-                        className="absolute top-1.5 bottom-1.5 overflow-hidden rounded-md border border-accent-200 bg-accent-100 px-2 py-0.5 text-xs dark:bg-accent-950 dark:border-accent-800"
-                        style={{ left: `${left}%`, width: `${width}%` }}
-                        title={`${o.booking.user.name} — ${fmtRange(o)}${o.booking.title ? ` — ${o.booking.title}` : ""}`}
-                      >
-                        <span className="font-medium text-accent-900">{o.booking.user.name}</span>
-                        <span className="ml-1 text-accent-700 dark:text-accent-300">{fmtRange(o)}</span>
-                      </div>
+                      <Tooltip key={o.id} content={<BookingTipContent o={o} />}>
+                        <div
+                          className="absolute top-1.5 bottom-1.5 overflow-hidden rounded-md border border-accent-200 bg-accent-100 px-2 py-0.5 text-xs dark:bg-accent-950 dark:border-accent-800"
+                          style={{ left: `${left}%`, width: `${width}%` }}
+                        >
+                          <span className="font-medium text-accent-900">{o.booking.user.name}</span>
+                          <span className="ml-1 text-accent-700 dark:text-accent-300">{fmtRange(o)}</span>
+                        </div>
+                      </Tooltip>
                     );
                   })}
                 </div>
@@ -152,15 +154,15 @@ export function DayTimeline({
                   const left = ((s - DAY_START_MIN) / totalMin) * 100;
                   const width = ((e - s) / totalMin) * 100;
                   return (
-                    <div
-                      key={o.id}
-                      className="absolute top-1.5 bottom-1.5 overflow-hidden rounded-md border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-xs dark:bg-emerald-950"
-                      style={{ left: `${left}%`, width: `${width}%` }}
-                      title={`${o.booking.user.name} — ${fmtRange(o)}`}
-                    >
-                      <span className="font-medium text-emerald-900">{o.booking.user.name}</span>
-                      <span className="ml-1 text-emerald-700 dark:text-emerald-300">{fmtRange(o)}</span>
-                    </div>
+                    <Tooltip key={o.id} content={<BookingTipContent o={o} />}>
+                      <div
+                        className="absolute top-1.5 bottom-1.5 overflow-hidden rounded-md border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-xs dark:bg-emerald-950"
+                        style={{ left: `${left}%`, width: `${width}%` }}
+                      >
+                        <span className="font-medium text-emerald-900">{o.booking.user.name}</span>
+                        <span className="ml-1 text-emerald-700 dark:text-emerald-300">{fmtRange(o)}</span>
+                      </div>
+                    </Tooltip>
                   );
                 })}
             </div>
