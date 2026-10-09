@@ -70,7 +70,7 @@ export function LoginForm({ appName }: { appName: string }) {
           >
             <BrandLogo className="h-16 w-16 drop-shadow-[0_8px_24px_var(--accent-500)]" />
           </motion.div>
-          <h1 className="bg-gradient-to-r from-accent-600 to-accent-800 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent dark:from-accent-400 dark:to-accent-200">
+          <h1 className="font-wordmark bg-gradient-to-r from-accent-600 to-accent-800 bg-clip-text text-[34px] leading-tight tracking-[0.05em] text-transparent dark:from-accent-400 dark:to-accent-200">
             {appName}
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Lab Operations and Outcomes Management</p>

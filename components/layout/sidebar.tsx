@@ -142,7 +142,7 @@ export function Sidebar({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.15 }}
-                className="whitespace-nowrap text-lg font-extrabold tracking-tight text-slate-900 dark:text-white"
+                className="font-wordmark whitespace-nowrap text-[21px] leading-none tracking-[0.06em] text-slate-900 dark:text-white"
               >
                 {appName}
               </motion.span>

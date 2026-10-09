@@ -2,6 +2,18 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Wordmark font (Astro) — used for the app name next to the logo in the
+   sidebar, mobile header and login page. Self-hosted; the font is a
+   display face with full lowercase + digits, so admin-renamed app names
+   render in it too. */
+@font-face {
+  font-family: "Astro";
+  src: url("/fonts/astro.otf") format("opentype");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
@@ -184,6 +196,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator {
 
 /* ---- Polish design tokens ---- */
 @theme {
+  --font-wordmark: "Astro", var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   /* Layered, soft shadows for the elevated look */
   --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 16px -4px rgb(15 23 42 / 0.08);
   --shadow-lift: 0 2px 4px rgb(15 23 42 / 0.05), 0 12px 32px -8px rgb(15 23 42 / 0.16);

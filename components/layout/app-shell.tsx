@@ -64,7 +64,7 @@ export function AppShell({
         <header className="relative z-40 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 md:px-6">
           <span className="flex items-center gap-2 md:hidden">
             <BrandLogo className="h-7 w-7" />
-            <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">{appName}</span>
+            <span className="font-wordmark text-[19px] leading-none tracking-[0.06em] text-slate-900 dark:text-white">{appName}</span>
           </span>
           <div className="hidden text-sm text-slate-500 dark:text-slate-400 md:block">
             {new Date().toLocaleDateString("en-PK", {
