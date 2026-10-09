@@ -126,7 +126,7 @@ export function Sidebar({
       style={{ width: widthMV }}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
-      className="relative z-40 hidden shrink-0 md:block"
+      className="sticky top-0 z-40 hidden h-screen shrink-0 self-start md:block"
     >
       <aside className="flex h-full flex-col overflow-hidden border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         {/* Brand */}
@@ -162,7 +162,10 @@ export function Sidebar({
                   "flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors duration-150",
                   !expanded && "justify-center px-0",
                   active
-                    ? "bg-accent-50 text-accent-700 dark:bg-accent-500/10 dark:text-accent-300"
+                    ? expanded
+                      ? "bg-accent-50 text-accent-700 dark:bg-accent-500/10 dark:text-accent-300"
+                      : // Collapsed: no background at all — only the icon color marks the active item.
+                        "text-accent-700 hover:bg-slate-100 dark:text-accent-300 dark:hover:bg-white/5"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
                 )}
               >
