@@ -56,6 +56,7 @@ const autoExpandedProjects = new Set<string>();
 const STATUS_PILL: Record<string, string> = {
   TODO: "bg-blue-600 hover:bg-blue-700",
   IN_PROGRESS: "bg-amber-500 hover:bg-amber-600",
+  IN_REVIEW: "bg-violet-600 hover:bg-violet-700",
   DONE: "bg-emerald-600 hover:bg-emerald-700",
 };
 
@@ -77,7 +78,7 @@ function TodoRow({
   async function quickStatus(s: string) {
     if (s === todo.status) return;
     setSaving(true);
-    const res = await setTodoStatus(todo.id, s as "TODO" | "IN_PROGRESS" | "DONE");
+    const res = await setTodoStatus(todo.id, s as "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE");
     setSaving(false);
     if (!res.ok) alert(res.error);
     else onChanged();
@@ -130,6 +131,7 @@ function TodoRow({
         >
           <option value="TODO">New</option>
           <option value="IN_PROGRESS">In progress</option>
+          <option value="IN_REVIEW">In review</option>
           <option value="DONE">Done</option>
         </select>
         <div className="relative shrink-0">

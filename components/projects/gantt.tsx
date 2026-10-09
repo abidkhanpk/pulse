@@ -51,6 +51,7 @@ interface DragState {
 const STATUS_BG: Record<string, string> = {
   TODO: "bg-slate-400",
   IN_PROGRESS: "bg-accent-500",
+  IN_REVIEW: "bg-violet-500",
   DONE: "bg-emerald-500",
 };
 

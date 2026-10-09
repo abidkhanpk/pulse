@@ -145,6 +145,7 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
             <Select id="td-status" value={status} onChange={(e) => setStatus(e.target.value as KanbanTodo["status"])}>
               <option value="TODO">To do</option>
               <option value="IN_PROGRESS">In progress</option>
+              <option value="IN_REVIEW">In review</option>
               <option value="DONE">Done</option>
             </Select>
           </div>

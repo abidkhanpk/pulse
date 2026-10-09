@@ -436,7 +436,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
                     <Link href={`/projects/${t.projectId}`} className="flex items-center gap-2 rounded-sm border border-slate-100 px-3 py-2.5 transition-colors hover:border-accent-300 dark:border-slate-800">
                       <ListTodo className="h-4 w-4 shrink-0 text-slate-400" />
                       <span className="flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-200">{t.title}</span>
-                      <Badge color={t.status === "IN_PROGRESS" ? "info" : "default"}>{t.status.replace("_", "")}</Badge>
+                      <Badge color={t.status === "IN_PROGRESS" ? "info" : t.status === "IN_REVIEW" ? "warning" : "default"}>{t.status.replace(/_/g, " ")}</Badge>
                     </Link>
                     <p className="mt-0.5 pl-6 text-xs text-slate-400">
                       {t.projectName}

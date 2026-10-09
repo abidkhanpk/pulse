@@ -301,7 +301,7 @@ const todoSchema = z.object({
   milestoneId: z.string().min(1).nullable().optional(),
   title: z.string().trim().min(1).max(300),
   description: z.string().trim().max(2000).optional().nullable(),
-  status: z.enum(["TODO", "IN_PROGRESS", "DONE"]),
+  status: z.enum(["TODO", "IN_PROGRESS", "IN_REVIEW", "DONE"]),
   priority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
   assigneeId: z.string().min(1).nullable().optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
@@ -384,7 +384,7 @@ export async function updateTodo(id: string, input: z.infer<typeof todoSchema>):
 /** Drag-and-drop move: change status and/or reorder. */
 export async function moveTodo(
   id: string,
-  toStatus: "TODO" | "IN_PROGRESS" | "DONE",
+  toStatus: "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE",
   toIndex: number
 ): Promise<ActionResult> {
   const actor = await requireUser();
@@ -689,7 +689,7 @@ export async function setMilestoneDependencies(milestoneId: string, dependsOnIds
  */
 export async function initKanbanOrder(
   projectId: string,
-  items: { id: string; status: "TODO" | "IN_PROGRESS" | "DONE"; sortOrder: number }[]
+  items: { id: string; status: "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE"; sortOrder: number }[]
 ): Promise<ActionResult> {
   const actor = await requireUser();
   const proj = await prisma.project.findUnique({ where: { id: projectId }, select: { labId: true } });
@@ -710,7 +710,7 @@ export async function initKanbanOrder(
 }
 
 /** Quick status change (e.g. from the overview status pill). Preserves all other fields. */
-export async function setTodoStatus(id: string, status: "TODO" | "IN_PROGRESS" | "DONE"): Promise<ActionResult> {
+export async function setTodoStatus(id: string, status: "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE"): Promise<ActionResult> {
   const actor = await requireUser();
   const existing = await prisma.todo.findUnique({
     where: { id },

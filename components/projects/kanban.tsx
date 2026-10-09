@@ -30,7 +30,7 @@ export interface KanbanTodo {
   title: string;
   description?: string | null;
   priority?: TodoPriority;
-  status: "TODO" | "IN_PROGRESS" | "DONE";
+  status: "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE";
   sortOrder: number;
   startDate: string | null;
   endDate: string | null;
@@ -60,6 +60,7 @@ function dateKey(t: KanbanTodo): string {
 const COLUMNS: { id: KanbanTodo["status"]; label: string }[] = [
   { id: "TODO", label: "To do" },
   { id: "IN_PROGRESS", label: "In progress" },
+  { id: "IN_REVIEW", label: "In Review" },
   { id: "DONE", label: "Done" },
 ];
 
