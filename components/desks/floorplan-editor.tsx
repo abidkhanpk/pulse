@@ -445,6 +445,25 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
   const selShape = shapes.find((s) => s.id === selectedShape);
   const polygons = shapes.filter((s) => s.kind === "POLYGON");
 
+  /** Copy the selected shape with all its properties, offset slightly so it doesn't hide under the original, and select the copy. */
+  function duplicateShape() {
+    if (!selShape) return;
+    const dx = Math.min(3, Math.max(0, 100 - (selShape.xPct + selShape.wPct)));
+    const dy = Math.min(3, Math.max(0, 100 - (selShape.yPct + selShape.hPct)));
+    const id = newShapeId();
+    const copy: Shape = {
+      ...selShape,
+      id,
+      xPct: selShape.xPct + dx,
+      yPct: selShape.yPct + dy,
+      points: selShape.points ? selShape.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) : null,
+    };
+    setShapes((ss) => [...ss, copy]);
+    setSelectedShape(id);
+    setSelectedDesk(null);
+    setDirty(true);
+  }
+
   function shapeStyle(s: Shape): React.CSSProperties {
     const col = s.color ?? (s.kind === "WALL" ? "#475569" : "#6366f1");
     return {
@@ -854,18 +873,23 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                       Filled <span className="text-xs text-slate-400">(uncheck for outline only)</span>
                     </label>
                   )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-red-600"
-                    onClick={() => {
-                      setShapes((ss) => ss.filter((s) => s.id !== selShape.id));
-                      setSelectedShape(null);
-                      setDirty(true);
-                    }}
-                  >
-                    Delete {KIND_LABEL[selShape.kind].toLowerCase()}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={duplicateShape}>
+                      Duplicate
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600"
+                      onClick={() => {
+                        setShapes((ss) => ss.filter((s) => s.id !== selShape.id));
+                        setSelectedShape(null);
+                        setDirty(true);
+                      }}
+                    >
+                      Delete {KIND_LABEL[selShape.kind].toLowerCase()}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}
