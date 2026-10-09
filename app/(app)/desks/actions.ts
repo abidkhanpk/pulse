@@ -362,10 +362,13 @@ export interface DeskLabOverview {
 /** Per-lab desk stats for the admin overview. */
 export async function deskLabOverview(): Promise<DeskLabOverview[]> {
   const actor = await requireUser();
-  if (actor.role.scope !== "GLOBAL") return [];
+  const labIds = scopeFilter(actor);
   const today = todayPKT();
   const now = new Date();
-  const labs = await prisma.lab.findMany({ orderBy: { name: "asc" } });
+  const labs = await prisma.lab.findMany({
+    where: labIds ? { id: { in: labIds } } : undefined,
+    orderBy: { name: "asc" },
+  });
   return Promise.all(
     labs.map(async (lab) => {
       const [deskCount, occupiedNow, bookingsToday] = await Promise.all([

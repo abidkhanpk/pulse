@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { requirePermission } from "@/lib/auth-helpers";
 import { hasPermission } from "@/lib/permissions";
@@ -31,18 +32,26 @@ export default async function DesksPage({
   const params = await searchParams;
   const labId = params.lab || undefined;
   const isAdmin = actor.role.scope === "GLOBAL";
+  const labs = await myLabs();
 
-  // Admins start at the lab overview; drill into ?lab=<id> for detail.
-  if (isAdmin && !labId) {
-    const overview = await deskLabOverview();
-    return <DesksOverview overview={overview} />;
+  // Landing behavior when no lab is chosen:
+  // — Admins start at the all-labs overview; drill into ?lab=<id> for detail.
+  // — A lab incharge with exactly one lab goes straight into that lab.
+  // — An incharge of several labs gets the overview cards for their labs.
+  if (!labId) {
+    if (!isAdmin && labs.length === 1) {
+      redirect(`/desks?lab=${labs[0].id}`);
+    }
+    if (isAdmin || labs.length > 1) {
+      const overview = await deskLabOverview();
+      return <DesksOverview overview={overview} />;
+    }
   }
 
   const today = toISODate(todayPKT());
   const weekStart = mondayOf(today);
 
-  const [labs, desks, people, projects, occurrences] = await Promise.all([
-    myLabs(),
+  const [desks, people, projects, occurrences] = await Promise.all([
     listDesks(labId),
     bookablePeopleAll(labId),
     bookableProjects(labId),
@@ -51,7 +60,7 @@ export default async function DesksPage({
 
   return (
     <div className="space-y-4">
-      {isAdmin && labId && (
+      {(isAdmin || labs.length > 1) && labId && (
         <Link
           href="/desks"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-accent-600 dark:text-slate-400"
