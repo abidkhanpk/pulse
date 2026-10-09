@@ -136,11 +136,10 @@ export function Sidebar({
             <span className="flex h-9 w-9 shrink-0 items-center justify-center">
               <BrandLogo className="h-9 w-9" />
             </span>
-            {showText && (
+            {expanded && (
               <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.15 }}
+                layoutId="app-wordmark"
+                transition={{ type: "spring", stiffness: 420, damping: 36 }}
                 className="font-wordmark whitespace-nowrap text-[44px] leading-none tracking-[-0.015em] text-slate-900 dark:text-white"
               >
                 {appName}

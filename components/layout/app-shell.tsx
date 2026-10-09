@@ -82,10 +82,19 @@ export function AppShell({
             {/* Collapsed sidebar: the wordmark moves up here, left of the date. */}
             {!sidebarExpanded && (
               <>
-                <span className="font-wordmark text-[44px] leading-none tracking-[-0.015em] text-slate-900 dark:text-white">
+                <motion.span
+                  layoutId="app-wordmark"
+                  transition={{ type: "spring", stiffness: 420, damping: 36 }}
+                  className="font-wordmark text-[44px] leading-none tracking-[-0.015em] text-slate-900 dark:text-white"
+                >
                   {appName}
-                </span>
-                <span className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
+                </motion.span>
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2 }}
+                  className="h-6 w-px bg-slate-200 dark:bg-slate-700"
+                />
               </>
             )}
             <span className="text-sm text-slate-500 dark:text-slate-400">
