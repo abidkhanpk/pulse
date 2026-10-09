@@ -27,6 +27,12 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const [pinned, setPinned] = React.useState(false);
+  // Sidebar expansion state lives here so the header can show the app
+  // name while the sidebar is collapsed. When pinned, the edge arrow
+  // collapses/expands it manually; otherwise hover drives it.
+  const [hovered, setHovered] = React.useState(false);
+  const [pinCollapsed, setPinCollapsed] = React.useState(false);
+  const sidebarExpanded = pinned ? !pinCollapsed : hovered;
 
   React.useEffect(() => {
     try {
@@ -37,6 +43,8 @@ export function AppShell({
   }, []);
 
   function togglePin() {
+    // Leaving pinned mode always restores the full-width state first.
+    setPinCollapsed(false);
     setPinned((v) => {
       const next = !v;
       try {
@@ -55,7 +63,11 @@ export function AppShell({
         appName={appName}
         pathname={pathname}
         pinned={pinned}
+        expanded={sidebarExpanded}
+        pinCollapsed={pinCollapsed}
+        onHoverChange={setHovered}
         onTogglePin={togglePin}
+        onTogglePinCollapsed={() => setPinCollapsed((v) => !v)}
         showCheckIn={showCheckIn}
       />
       {/* The sidebar is in normal flow: as it expands/collapses this column
@@ -66,14 +78,25 @@ export function AppShell({
             <BrandLogo className="h-7 w-7" />
             <span className="font-wordmark text-[19px] leading-none tracking-[0.06em] text-slate-900 dark:text-white">{appName}</span>
           </span>
-          <div className="hidden text-sm text-slate-500 dark:text-slate-400 md:block">
-            {new Date().toLocaleDateString("en-PK", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-              timeZone: "Asia/Karachi",
-            })}
+          <div className="hidden items-center gap-3 md:flex">
+            {/* Collapsed sidebar: the wordmark moves up here, left of the date. */}
+            {!sidebarExpanded && (
+              <>
+                <span className="font-wordmark text-[44px] leading-none tracking-[-0.015em] text-slate-900 dark:text-white">
+                  {appName}
+                </span>
+                <span className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
+              </>
+            )}
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              {new Date().toLocaleDateString("en-PK", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+                timeZone: "Asia/Karachi",
+              })}
+            </span>
           </div>
           <div className="flex items-center gap-3">
             <UserMenu actor={actor} accentChoice={accentChoice} defaultAccent={defaultAccent} />

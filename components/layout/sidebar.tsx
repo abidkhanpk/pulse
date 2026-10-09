@@ -65,22 +65,26 @@ export function Sidebar({
   appName,
   pathname,
   pinned,
+  expanded,
+  pinCollapsed,
+  onHoverChange,
   onTogglePin,
+  onTogglePinCollapsed,
   showCheckIn,
 }: {
   actor: SessionActorLike;
   appName: string;
   pathname: string;
   pinned: boolean;
+  /** Owned by the app shell so the header can react to the sidebar state. */
+  expanded: boolean;
+  pinCollapsed: boolean;
+  onHoverChange: (hovered: boolean) => void;
   onTogglePin: () => void;
+  onTogglePinCollapsed: () => void;
   showCheckIn: boolean;
 }) {
-  const [hovered, setHovered] = React.useState(false);
-  // When pinned, the edge arrow can collapse the sidebar to icons (and back);
-  // in auto mode the arrow is hidden and hover alone drives expansion.
-  const [pinCollapsed, setPinCollapsed] = React.useState(false);
   const leaveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const expanded = pinned ? !pinCollapsed : hovered;
 
   // Width is driven by a motion value, and text visibility is DERIVED from
   // the actual rendered width — labels only exist once the sidebar is
@@ -105,22 +109,17 @@ export function Sidebar({
 
   function onEnter() {
     if (leaveTimer.current) clearTimeout(leaveTimer.current);
-    setHovered(true);
+    onHoverChange(true);
   }
   function onLeave() {
     if (leaveTimer.current) clearTimeout(leaveTimer.current);
     // Small delay so moving between icon and edge doesn't flicker.
-    leaveTimer.current = setTimeout(() => setHovered(false), 220);
+    leaveTimer.current = setTimeout(() => onHoverChange(false), 220);
   }
   React.useEffect(() => () => {
     if (leaveTimer.current) clearTimeout(leaveTimer.current);
   }, []);
 
-  function handlePinClick() {
-    // Leaving pinned mode always restores the full-width pinned state first.
-    if (pinned) setPinCollapsed(false);
-    onTogglePin();
-  }
 
   return (
     <motion.div
@@ -142,7 +141,7 @@ export function Sidebar({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.15 }}
-                className="font-wordmark whitespace-nowrap text-[50px] leading-none tracking-[-0.015em] text-slate-900 dark:text-white"
+                className="font-wordmark whitespace-nowrap text-[44px] leading-none tracking-[-0.015em] text-slate-900 dark:text-white"
               >
                 {appName}
               </motion.span>
@@ -213,7 +212,7 @@ export function Sidebar({
           </div>
           <Tooltip content={pinned ? "Unpin sidebar" : "Pin sidebar open"} disabled={expanded} prefer="right">
           <button
-            onClick={handlePinClick}
+            onClick={onTogglePin}
             aria-label={pinned ? "Unpin sidebar" : "Pin sidebar open"}
             className={cn(
               "flex w-full items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors",
@@ -244,7 +243,7 @@ export function Sidebar({
       {pinned && (
         <Tooltip content={pinCollapsed ? "Expand sidebar" : "Collapse sidebar"} prefer="right">
           <button
-            onClick={() => setPinCollapsed((v) => !v)}
+            onClick={onTogglePinCollapsed}
             aria-label={pinCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-expanded={!pinCollapsed}
             className="absolute -right-3 top-20 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md transition-colors hover:text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
