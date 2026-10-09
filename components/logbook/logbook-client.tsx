@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label, Select, Checkbox, FieldError } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { fmtFullDate } from "@/lib/dates";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { Card, CardHeader, CardTitle, CardContent, Badge } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/misc";
@@ -77,7 +78,7 @@ function EntryCard({
             <div className="flex flex-wrap items-center gap-2">
               <Badge color={STATUS_COLORS[entry.status] ?? "default"}>{entry.status}</Badge>
               {entry.deleted && <Badge color="danger">Deleted</Badge>}
-              <span className="text-xs text-slate-400">{entry.date}</span>
+              <span className="text-xs text-slate-400">{fmtFullDate(entry.date)}</span>
               {!mine && <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{entry.user.name}</span>}
               {entry.project && <span className="text-xs text-accent-600">{entry.project.name}</span>}
             </div>

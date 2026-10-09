@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Sheet, SheetHeader, SheetTitle, SheetBody } from "@/components/ui/overlay";
 import { Checkbox } from "@/components/ui/input";
+import { fmtFullDate, fmtDateTime } from "@/lib/dates";
 import { Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { RevisionView } from "@/app/(app)/logbook/actions";
@@ -43,18 +44,11 @@ function timeAgo(iso: string): string {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   if (d < 30) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" });
+  return fmtFullDate(iso);
 }
 
 function fullDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("en-PK", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "Asia/Karachi",
-  });
+  return fmtDateTime(iso);
 }
 
 /** Rendered word diff: deletions red strikethrough, additions green. */

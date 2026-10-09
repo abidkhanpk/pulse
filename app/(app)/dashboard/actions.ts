@@ -57,7 +57,7 @@ function buildTrend(today: Date, records: { date: Date }[]): { date: string; pre
     const k = toISODate(r.date);
     if (trendMap.has(k)) trendMap.set(k, (trendMap.get(k) ?? 0) + 1);
   }
-  return [...trendMap.entries()].map(([date, present]) => ({ date: date.slice(5), present }));
+  return [...trendMap.entries()].map(([date, present]) => ({ date, present }));
 }
 
 function toProgress(

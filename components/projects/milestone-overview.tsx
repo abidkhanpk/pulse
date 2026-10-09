@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Plus, Pencil, Trash2, CalendarDays, MoreVertical, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label, Select, FieldError } from "@/components/ui/input";
+import { fmtFullDate } from "@/lib/dates";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { Avatar } from "@/components/ui/misc";
 import {
@@ -45,8 +46,7 @@ function dateKey(t: OverviewTodo): string {
 
 function fmt(d: string | null): string {
   if (!d) return "—";
-  const [y, m, day] = d.slice(0, 10).split("-");
-  return `${m}/${day}/${y}`;
+  return fmtFullDate(d.slice(0, 10));
 }
 
 // Projects auto-expanded this session — survives tab switches (component

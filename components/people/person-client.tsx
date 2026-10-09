@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent, Badge } from "@/components/ui
 import { Avatar } from "@/components/ui/misc";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Input, Label } from "@/components/ui/input";
+import { fmtFullDate } from "@/lib/dates";
 import { Button } from "@/components/ui/button";
 import { personAttendance } from "@/app/(app)/check-in/actions";
 
@@ -89,7 +90,7 @@ export function PersonClient({ person }: { person: Person }) {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p><span className="font-medium text-slate-700 dark:text-slate-300">Lab:</span> {person.lab?.name ?? "—"}</p>
-            <p><span className="font-medium text-slate-700 dark:text-slate-300">Join date:</span> {person.joinDate ? person.joinDate.slice(0, 10) : "—"}</p>
+            <p><span className="font-medium text-slate-700 dark:text-slate-300">Join date:</span> {person.joinDate ? fmtFullDate(person.joinDate.slice(0, 10)) : "—"}</p>
             {person.inchargeOf.length > 0 && (
               <p>
                 <span className="font-medium text-slate-700 dark:text-slate-300">Incharge of:</span>{""}
@@ -145,7 +146,7 @@ export function PersonClient({ person }: { person: Person }) {
                     : "—";
                 return (
                   <TR key={r.id}>
-                    <TD>{r.date}</TD>
+                    <TD>{fmtFullDate(r.date)}</TD>
                     <TD>{fmtTime(r.checkIn)}</TD>
                     <TD>{fmtTime(r.checkOut)}</TD>
                     <TD>{hours}</TD>

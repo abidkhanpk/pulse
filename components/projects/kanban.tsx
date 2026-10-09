@@ -20,6 +20,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Badge } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/misc";
+import { fmtFullDate } from "@/lib/dates";
 import { moveTodo, initKanbanOrder } from "@/app/(app)/projects/actions";
 
 export interface KanbanTodo {
@@ -82,7 +83,7 @@ function TodoCard({ todo, onClick }: { todo: KanbanTodo; onClick: () => void }) 
         )}
         {todo.endDate && (
           <Badge color={isOverdue(todo) ? "danger" : "default"} className="text-[10px]">
-            {isOverdue(todo) ? "Overdue" : ""}{todo.endDate.slice(0, 10)}
+            {isOverdue(todo) ? "Overdue · " : ""}{fmtFullDate(todo.endDate.slice(0, 10))}
           </Badge>
         )}
         {todo.assignee && (

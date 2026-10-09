@@ -24,9 +24,10 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent, Badge } from "@/components/ui/card";
+import { ChartTipBubble, placeTip, type TipPos } from "@/components/ui/chart-tip";
+import { fmtDayMonth, fmtDayMonthDay, fmtFullDate, fmtDateTime } from "@/lib/dates";
 import { EmptyState } from "@/components/ui/misc";
 import { FadeIn, Stagger, StaggerItem } from "@/components/ui/motion";
 import type { DashboardData } from "@/app/(app)/dashboard/actions";
@@ -73,31 +74,31 @@ const CHART_COLORS = {
   violet: "#8b5cf6",
 };
 
-function SparkTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: { value: number; payload: { label: string; value: number } }[];
-}) {
-  if (!active || !payload?.length) return null;
-  const { label, value } = payload[0].payload;
-  const [mm, dd] = label.split("-").map(Number);
-  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const nice = mm && dd ? `${dd} ${MONTHS[mm - 1]}` : label;
-  return (
-    <div className="relative rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs shadow-pop dark:border-slate-700 dark:bg-slate-800">
-      <p className="font-bold text-slate-800 dark:text-slate-100">
-        {value} <span className="font-medium text-slate-400">present</span>
-      </p>
-      <p className="text-slate-400">{nice}</p>
-      {/* notch — little pointer at the bottom of the bubble */}
-      <span
-        aria-hidden
-        className="absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-[5px] rotate-45 border-b border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
-      />
-    </div>
-  );
+/** Minimal shape of the state recharts v3 passes to chart mouse handlers. */
+interface ChartHoverState {
+  isTooltipActive?: boolean;
+  activeCoordinate?: { x: number; y: number };
+  activeTooltipIndex?: number | string | null;
+}
+
+interface TipState {
+  x: number;
+  y: number;
+  idx: number;
+  pos: TipPos;
+}
+
+/** Compute the adaptive tip position for a hover inside `el`, bounded by the nearest [data-tip-bound] ancestor (or the element itself). */
+function computeTipPos(el: HTMLElement, x: number, y: number): TipPos {
+  const sr = el.getBoundingClientRect();
+  const boundEl = el.closest("[data-tip-bound]");
+  const br = boundEl ? boundEl.getBoundingClientRect() : sr;
+  return placeTip(x, y, {
+    left: br.left - sr.left,
+    top: br.top - sr.top,
+    right: br.right - sr.left,
+    bottom: br.bottom - sr.top,
+  });
 }
 
 function Stat({
@@ -121,8 +122,18 @@ function Stat({
   spark?: { label: string; value: number }[];
   sparkColor?: string;
 }) {
+  const stripRef = React.useRef<HTMLDivElement>(null);
+  const [tip, setTip] = React.useState<TipState | null>(null);
+
+  function handleSparkMove(s: ChartHoverState) {
+    const el = stripRef.current;
+    if (!el || !s?.isTooltipActive || !s.activeCoordinate || s.activeTooltipIndex == null) return;
+    const { x, y } = s.activeCoordinate;
+    setTip({ x, y, idx: Number(s.activeTooltipIndex), pos: computeTipPos(el, x, y) });
+  }
+
   const inner = (
-    <Card hover={!!href} className="relative h-full overflow-hidden p-5">
+    <Card hover={!!href} data-tip-bound className="relative h-full overflow-hidden p-5">
       <div className={`pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br ${gradient} opacity-[0.14] blur-2xl`} />
       <div className="flex items-start justify-between">
         <span className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-white shadow-lg`}>
@@ -137,24 +148,20 @@ function Stat({
       <p className="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300">{label}</p>
       {hint && <p className="text-xs text-slate-400">{hint}</p>}
       {spark && spark.length > 1 && (
-        <div className="mt-2 h-10">
+        <div ref={stripRef} className="relative mt-2 h-10">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={spark} margin={{ top: 4, bottom: 2, left: 0, right: 0 }}>
+            <AreaChart
+              data={spark}
+              margin={{ top: 4, bottom: 2, left: 0, right: 0 }}
+              onMouseMove={handleSparkMove}
+              onMouseLeave={() => setTip(null)}
+            >
               <defs>
                 <linearGradient id={`spark-${label}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={sparkColor} stopOpacity={0.5} />
                   <stop offset="100%" stopColor={sparkColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="label" hide />
-              <Tooltip
-                content={<SparkTooltip />}
-                // Pin the bubble above the chart strip; x still follows the point.
-                position={{ y: -62 }}
-                allowEscapeViewBox={{ y: true }}
-                cursor={{ stroke: sparkColor ?? "#6366f1", strokeOpacity: 0.35, strokeDasharray: "3 3" }}
-                wrapperStyle={{ zIndex: 20, pointerEvents: "none" }}
-              />
               <Area
                 type="monotone"
                 dataKey="value"
@@ -162,10 +169,33 @@ function Stat({
                 strokeWidth={2}
                 fill={sparkColor ? `url(#spark-${label})` : "none"}
                 isAnimationActive={false}
-                activeDot={{ r: 3.5, strokeWidth: 2, stroke: "#fff" }}
+                activeDot={false}
               />
             </AreaChart>
           </ResponsiveContainer>
+          {tip && spark[tip.idx] && (
+            <>
+              <div
+                aria-hidden
+                className="pointer-events-none absolute bottom-0 top-0 z-10 border-l border-dashed opacity-40"
+                style={{ left: tip.x, borderColor: sparkColor ?? "#6366f1" }}
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute z-20 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow"
+                style={{ left: tip.x, top: tip.y, backgroundColor: sparkColor ?? "#6366f1" }}
+              />
+              <ChartTipBubble
+                title={
+                  <>
+                    {spark[tip.idx].value} <span className="font-medium text-slate-400">present</span>
+                  </>
+                }
+                sub={fmtDayMonthDay(spark[tip.idx].label)}
+                pos={tip.pos}
+              />
+            </>
+          )}
         </div>
       )}
     </Card>
@@ -190,14 +220,6 @@ function ChartCard({ title, action, children }: { title: string; action?: React.
     </Card>
   );
 }
-
-const tooltipStyle = (dark: boolean) => ({
-  backgroundColor: dark ? "#1e293b" : "#ffffff",
-  border: `1px solid ${dark ? "#334155" : "#e2e8f0"}`,
-  borderRadius: 12,
-  fontSize: 12,
-  color: dark ? "#e2e8f0" : "#0f172a",
-});
 
 function BookingRows({
   bookings,
@@ -230,6 +252,15 @@ function BookingRows({
 
 export function DashboardClient({ d }: { d: DashboardData }) {
   const dark = useIsDark();
+  const attRef = React.useRef<HTMLDivElement>(null);
+  const [attTip, setAttTip] = React.useState<TipState | null>(null);
+
+  function handleAttMove(s: ChartHoverState) {
+    const el = attRef.current;
+    if (!el || !s?.isTooltipActive || !s.activeCoordinate || s.activeTooltipIndex == null) return;
+    const { x, y } = s.activeCoordinate;
+    setAttTip({ x, y, idx: Number(s.activeTooltipIndex), pos: computeTipPos(el, x, y) });
+  }
 
   return (
     <div className="space-y-6">
@@ -372,7 +403,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
                     </Link>
                     <p className="mt-0.5 pl-6 text-xs text-slate-400">
                       {t.projectName}
-                      {t.endDate ? ` · due ${t.endDate}` : ""}
+                      {t.endDate ? ` · due ${fmtFullDate(t.endDate)}` : ""}
                     </p>
                   </motion.div>
                 ))}
@@ -395,7 +426,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
                         {a.userName} <span className="font-normal text-slate-400">· {a.action.replace(/\./g, " ")}</span>
                       </p>
                       <p className="text-xs text-slate-400">
-                        {a.entity} · {new Date(a.at).toLocaleString("en-PK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Karachi" })}
+                        {a.entity} · {fmtDateTime(a.at)}
                       </p>
                     </div>
                   </div>
@@ -454,9 +485,14 @@ export function DashboardClient({ d }: { d: DashboardData }) {
               </span>
             }
           >
-            <div className="h-64">
+            <div ref={attRef} className="relative h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={d.attendanceTrend} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                <AreaChart
+                  data={d.attendanceTrend}
+                  margin={{ top: 8, right: 8, left: -12, bottom: 0 }}
+                  onMouseMove={handleAttMove}
+                  onMouseLeave={() => setAttTip(null)}
+                >
                   <defs>
                     <linearGradient id="attTrend" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={CHART_COLORS.emerald} stopOpacity={0.45} />
@@ -464,12 +500,34 @@ export function DashboardClient({ d }: { d: DashboardData }) {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#1e293b" : "#e2e8f0"} vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: dark ? "#94a3b8" : "#64748b" }} tickLine={false} axisLine={false} interval={2} />
+                  <XAxis dataKey="date" tickFormatter={(v: string) => fmtDayMonth(v)} tick={{ fontSize: 11, fill: dark ? "#94a3b8" : "#64748b" }} tickLine={false} axisLine={false} interval={2} />
                   <YAxis tick={{ fontSize: 11, fill: dark ? "#94a3b8" : "#64748b" }} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip contentStyle={tooltipStyle(dark)} />
-                  <Area type="monotone" dataKey="present" name="Present" stroke={CHART_COLORS.emerald} strokeWidth={2.5} fill="url(#attTrend)" />
+                  <Area type="monotone" dataKey="present" name="Present" stroke={CHART_COLORS.emerald} strokeWidth={2.5} fill="url(#attTrend)" activeDot={false} />
                 </AreaChart>
               </ResponsiveContainer>
+              {attTip && d.attendanceTrend[attTip.idx] && (
+                <>
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute bottom-0 top-0 z-10 border-l border-dashed opacity-40"
+                    style={{ left: attTip.x, borderColor: CHART_COLORS.emerald }}
+                  />
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute z-20 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow"
+                    style={{ left: attTip.x, top: attTip.y, backgroundColor: CHART_COLORS.emerald }}
+                  />
+                  <ChartTipBubble
+                    title={
+                      <>
+                        {d.attendanceTrend[attTip.idx].present} <span className="font-medium text-slate-400">present</span>
+                      </>
+                    }
+                    sub={fmtDayMonthDay(d.attendanceTrend[attTip.idx].date)}
+                    pos={attTip.pos}
+                  />
+                </>
+              )}
             </div>
           </ChartCard>
         </FadeIn>

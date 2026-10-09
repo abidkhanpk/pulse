@@ -4,6 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { Label, Textarea } from "@/components/ui/input";
+import { fmtFullDate } from "@/lib/dates";
 import {
   listOccurrences,
   cancelOccurrenceAction,
@@ -331,7 +332,7 @@ export function MonthGrid({ desks, people, projects, today, labId, canManage }: 
             <DialogTitle>Booking</DialogTitle>
             <div className="space-y-1 text-sm">
               <p><span className="font-medium">Person:</span> {selected.booking.user.name}</p>
-              <p><span className="font-medium">When:</span> {selected.date} · {fmtTime(selected.startsAt)}–{fmtTime(selected.endsAt)}</p>
+              <p><span className="font-medium">When:</span> {fmtFullDate(selected.date)} · {fmtTime(selected.startsAt)}–{fmtTime(selected.endsAt)}</p>
               <p><span className="font-medium">Where:</span> {selected.desk ? selected.desk.label : "Remote / WFH"}</p>
               {selected.booking.title && <p><span className="font-medium">Title:</span> {selected.booking.title}</p>}
             </div>
