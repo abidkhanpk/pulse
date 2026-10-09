@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
 import { Tooltip } from "@/components/ui/tooltip";
 import { textShapeStyle } from "@/lib/floorplan-text";
+import { deskDisplayLabel } from "@/lib/desks";
 import { AmenityChips } from "./amenity-chips";
 import { getFloorplan, layoutOccupancy } from "@/app/(app)/desks/actions";
 import { BookingDrawer } from "./booking-drawer";
@@ -82,7 +83,7 @@ export function FloorplanView({
 }: {
   labId: string;
   labName: string;
-  desks: { id: string; label: string; status: string }[];
+  desks: { id: string; label: string; displayName?: string | null; status: string }[];
   people: { id: string; name: string }[];
   projects: { id: string; name: string }[];
   canBook: boolean;
@@ -216,7 +217,7 @@ export function FloorplanView({
                   content={
                     <div className="min-w-[180px]">
                       <p className="font-bold text-slate-800 dark:text-slate-100">
-                        {d.label} <span className="ml-1 font-medium text-slate-400">{statusText}</span>
+                        {deskDisplayLabel(d)} <span className="ml-1 font-medium text-slate-400">{statusText}</span>
                       </p>
                       {d.amenities.length > 0 && (
                         <div className="mt-1.5">
@@ -262,7 +263,7 @@ export function FloorplanView({
                       </span>
                     )}
                     <span className={`${color} absolute inset-0 ${rad}`} />
-                    <span className="relative">{d.label.slice(0, 4)}</span>
+                    <span className="relative">{deskDisplayLabel(d).slice(0, 4)}</span>
                   </button>
                 </Tooltip>
               );
@@ -276,7 +277,7 @@ export function FloorplanView({
           <CardContent className="!py-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                {selDesk.label}
+                {deskDisplayLabel(selDesk)}
                 <span className="ml-2 text-xs font-normal text-slate-400">
                   {statusOf(selDesk) === "occupied" ? "Occupied now" : statusOf(selDesk) === "upcoming" ? "Booked later today" : statusOf(selDesk) === "maintenance" ? "Under maintenance" : "Free"}
                 </span>

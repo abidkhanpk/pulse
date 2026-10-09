@@ -15,6 +15,7 @@ import { DesksManager } from "./desks-manager";
 interface Desk {
   id: string;
   label: string;
+  displayName: string | null;
   status: string;
   notes: string | null;
   amenities: string[];

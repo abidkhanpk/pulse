@@ -4,6 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { fmtFullDate } from "@/lib/dates";
+import { deskDisplayLabel } from "@/lib/desks";
 import { Tooltip } from "@/components/ui/tooltip";
 import { BookingTipContent } from "./booking-tip";
 import {
@@ -231,7 +232,7 @@ export function MonthGrid({ desks, people, projects, today, labId, canManage }: 
                         }}
                         className={`block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium ${TYPE_STYLES[o.booking.type]}`}
                       >
-                        {o.booking.user.name} · {o.desk ? o.desk.label : "WFH"}
+                        {o.booking.user.name} · {o.desk ? deskDisplayLabel(o.desk) : "WFH"}
                       </button>
                     </Tooltip>
                   ))}
@@ -280,7 +281,7 @@ export function MonthGrid({ desks, people, projects, today, labId, canManage }: 
                 >
                   <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${o.booking.type === "DESK" ? "bg-accent-500" : "bg-emerald-500"}`} />
                   <span className="min-w-0 flex-1 truncate font-medium text-slate-800 dark:text-slate-200">{o.booking.user.name}</span>
-                  <span className="shrink-0 text-xs text-slate-400">{o.desk ? o.desk.label : "WFH"}</span>
+                  <span className="shrink-0 text-xs text-slate-400">{o.desk ? deskDisplayLabel(o.desk) : "WFH"}</span>
                   <span className="shrink-0 text-xs text-slate-400">
                     {fmtTime(o.startsAt)}–{fmtTime(o.endsAt)}
                   </span>
@@ -312,7 +313,7 @@ export function MonthGrid({ desks, people, projects, today, labId, canManage }: 
             <div className="space-y-1 text-sm">
               <p><span className="font-medium">Person:</span> {selected.booking.user.name}</p>
               <p><span className="font-medium">When:</span> {new Date(selected.date + "T00:00:00Z").toLocaleDateString("en-PK", { weekday: "short", timeZone: "Asia/Karachi" })}, {fmtFullDate(selected.date)} · {fmtTime(selected.startsAt)}–{fmtTime(selected.endsAt)}</p>
-              <p><span className="font-medium">Where:</span> {selected.desk ? selected.desk.label : "Remote / WFH"}</p>
+              <p><span className="font-medium">Where:</span> {selected.desk ? deskDisplayLabel(selected.desk) : "Remote / WFH"}</p>
               {selected.booking.title && <p><span className="font-medium">Title:</span> {selected.booking.title}</p>}
             </div>
             {canManage && (

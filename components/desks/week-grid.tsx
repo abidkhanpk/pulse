@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { fmtFullDate } from "@/lib/dates";
-import { amenitySummary } from "@/lib/amenities";
+import { deskDisplayLabel } from "@/lib/desks";
 import { Tooltip } from "@/components/ui/tooltip";
+import { AmenityChips } from "./amenity-chips";
 import { BookingTipContent } from "./booking-tip";
 import {
   listOccurrences,
@@ -20,7 +21,7 @@ export interface Occurrence {
   startsAt: string;
   endsAt: string;
   deskId: string | null;
-  desk: { id: string; label: string; amenities?: string[] } | null;
+  desk: { id: string; label: string; displayName?: string | null; amenities?: string[] } | null;
   booking: {
     id: string;
     type: "DESK" | "REMOTE";
@@ -30,7 +31,7 @@ export interface Occurrence {
 }
 
 interface Props {
-  desks: { id: string; label: string; status: string; amenities?: string[]; lab: { id: string; name: string } }[];
+  desks: { id: string; label: string; displayName?: string | null; status: string; amenities?: string[]; lab: { id: string; name: string } }[];
   people: { id: string; name: string }[];
   projects: { id: string; name: string }[];
   initialOccurrences: Occurrence[];
@@ -196,12 +197,29 @@ export function WeekGrid({
             {desks.map((desk) => (
               <tr key={desk.id} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
                 <td className="sticky left-0 z-10 border-r border-slate-200 bg-white px-3 py-2 dark:bg-slate-900 dark:border-slate-700">
-                  <div className="font-medium text-slate-800 dark:text-slate-200">{desk.label}</div>
-                  <div className="text-xs text-slate-400">{desk.lab.name}</div>
-                  {amenitySummary(desk.amenities) && (
-                    <div className="line-clamp-2 max-w-[130px] text-[11px] leading-snug text-slate-400">{amenitySummary(desk.amenities)}</div>
-                  )}
-                  {desk.status === "MAINTENANCE" && <Badge color="warning">Maintenance</Badge>}
+                  <Tooltip
+                    prefer="right"
+                    disabled={!desk.amenities || desk.amenities.length === 0}
+                    content={
+                      <div className="min-w-[150px]">
+                        <p className="font-bold text-slate-800 dark:text-slate-100">{deskDisplayLabel(desk)}</p>
+                        <p className="mt-0.5 text-slate-500 dark:text-slate-400">
+                          {desk.label} · {desk.lab.name}
+                        </p>
+                        <div className="mt-1.5">
+                          <AmenityChips labels={desk.amenities ?? []} />
+                        </div>
+                      </div>
+                    }
+                  >
+                    <div>
+                      <div className="font-medium text-slate-800 dark:text-slate-200">{deskDisplayLabel(desk)}</div>
+                      <div className="text-xs text-slate-400">
+                        {desk.displayName ? `${desk.label} · ` : ""}{desk.lab.name}
+                      </div>
+                      {desk.status === "MAINTENANCE" && <Badge color="warning">Maintenance</Badge>}
+                    </div>
+                  </Tooltip>
                 </td>
                 {days.map((day) => {
                   const cell = byDeskDay.get(`${desk.id}|${day}`) ?? [];
@@ -290,7 +308,7 @@ export function WeekGrid({
             <div className="space-y-1 text-sm">
               <p><span className="font-medium">Person:</span> {selected.booking.user.name}</p>
               <p><span className="font-medium">When:</span> {new Date(selected.date + "T00:00:00Z").toLocaleDateString("en-PK", { weekday: "short", timeZone: "Asia/Karachi" })}, {fmtFullDate(selected.date)} · {fmtTime(selected.startsAt)}–{fmtTime(selected.endsAt)}</p>
-              <p><span className="font-medium">Where:</span> {selected.desk ? selected.desk.label : "Remote / WFH"}</p>
+              <p><span className="font-medium">Where:</span> {selected.desk ? deskDisplayLabel(selected.desk) : "Remote / WFH"}</p>
               {selected.booking.title && <p><span className="font-medium">Title:</span> {selected.booking.title}</p>}
             </div>
             {canManage && (

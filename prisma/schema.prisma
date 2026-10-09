@@ -223,6 +223,8 @@ model Desk {
   labId       String
   lab         Lab        @relation(fields: [labId], references: [id], onDelete: Cascade)
   label       String
+  // Optional friendlier text shown in booking views instead of the code.
+  displayName String?
   status      DeskStatus @default(ACTIVE)
   notes       String?
   // Floorplan position as % of image dimensions (null = not placed).
