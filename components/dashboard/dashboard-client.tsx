@@ -95,7 +95,7 @@ function Stat({
   sparkColor?: string;
 }) {
   const inner = (
-    <Card hover={!!href} className="relative overflow-hidden p-5">
+    <Card hover={!!href} className="relative h-full overflow-hidden p-5">
       <div className={`pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br ${gradient} opacity-[0.14] blur-2xl`} />
       <div className="flex items-start justify-between">
         <span className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-white shadow-lg`}>
@@ -127,7 +127,7 @@ function Stat({
     </Card>
   );
   return href ? (
-    <Link href={href} className="group block">
+    <Link href={href} className="group block h-full">
       {inner}
     </Link>
   ) : (
@@ -267,138 +267,136 @@ export function DashboardClient({ d }: { d: DashboardData }) {
         )}
       </Stagger>
 
-      {/* ── projects + activity ── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <FadeIn delay={0.2}>
-          <ChartCard
-            title={d.mode === "full" ? "Project progress" : "My projects"}
-            action={
-              <Link href="/projects" className="group inline-flex items-center gap-1 text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400">
-                All projects <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            }
-          >
-            <div className="space-y-3">
-              {d.projectProgress.length === 0 && <p className="text-sm text-slate-400">No active projects.</p>}
-              {d.projectProgress.map((p, i) => {
-                const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
-                const colors = [CHART_COLORS.indigo, CHART_COLORS.violet, CHART_COLORS.sky, CHART_COLORS.emerald, CHART_COLORS.amber, CHART_COLORS.rose];
-                const c = colors[i % colors.length];
-                return (
-                  <div key={p.name}>
-                    <div className="mb-1 flex items-center justify-between text-sm">
-                      <span className="truncate font-medium text-slate-700 dark:text-slate-300">{p.name}</span>
-                      <span className="ml-2 shrink-0 text-xs text-slate-400">
-                        {p.done}/{p.total} · {pct}%
-                      </span>
-                    </div>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.9, delay: 0.25 + i * 0.08, ease: "easeOut" }}
-                        className="h-full rounded-full"
-                        style={{ background: `linear-gradient(90deg, ${c}, ${c}cc)` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </ChartCard>
-        </FadeIn>
-
-        <FadeIn delay={0.26}>
-          <ChartCard title={d.mode === "full" ? "Recent activity" : d.mode === "team" ? "Team activity" : "My activity"}>
-            <div className="max-h-72 space-y-1 overflow-y-auto">
-              {d.recentActivity.length === 0 && <p className="text-sm text-slate-400">No activity yet.</p>}
-              {d.recentActivity.map((a) => (
-                <div key={a.id} className="flex items-start gap-3 rounded-xl px-2 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/60">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-600 dark:bg-accent-950 dark:text-accent-300">
-                    <Activity className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-300">
-                      {a.userName} <span className="font-normal text-slate-400">· {a.action.replace(/\./g, " ")}</span>
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {a.entity} · {new Date(a.at).toLocaleString("en-PK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Karachi" })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ChartCard>
-        </FadeIn>
-      </div>
-
-      {/* ── todos + bookings ── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <FadeIn delay={0.3}>
-          <ChartCard
-            title="My open todos"
-            action={
-              <Link href="/projects" className="group inline-flex items-center gap-1 text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400">
-                All projects <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            }
-          >
-            <div className="space-y-2">
-              {d.myTodos.length === 0 && <p className="text-sm text-slate-400">Nothing assigned — enjoy the quiet.</p>}
-              {d.myTodos.map((t, i) => (
-                <motion.div key={t.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.32 + i * 0.05, duration: 0.3 }}>
-                  <Link href={`/projects/${t.projectId}`} className="flex items-center gap-2 rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:-translate-y-px hover:border-accent-200 hover:shadow-md dark:border-slate-800">
-                    <ListTodo className="h-4 w-4 shrink-0 text-slate-400" />
-                    <span className="flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-200">{t.title}</span>
-                    <Badge color={t.status === "IN_PROGRESS" ? "info" : "default"}>{t.status.replace("_", "")}</Badge>
-                  </Link>
-                  <p className="mt-0.5 pl-6 text-xs text-slate-400">
-                    {t.projectName}
-                    {t.endDate ? ` · due ${t.endDate}` : ""}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          </ChartCard>
-        </FadeIn>
-
-        {d.mode === "full" && d.canSeeBookings ? (
-          <FadeIn delay={0.36}>
+      {/* ── two stacked columns: cards pack tightly, no cross-column gaps ── */}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-4">
+          <FadeIn delay={0.2}>
             <ChartCard
-              title="Today's bookings"
+              title={d.mode === "full" ? "Project progress" : "My projects"}
               action={
-                <Link href="/desks" className="group inline-flex items-center gap-1 text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400">
-                  Desk booking <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                <Link href="/projects" className="group inline-flex items-center gap-1 text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400">
+                  All projects <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              }
+            >
+              <div className="space-y-3">
+                {d.projectProgress.length === 0 && <p className="text-sm text-slate-400">No active projects.</p>}
+                {d.projectProgress.map((p, i) => {
+                  const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
+                  const colors = [CHART_COLORS.indigo, CHART_COLORS.violet, CHART_COLORS.sky, CHART_COLORS.emerald, CHART_COLORS.amber, CHART_COLORS.rose];
+                  const c = colors[i % colors.length];
+                  return (
+                    <div key={p.name}>
+                      <div className="mb-1 flex items-center justify-between text-sm">
+                        <span className="truncate font-medium text-slate-700 dark:text-slate-300">{p.name}</span>
+                        <span className="ml-2 shrink-0 text-xs text-slate-400">
+                          {p.done}/{p.total} · {pct}%
+                        </span>
+                      </div>
+                      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${pct}%` }}
+                          transition={{ duration: 0.9, delay: 0.25 + i * 0.08, ease: "easeOut" }}
+                          className="h-full rounded-full"
+                          style={{ background: `linear-gradient(90deg, ${c}, ${c}cc)` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </ChartCard>
+          </FadeIn>
+          <FadeIn delay={0.3}>
+            <ChartCard
+              title="My open todos"
+              action={
+                <Link href="/projects" className="group inline-flex items-center gap-1 text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400">
+                  All projects <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               }
             >
               <div className="space-y-2">
-                {d.todayBookings.length === 0 && <EmptyState title="No bookings today" description="The labs are free — or nobody booked." />}
-                {d.todayBookings.map((b, i) => (
-                  <motion.div
-                    key={b.id}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.38 + i * 0.04, duration: 0.3 }}
-                    className="flex items-center gap-2 rounded-xl border border-slate-100 px-3 py-2.5 text-sm transition-shadow hover:shadow-sm dark:border-slate-800"
-                  >
-                    <span className="font-medium text-slate-800 dark:text-slate-200">{b.personName}</span>
-                    <span className="text-slate-400">
-                      {b.deskLabel ?? "Remote"} · {b.timeStart}–{b.timeEnd}
-                    </span>
-                    {b.title && <span className="truncate text-xs text-slate-400">· {b.title}</span>}
+                {d.myTodos.length === 0 && <p className="text-sm text-slate-400">Nothing assigned — enjoy the quiet.</p>}
+                {d.myTodos.map((t, i) => (
+                  <motion.div key={t.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.32 + i * 0.05, duration: 0.3 }}>
+                    <Link href={`/projects/${t.projectId}`} className="flex items-center gap-2 rounded-xl border border-slate-100 px-3 py-2.5 transition-all hover:-translate-y-px hover:border-accent-200 hover:shadow-md dark:border-slate-800">
+                      <ListTodo className="h-4 w-4 shrink-0 text-slate-400" />
+                      <span className="flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-200">{t.title}</span>
+                      <Badge color={t.status === "IN_PROGRESS" ? "info" : "default"}>{t.status.replace("_", "")}</Badge>
+                    </Link>
+                    <p className="mt-0.5 pl-6 text-xs text-slate-400">
+                      {t.projectName}
+                      {t.endDate ? ` · due ${t.endDate}` : ""}
+                    </p>
                   </motion.div>
                 ))}
               </div>
             </ChartCard>
           </FadeIn>
-        ) : (
-          <FadeIn delay={0.36}>
-            <ChartCard title="My bookings today">
-              <BookingRows bookings={d.myBookingsToday} />
+        </div>
+        <div className="flex min-w-0 flex-col gap-4">
+          <FadeIn delay={0.26}>
+            <ChartCard title={d.mode === "full" ? "Recent activity" : d.mode === "team" ? "Team activity" : "My activity"}>
+              <div className="max-h-72 space-y-1 overflow-y-auto">
+                {d.recentActivity.length === 0 && <p className="text-sm text-slate-400">No activity yet.</p>}
+                {d.recentActivity.map((a) => (
+                  <div key={a.id} className="flex items-start gap-3 rounded-xl px-2 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-600 dark:bg-accent-950 dark:text-accent-300">
+                      <Activity className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {a.userName} <span className="font-normal text-slate-400">· {a.action.replace(/\./g, " ")}</span>
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {a.entity} · {new Date(a.at).toLocaleString("en-PK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Karachi" })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </ChartCard>
           </FadeIn>
-        )}
+          {d.mode === "full" && d.canSeeBookings ? (
+            <FadeIn delay={0.36}>
+              <ChartCard
+                title="Today's bookings"
+                action={
+                  <Link href="/desks" className="group inline-flex items-center gap-1 text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400">
+                    Desk booking <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                }
+              >
+                <div className="space-y-2">
+                  {d.todayBookings.length === 0 && <EmptyState title="No bookings today" description="The labs are free — or nobody booked." />}
+                  {d.todayBookings.map((b, i) => (
+                    <motion.div
+                      key={b.id}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.38 + i * 0.04, duration: 0.3 }}
+                      className="flex items-center gap-2 rounded-xl border border-slate-100 px-3 py-2.5 text-sm transition-shadow hover:shadow-sm dark:border-slate-800"
+                    >
+                      <span className="font-medium text-slate-800 dark:text-slate-200">{b.personName}</span>
+                      <span className="text-slate-400">
+                        {b.deskLabel ?? "Remote"} · {b.timeStart}–{b.timeEnd}
+                      </span>
+                      {b.title && <span className="truncate text-xs text-slate-400">· {b.title}</span>}
+                    </motion.div>
+                  ))}
+                </div>
+              </ChartCard>
+            </FadeIn>
+          ) : (
+            <FadeIn delay={0.36}>
+              <ChartCard title="My bookings today">
+                <BookingRows bookings={d.myBookingsToday} />
+              </ChartCard>
+            </FadeIn>
+          )}
+        </div>
       </div>
 
       {/* ── attendance chart, last ── */}
