@@ -113,6 +113,9 @@ export function Sidebar({
             <motion.span
               initial={{ opacity: 0, x: -6 }}
               animate={{ opacity: 1, x: 0 }}
+              // Delay until the width spring has opened far enough to fit the
+              // word — otherwise a clipped first-letter sliver shows mid-animation.
+              transition={{ duration: 0.18, delay: 0.13 }}
               className="whitespace-nowrap bg-gradient-to-r from-accent-600 to-accent-700 bg-clip-text text-xl font-extrabold tracking-tight text-transparent"
             >
               {appName}
@@ -133,9 +136,14 @@ export function Sidebar({
             return (
               <React.Fragment key={item.href}>
                 {sectionHeader && expanded && (
-                  <p className="px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.18, delay: 0.13 }}
+                    className="whitespace-nowrap px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500"
+                  >
                     {sectionHeader}
-                  </p>
+                  </motion.p>
                 )}
                 <Link
                   href={item.href}
@@ -169,7 +177,7 @@ export function Sidebar({
                     <motion.span
                       initial={{ opacity: 0, x: -6 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.15 }}
+                      transition={{ duration: 0.18, delay: 0.13 }}
                       className="relative z-10 truncate whitespace-nowrap"
                     >
                       {item.label}
@@ -179,6 +187,7 @@ export function Sidebar({
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
+                      transition={{ delay: 0.13 }}
                       className="relative z-10 ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-white"
                     />
                   )}
@@ -195,6 +204,7 @@ export function Sidebar({
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
+            transition={{ duration: 0.18, delay: 0.13 }}
             className="flex items-center gap-2.5 rounded-2xl bg-gradient-to-br from-accent-50 to-accent-100 p-2.5 ring-1 ring-accent-100 dark:from-white/5 dark:to-white/10 dark:ring-white/10"
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent-600 to-accent-700 text-xs font-bold text-white">
@@ -222,7 +232,7 @@ export function Sidebar({
             <motion.span
               initial={{ opacity: 0, x: -6 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.15 }}
+              transition={{ duration: 0.18, delay: 0.13 }}
               className="whitespace-nowrap"
             >
               {pinned ? "Unpin" : "Pin open"}
