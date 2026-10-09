@@ -73,6 +73,28 @@ const CHART_COLORS = {
   violet: "#8b5cf6",
 };
 
+function SparkTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { value: number; payload: { label: string; value: number } }[];
+}) {
+  if (!active || !payload?.length) return null;
+  const { label, value } = payload[0].payload;
+  const [mm, dd] = label.split("-").map(Number);
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const nice = mm && dd ? `${dd} ${MONTHS[mm - 1]}` : label;
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs shadow-pop dark:border-slate-700 dark:bg-slate-800">
+      <p className="font-bold text-slate-800 dark:text-slate-100">
+        {value} <span className="font-medium text-slate-400">present</span>
+      </p>
+      <p className="text-slate-400">{nice}</p>
+    </div>
+  );
+}
+
 function Stat({
   icon: Icon,
   label,
@@ -91,7 +113,7 @@ function Stat({
   hint?: string;
   href?: string;
   gradient: string;
-  spark?: number[];
+  spark?: { label: string; value: number }[];
   sparkColor?: string;
 }) {
   const inner = (
@@ -112,14 +134,28 @@ function Stat({
       {spark && spark.length > 1 && (
         <div className="mt-2 h-10">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={spark.map((v, i) => ({ i, v }))} margin={{ top: 2, bottom: 2, left: 0, right: 0 }}>
+            <AreaChart data={spark} margin={{ top: 4, bottom: 2, left: 0, right: 0 }}>
               <defs>
                 <linearGradient id={`spark-${label}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={sparkColor} stopOpacity={0.5} />
                   <stop offset="100%" stopColor={sparkColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <Area type="monotone" dataKey="v" stroke={sparkColor ?? "#6366f1"} strokeWidth={2} fill={sparkColor ? `url(#spark-${label})` : "none"} isAnimationActive={false} />
+              <XAxis dataKey="label" hide />
+              <Tooltip
+                content={<SparkTooltip />}
+                cursor={{ stroke: sparkColor ?? "#6366f1", strokeOpacity: 0.35, strokeDasharray: "3 3" }}
+                wrapperStyle={{ zIndex: 20 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke={sparkColor ?? "#6366f1"}
+                strokeWidth={2}
+                fill={sparkColor ? `url(#spark-${label})` : "none"}
+                isAnimationActive={false}
+                activeDot={{ r: 3.5, strokeWidth: 2, stroke: "#fff" }}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -223,7 +259,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
               <Stat icon={Armchair} label="Desks occupied now" value={d.desksOccupied} total={d.desksTotal} hint="Live bookings on active desks" href={d.canSeeBookings ? "/desks" : undefined} gradient="from-accent-600 to-accent-700" />
             </StaggerItem>
             <StaggerItem>
-              <Stat icon={UserCheck} label="Checked in today" value={d.checkedInToday} total={d.peopleTotal} hint="Across your labs" href={d.canViewReports ? "/reports" : undefined} gradient="from-emerald-600 to-teal-600" spark={d.attendanceTrend.map((t) => t.present)} sparkColor={CHART_COLORS.emerald} />
+              <Stat icon={UserCheck} label="Checked in today" value={d.checkedInToday} total={d.peopleTotal} hint="Across your labs" href={d.canViewReports ? "/reports" : undefined} gradient="from-emerald-600 to-teal-600" spark={d.attendanceTrend.map((t) => ({ label: t.date, value: t.present }))} sparkColor={CHART_COLORS.emerald} />
             </StaggerItem>
             <StaggerItem>
               <Stat icon={AlertTriangle} label="Overdue todos" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="from-amber-500 to-orange-600" />
@@ -242,7 +278,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
               <Stat icon={AlertTriangle} label="Overdue in my projects" value={d.overdueTodos} hint="Past due date, not done" href="/projects" gradient="from-amber-500 to-orange-600" />
             </StaggerItem>
             <StaggerItem>
-              <Stat icon={Users} label="Team checked in today" value={d.teamCheckedInToday} total={d.teamSize} hint="My project teams" href={d.canViewReports ? "/reports" : undefined} gradient="from-emerald-600 to-teal-600" spark={d.attendanceTrend.map((t) => t.present)} sparkColor={CHART_COLORS.emerald} />
+              <Stat icon={Users} label="Team checked in today" value={d.teamCheckedInToday} total={d.teamSize} hint="My project teams" href={d.canViewReports ? "/reports" : undefined} gradient="from-emerald-600 to-teal-600" spark={d.attendanceTrend.map((t) => ({ label: t.date, value: t.present }))} sparkColor={CHART_COLORS.emerald} />
             </StaggerItem>
             <StaggerItem>
               <Stat icon={ClipboardCheck} label="Awaiting review" value={d.pendingReviews} hint="My teams' logbooks" href="/logbook" gradient="from-sky-600 to-blue-600" />
