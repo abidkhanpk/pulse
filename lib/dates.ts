@@ -1,6 +1,6 @@
 // Shared date formatting — one format rule app-wide:
 //   day + month only  -> "30 Sep"           (fmtDayMonth)
-//   day + month + day -> "Wed · 30 Sep"     (fmtDayMonthDay)
+//   day + month + day -> "Wed, 30 Sep"     (fmtDayMonthDay)
 //   full date         -> "30/09/2026"      (fmtFullDate)
 // All helpers accept ISO dates ("2026-09-30"), ISO datetimes, or "MM-DD".
 
@@ -53,12 +53,12 @@ export function fmtFullDate(iso: string): string {
   return `${pad(p.d)}/${pad(p.m)}/${p.y}`;
 }
 
-/** "Wed · 30 Sep" — weekday separated from the date by a middle dot. */
+/** "Wed, 30 Sep" — weekday separated from the date by a comma. */
 export function fmtDayMonthDay(iso: string): string {
   const p = parts(iso);
   if (!p) return iso;
   const wd = DAYS[new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay()];
-  return `${wd} · ${p.d} ${MONTHS[p.m - 1]}`;
+  return `${wd}, ${p.d} ${MONTHS[p.m - 1]}`;
 }
 
 /** "30/09/2026 · 4:12 PM" — full date plus local time, for timestamps. */
