@@ -73,6 +73,9 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
   const [dragShape, setDragShape] = React.useState<{ id: string; dx: number; dy: number } | null>(null);
   const [polyPoints, setPolyPoints] = React.useState<{ x: number; y: number }[]>([]);
   const [polyCursor, setPolyCursor] = React.useState<{ x: number; y: number } | null>(null);
+  // Alignment guides while drawing a polygon: v = x of the vertical guide, h = y of the horizontal guide.
+  const [guides, setGuides] = React.useState<{ v: number | null; h: number | null }>({ v: null, h: null });
+  const rawCursorRef = React.useRef<{ x: number; y: number } | null>(null);
   const canvasRef = React.useRef<HTMLDivElement>(null);
   const fileRef = React.useRef<HTMLInputElement>(null);
   const idCounter = React.useRef(0);
@@ -94,6 +97,8 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
     setSelectedShape(null);
     setPolyPoints([]);
     setPolyCursor(null);
+    setGuides({ v: null, h: null });
+    rawCursorRef.current = null;
   }, [labId]);
 
   React.useEffect(() => {
@@ -107,11 +112,37 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
       if (e.key === "Escape") {
         setPolyPoints([]);
         setPolyCursor(null);
+        setGuides({ v: null, h: null });
+        rawCursorRef.current = null;
       }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [tool, polyPoints.length]);
+
+  // Pressing/releasing Shift while the mouse is stationary should still
+  // apply/drop the straight-line constraint — recompute from the last raw
+  // cursor position on Shift key changes during polygon drawing.
+  React.useEffect(() => {
+    if (tool !== "polygon" || polyPoints.length === 0) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== "Shift") return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      const raw = rawCursorRef.current;
+      if (!raw) return;
+      const s = snapPoint(raw, e.type === "keydown");
+      setPolyCursor(s.point);
+      setGuides(s.guides);
+    };
+    window.addEventListener("keydown", h);
+    window.addEventListener("keyup", h);
+    return () => {
+      window.removeEventListener("keydown", h);
+      window.removeEventListener("keyup", h);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tool, polyPoints]);
 
   function pctFromEvent(e: React.MouseEvent): { x: number; y: number } {
     const el = canvasRef.current!;
@@ -120,6 +151,50 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
       x: clamp(((e.clientX - r.left) / r.width) * 100, 0, 100),
       y: clamp(((e.clientY - r.top) / r.height) * 100, 0, 100),
     };
+  }
+
+  /**
+   * Snap a raw cursor point for polygon drawing:
+   * — within ~8px of a placed point's x or y, snap exactly onto it (guide shows);
+   * — with Shift held, constrain the segment from the LAST placed point to
+   *   exactly horizontal or vertical (dominant axis wins), which also shows
+   *   the guide through that point. The free axis can still guide-snap.
+   */
+  function snapPoint(raw: { x: number; y: number }, shift: boolean) {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    const tolX = rect ? (8 / rect.width) * 100 : 1;
+    const tolY = rect ? (8 / rect.height) * 100 : 1.6;
+    let x = raw.x;
+    let y = raw.y;
+    let v: number | null = null;
+    let h: number | null = null;
+    let bestDx = tolX;
+    let bestDy = tolY;
+    for (const p of polyPoints) {
+      const ddx = Math.abs(p.x - raw.x);
+      if (ddx <= bestDx) {
+        bestDx = ddx;
+        v = p.x;
+      }
+      const ddy = Math.abs(p.y - raw.y);
+      if (ddy <= bestDy) {
+        bestDy = ddy;
+        h = p.y;
+      }
+    }
+    if (v !== null) x = v;
+    if (h !== null) y = h;
+    if (shift && polyPoints.length > 0) {
+      const last = polyPoints[polyPoints.length - 1];
+      if (Math.abs(raw.x - last.x) >= Math.abs(raw.y - last.y)) {
+        y = last.y;
+        h = last.y;
+      } else {
+        x = last.x;
+        v = last.x;
+      }
+    }
+    return { point: { x, y }, guides: { v, h } };
   }
 
   function finishPolygon() {
@@ -155,6 +230,8 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
     ]);
     setPolyPoints([]);
     setPolyCursor(null);
+    setGuides({ v: null, h: null });
+    rawCursorRef.current = null;
     setSelectedShape(id);
     setSelectedDesk(null);
     setDirty(true);
@@ -225,6 +302,7 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
     }
     if (tool === "polygon") {
       // Click near the first vertex to close; ignore double-click duplicates.
+      // The close check uses the raw point so snapping can never block closing.
       if (polyPoints.length >= 3) {
         const f = polyPoints[0];
         if (Math.hypot(p.x - f.x, p.y - f.y) < 2) {
@@ -232,9 +310,11 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
           return;
         }
       }
+      const snapped = snapPoint(p, e.shiftKey).point;
       const last = polyPoints[polyPoints.length - 1];
-      if (last && Math.hypot(p.x - last.x, p.y - last.y) < 1) return;
-      setPolyPoints((ps) => [...ps, p]);
+      if (last && Math.hypot(snapped.x - last.x, snapped.y - last.y) < 1) return;
+      setPolyPoints((ps) => [...ps, snapped]);
+      setGuides({ v: null, h: null });
       return;
     }
     if (tool === "wall" || tool === "zone" || tool === "rectangle" || tool === "circle") {
@@ -273,7 +353,11 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
       return;
     }
     if (tool === "polygon" && polyPoints.length > 0) {
-      setPolyCursor(pctFromEvent(e));
+      const raw = pctFromEvent(e);
+      rawCursorRef.current = raw;
+      const s = snapPoint(raw, e.shiftKey);
+      setPolyCursor(s.point);
+      setGuides(s.guides);
     }
   }
 
@@ -440,11 +524,11 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
               </div>
               {tool === "polygon" && polyPoints.length > 0 && (
                 <div className="mb-2 flex items-center gap-2 rounded-lg bg-accent-50 px-3 py-1.5 text-xs text-accent-700 dark:bg-accent-950 dark:text-accent-300">
-                  <span>{polyPoints.length} points — double-click or click near the start to close, Esc to cancel.</span>
+                  <span>{polyPoints.length} points — double-click or click near the start to close, Esc to cancel. Dotted guides snap to placed points; hold Shift for a straight horizontal/vertical edge.</span>
                   <Button size="sm" variant="outline" className="ml-auto !py-0.5 !text-xs" onClick={finishPolygon}>
                     Finish
                   </Button>
-                  <Button size="sm" variant="outline" className="!py-0.5 !text-xs" onClick={() => { setPolyPoints([]); setPolyCursor(null); }}>
+                  <Button size="sm" variant="outline" className="!py-0.5 !text-xs" onClick={() => { setPolyPoints([]); setPolyCursor(null); setGuides({ v: null, h: null }); rawCursorRef.current = null; }}>
                     Cancel
                   </Button>
                 </div>
@@ -465,6 +549,7 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                   setDrawStart(null);
                   setDrawCur(null);
                   setPolyCursor(null);
+                  setGuides({ v: null, h: null });
                 }}
               >
                 {imageUrl && <img src={imageUrl} alt="Lab floorplan" className="absolute inset-0 h-full w-full object-contain" draggable={false} />}
@@ -527,6 +612,16 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                       </g>
                     );
                   })}
+                  {tool === "polygon" && polyPoints.length > 0 && (guides.v !== null || guides.h !== null) && (
+                    <g pointerEvents="none">
+                      {guides.v !== null && (
+                        <line x1={guides.v} y1={0} x2={guides.v} y2={100} stroke="#f43f5e" strokeWidth={1.2} strokeDasharray="4 4" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                      )}
+                      {guides.h !== null && (
+                        <line x1={0} y1={guides.h} x2={100} y2={guides.h} stroke="#f43f5e" strokeWidth={1.2} strokeDasharray="4 4" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                      )}
+                    </g>
+                  )}
                   {tool === "polygon" && polyPoints.length > 0 && polyCursor && (
                     <polyline
                       points={[...polyPoints, polyCursor].map((p) => `${p.x},${p.y}`).join(" ")}
@@ -539,15 +634,22 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                     />
                   )}
                 </svg>
-                {/* polygon vertex dots */}
+                {/* polygon vertex dots — the one you're aligned with highlights */}
                 {tool === "polygon" &&
-                  polyPoints.map((p, i) => (
-                    <div
-                      key={i}
-                      className="pointer-events-none absolute z-10 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-600 ring-2 ring-white"
-                      style={{ left: `${p.x}%`, top: `${p.y}%` }}
-                    />
-                  ))}
+                  polyPoints.map((p, i) => {
+                    const aligned =
+                      (guides.v !== null && Math.abs(p.x - guides.v) < 0.001) ||
+                      (guides.h !== null && Math.abs(p.y - guides.h) < 0.001);
+                    return (
+                      <div
+                        key={i}
+                        className={`pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 transition-all duration-100 ${
+                          aligned ? "h-3.5 w-3.5 bg-rose-500 ring-rose-300" : "h-2.5 w-2.5 bg-accent-600 ring-white"
+                        }`}
+                        style={{ left: `${p.x}%`, top: `${p.y}%` }}
+                      />
+                    );
+                  })}
                 {/* in-progress draw rect */}
                 {drawStart && drawCur && (
                   <div
