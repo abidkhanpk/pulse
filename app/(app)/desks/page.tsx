@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { requirePermission } from "@/lib/auth-helpers";
 import { hasPermission } from "@/lib/permissions";
-import { listDesks, listOccurrences, bookablePeopleAll, bookableProjects, deskLabOverview } from "./actions";
+import { listDesks, listOccurrences, bookablePeopleAll, bookableProjects, deskLabOverview, listAmenities } from "./actions";
 import { myLabs } from "../labs/actions";
 import { DesksClient } from "@/components/desks/desks-client";
 import { DesksOverview } from "@/components/overview/desks-overview";
@@ -51,11 +51,12 @@ export default async function DesksPage({
   const today = toISODate(todayPKT());
   const weekStart = mondayOf(today);
 
-  const [desks, people, projects, occurrences] = await Promise.all([
+  const [desks, people, projects, occurrences, amenityOptions] = await Promise.all([
     listDesks(labId),
     bookablePeopleAll(labId),
     bookableProjects(labId),
     listOccurrences({ from: weekStart, to: addDays(weekStart, 6), labId }),
+    listAmenities(),
   ]);
 
   return (
@@ -86,6 +87,8 @@ export default async function DesksPage({
       today={today}
       canManage={hasPermission(actor, "bookings.manage")}
       canManageDesks={hasPermission(actor, "desks.manage")}
+      amenityOptions={amenityOptions}
+      canManageAmenities={hasPermission(actor, "org.manage")}
     />
     </div>
   );

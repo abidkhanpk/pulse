@@ -199,7 +199,7 @@ export function WeekGrid({
                   <div className="font-medium text-slate-800 dark:text-slate-200">{desk.label}</div>
                   <div className="text-xs text-slate-400">{desk.lab.name}</div>
                   {amenitySummary(desk.amenities) && (
-                    <div className="text-[11px] text-slate-400">{amenitySummary(desk.amenities)}</div>
+                    <div className="line-clamp-2 max-w-[130px] text-[11px] leading-snug text-slate-400">{amenitySummary(desk.amenities)}</div>
                   )}
                   {desk.status === "MAINTENANCE" && <Badge color="warning">Maintenance</Badge>}
                 </td>

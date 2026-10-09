@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Select, Checkbox } from "@/components/ui/input";
+import { Input, Label, Select, Checkbox, Textarea } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
 import {
@@ -14,9 +14,10 @@ import {
   updateDesk,
   setDeskStatus,
 } from "@/app/(app)/desks/actions";
+import { FONT_OPTIONS, textShapeStyle } from "@/lib/floorplan-text";
 
-type Tool = "select" | "station" | "wall" | "zone" | "rectangle" | "circle" | "polygon";
-type ShapeKind = "WALL" | "ZONE" | "RECTANGLE" | "CIRCLE" | "POLYGON";
+type Tool = "select" | "station" | "wall" | "zone" | "rectangle" | "circle" | "polygon" | "text";
+type ShapeKind = "WALL" | "ZONE" | "RECTANGLE" | "CIRCLE" | "POLYGON" | "TEXT";
 type MarkerShape = "CIRCLE" | "SQUARE" | "ROUNDED";
 
 interface DeskPos {
@@ -39,6 +40,10 @@ interface Shape {
   color: string | null;
   points: { x: number; y: number }[] | null;
   filled: boolean;
+  fontSize?: number | null;
+  fontFamily?: string | null;
+  bold?: boolean;
+  italic?: boolean;
 }
 
 const ZONE_COLORS = ["#6366f1", "#10b981", "#f59e0b", "#0ea5e9", "#f43f5e", "#8b5cf6"];
@@ -49,6 +54,7 @@ const KIND_LABEL: Record<ShapeKind, string> = {
   RECTANGLE: "Rectangle",
   CIRCLE: "Circle",
   POLYGON: "Polygon",
+  TEXT: "Text",
 };
 
 function clamp(v: number, lo: number, hi: number): number {
@@ -317,6 +323,33 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
       setGuides({ v: null, h: null });
       return;
     }
+    if (tool === "text") {
+      const id = newShapeId();
+      setShapes((ss) => [
+        ...ss,
+        {
+          id,
+          kind: "TEXT",
+          xPct: clamp(p.x, 0, 95),
+          yPct: clamp(p.y, 0, 95),
+          wPct: 20,
+          hPct: 5,
+          label: "Text",
+          color: "#0f172a",
+          points: null,
+          filled: true,
+          fontSize: 2.2,
+          fontFamily: "SANS",
+          bold: false,
+          italic: false,
+        },
+      ]);
+      setSelectedShape(id);
+      setSelectedDesk(null);
+      setTool("select");
+      setDirty(true);
+      return;
+    }
     if (tool === "wall" || tool === "zone" || tool === "rectangle" || tool === "circle") {
       setDrawStart(p);
       setDrawCur(p);
@@ -425,6 +458,10 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
             color: s.color,
             points: s.points,
             filled: s.filled,
+            fontSize: s.fontSize ?? null,
+            fontFamily: s.fontFamily ?? null,
+            bold: s.bold ?? false,
+            italic: s.italic ?? false,
           })),
         }),
       ]);
@@ -522,6 +559,7 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                     ["rectangle", "Rectangle"],
                     ["circle", "Circle"],
                     ["polygon", "Polygon"],
+                    ["text", "Text"],
                   ] as [Tool, string][]
                 ).map(([t, label]) => (
                   <button
@@ -554,7 +592,7 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
               )}
               <div
                 ref={canvasRef}
-                className="relative w-full select-none overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
+                className="relative w-full select-none overflow-hidden rounded-xl border border-slate-200 bg-slate-50 [container-type:inline-size] dark:border-slate-700 dark:bg-slate-800"
                 style={{ aspectRatio: "16 / 10", cursor: tool === "select" ? "default" : "crosshair" }}
                 onMouseDown={onCanvasDown}
                 onMouseMove={onCanvasMove}
@@ -573,7 +611,7 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
               >
                 {imageUrl && <img src={imageUrl} alt="Lab floorplan" className="absolute inset-0 h-full w-full object-contain" draggable={false} />}
                 {/* rect-like shapes */}
-                {shapes.filter((s) => s.kind !== "POLYGON").map((s) => (
+                {shapes.filter((s) => s.kind !== "POLYGON" && s.kind !== "TEXT").map((s) => (
                   <div
                     key={s.id}
                     onMouseDown={(e) => onShapeMouseDown(e, s)}
@@ -669,6 +707,19 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                       />
                     );
                   })}
+                {/* text annotations */}
+                {shapes.filter((s) => s.kind === "TEXT").map((s) => (
+                  <div
+                    key={s.id}
+                    onMouseDown={(e) => onShapeMouseDown(e, s)}
+                    className={`absolute max-w-[45%] whitespace-pre-wrap px-1 py-0.5 ${tool === "select" ? "cursor-move" : ""} ${
+                      selectedShape === s.id ? "ring-2 ring-accent-500" : ""
+                    }`}
+                    style={textShapeStyle(s)}
+                  >
+                    {s.label || "Text"}
+                  </div>
+                ))}
                 {/* in-progress draw rect */}
                 {drawStart && drawCur && (
                   <div
@@ -831,27 +882,100 @@ export function FloorplanEditor({ labId, labName }: { labId: string; labName: st
                   {selShape.kind !== "WALL" && (
                     <>
                       <div>
-                        <Label>Label</Label>
-                        <Input
-                          value={selShape.label ?? ""}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setShapes((ss) => ss.map((s) => (s.id === selShape.id ? { ...s, label: v } : s)));
-                            setDirty(true);
-                          }}
-                        />
+                        <Label>{selShape.kind === "TEXT" ? "Text" : "Label"}</Label>
+                        {selShape.kind === "TEXT" ? (
+                          <Textarea
+                            value={selShape.label ?? ""}
+                            rows={2}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setShapes((ss) => ss.map((s) => (s.id === selShape.id ? { ...s, label: v } : s)));
+                              setDirty(true);
+                            }}
+                          />
+                        ) : (
+                          <Input
+                            value={selShape.label ?? ""}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setShapes((ss) => ss.map((s) => (s.id === selShape.id ? { ...s, label: v } : s)));
+                              setDirty(true);
+                            }}
+                          />
+                        )}
                       </div>
+                      {selShape.kind === "TEXT" && (
+                        <>
+                          <div>
+                            <Label>Font</Label>
+                            <Select
+                              value={selShape.fontFamily ?? "SANS"}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                setShapes((ss) => ss.map((s) => (s.id === selShape.id ? { ...s, fontFamily: v } : s)));
+                                setDirty(true);
+                              }}
+                            >
+                              {FONT_OPTIONS.map((f) => (
+                                <option key={f.id} value={f.id}>
+                                  {f.label}
+                                </option>
+                              ))}
+                            </Select>
+                          </div>
+                          <div>
+                            <Label>Size — {(selShape.fontSize ?? 2.2).toFixed(1)}</Label>
+                            <input
+                              type="range"
+                              min={0.8}
+                              max={5}
+                              step={0.1}
+                              value={selShape.fontSize ?? 2.2}
+                              onChange={(e) => {
+                                const v = Number(e.target.value);
+                                setShapes((ss) => ss.map((s) => (s.id === selShape.id ? { ...s, fontSize: v } : s)));
+                                setDirty(true);
+                              }}
+                              className="w-full accent-accent-600"
+                            />
+                          </div>
+                          <div className="flex gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShapes((ss) => ss.map((s) => (s.id === selShape.id ? { ...s, bold: !s.bold } : s)));
+                                setDirty(true);
+                              }}
+                              className={`h-8 w-8 rounded-sm border text-sm font-bold ${selShape.bold ? "border-accent-600 bg-accent-600 text-white" : "border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300"}`}
+                              title="Bold"
+                            >
+                              B
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShapes((ss) => ss.map((s) => (s.id === selShape.id ? { ...s, italic: !s.italic } : s)));
+                                setDirty(true);
+                              }}
+                              className={`h-8 w-8 rounded-sm border text-sm italic ${selShape.italic ? "border-accent-600 bg-accent-600 text-white" : "border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300"}`}
+                              title="Italic"
+                            >
+                              I
+                            </button>
+                          </div>
+                        </>
+                      )}
                       <div>
                         <Label>Color</Label>
-                        <div className="flex gap-1.5">
-                          {ZONE_COLORS.map((c) => (
+                        <div className="flex flex-wrap gap-1.5">
+                          {(selShape.kind === "TEXT" ? ["#0f172a", "#475569", "#ffffff", ...ZONE_COLORS] : ZONE_COLORS).map((c) => (
                             <button
                               key={c}
                               onClick={() => {
                                 setShapes((ss) => ss.map((s) => (s.id === selShape.id ? { ...s, color: c } : s)));
                                 setDirty(true);
                               }}
-                              className={`h-7 w-7 rounded-full ${selShape.color === c ? "ring-2 ring-accent-500 ring-offset-2" : ""}`}
+                              className={`h-7 w-7 rounded-full border border-slate-200 ${selShape.color === c ? "ring-2 ring-accent-500 ring-offset-2" : ""}`}
                               style={{ backgroundColor: c }}
                               title={c}
                             />

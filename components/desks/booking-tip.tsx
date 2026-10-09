@@ -1,5 +1,5 @@
 import { fmtFullDate } from "@/lib/dates";
-import { amenitySummary } from "@/lib/amenities";
+import { AmenityChips } from "./amenity-chips";
 import type { Occurrence } from "./week-grid";
 
 function fmtTime(iso: string): string {
@@ -23,8 +23,10 @@ export function BookingTipContent({ o }: { o: Occurrence }) {
         {fmtTime(o.startsAt)}–{fmtTime(o.endsAt)}
         {o.booking.type === "REMOTE" ? " · Remote" : ""}
       </p>
-      {amenitySummary(o.desk?.amenities) && (
-        <p className="mt-0.5 text-slate-400">{amenitySummary(o.desk?.amenities)}</p>
+      {o.desk?.amenities && o.desk.amenities.length > 0 && (
+        <div className="mt-1.5">
+          <AmenityChips labels={o.desk.amenities} />
+        </div>
       )}
       {o.booking.title && <p className="mt-0.5 text-slate-600 dark:text-slate-300">{o.booking.title}</p>}
     </div>

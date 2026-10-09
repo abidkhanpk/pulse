@@ -31,6 +31,8 @@ export function DesksClient({
   today,
   canManage,
   canManageDesks,
+  amenityOptions,
+  canManageAmenities,
 }: {
   labs: { id: string; name: string }[];
   desks: Desk[];
@@ -41,12 +43,25 @@ export function DesksClient({
   today: string;
   canManage: boolean;
   canManageDesks: boolean;
+  amenityOptions: { id: string; label: string }[];
+  canManageAmenities: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [view, setView] = React.useState("week");
   const [managerOpen, setManagerOpen] = React.useState(false);
   const [editingLayout, setEditingLayout] = React.useState(false);
+  const [amenities, setAmenities] = React.useState(amenityOptions);
+
+  // Week grid shows amenity labels in desk rows; desks carry ids.
+  const amenityLabel = React.useCallback(
+    (id: string) => amenities.find((a) => a.id === id)?.label ?? id,
+    [amenities]
+  );
+  const gridDesks = React.useMemo(
+    () => desks.map((d) => ({ ...d, amenities: d.amenities.map(amenityLabel) })),
+    [desks, amenityLabel]
+  );
 
   const labId = searchParams.get("lab") ?? "";
 
@@ -105,7 +120,7 @@ export function DesksClient({
       {view === "week" ? (
         <WeekGrid
           key={`${labId}|${weekStart}`}
-          desks={desks}
+          desks={gridDesks}
           people={people}
           projects={projects}
           initialOccurrences={initialOccurrences}
@@ -158,6 +173,9 @@ export function DesksClient({
         desks={desks}
         labs={labs}
         onChanged={() => router.refresh()}
+        amenityOptions={amenities}
+        canManageAmenities={canManageAmenities}
+        onAmenitiesChanged={setAmenities}
       />
     </div>
   );

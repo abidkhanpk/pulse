@@ -251,6 +251,7 @@ enum FloorplanShapeKind {
   WALL
   ZONE
   RECTANGLE
+  TEXT
   CIRCLE
   POLYGON
 }
@@ -278,6 +279,19 @@ model FloorplanShape {
   points Json?
   // Polygon style: filled (like a zone) or outline only (like a wall).
   filled Boolean           @default(true)
+  // Text annotations (kind = TEXT): label holds the text; size is in
+  // container-width units so it scales with the canvas.
+  fontSize   Float?
+  fontFamily String?
+  bold       Boolean @default(false)
+  italic     Boolean @default(false)
+}
+
+/** Admin-managed catalogue of desk amenities (Desk.amenities stores ids). */
+model DeskAmenity {
+  id        String   @id @default(cuid())
+  label     String   @unique
+  createdAt DateTime @default(now())
 }
 
 // ─── Bookings ───

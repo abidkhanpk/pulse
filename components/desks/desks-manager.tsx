@@ -6,8 +6,19 @@ import { Input, Label, Select, Textarea, FieldError } from "@/components/ui/inpu
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { Badge } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
-import { createDesk, updateDesk, setDeskStatus, deleteDesk } from "@/app/(app)/desks/actions";
-import { DESK_AMENITIES, amenitySummary } from "@/lib/amenities";
+import {
+  createDesk,
+  updateDesk,
+  setDeskStatus,
+  deleteDesk,
+  createAmenity,
+  deleteAmenity,
+} from "@/app/(app)/desks/actions";
+
+interface AmenityOption {
+  id: string;
+  label: string;
+}
 
 interface Desk {
   id: string;
@@ -24,13 +35,58 @@ export function DesksManager({
   desks,
   labs,
   onChanged,
+  amenityOptions,
+  canManageAmenities,
+  onAmenitiesChanged,
 }: {
   open: boolean;
   onClose: () => void;
   desks: Desk[];
   labs: { id: string; name: string }[];
   onChanged: () => void;
+  amenityOptions: AmenityOption[];
+  canManageAmenities: boolean;
+  onAmenitiesChanged: (items: AmenityOption[]) => void;
 }) {
+  const [newAmenity, setNewAmenity] = React.useState("");
+  const [amenityError, setAmenityError] = React.useState<string | null>(null);
+  const [amenityPending, setAmenityPending] = React.useState(false);
+
+  const labelOf = (id: string) => amenityOptions.find((a) => a.id === id)?.label ?? id;
+  const summaryOf = (ids: string[]) => (ids.length ? ids.map(labelOf).join(" · ") : null);
+
+  async function addAmenity() {
+    const label = newAmenity.trim();
+    if (!label) return;
+    setAmenityPending(true);
+    setAmenityError(null);
+    try {
+      const res = await createAmenity(label);
+      if (!res.ok) setAmenityError(res.error);
+      else if (res.data) {
+        onAmenitiesChanged(res.data.items);
+        setNewAmenity("");
+      }
+    } finally {
+      setAmenityPending(false);
+    }
+  }
+
+  async function removeAmenity(a: AmenityOption) {
+    if (!confirm(`Delete amenity "${a.label}"? It will also be removed from every desk that lists it.`)) return;
+    setAmenityPending(true);
+    setAmenityError(null);
+    try {
+      const res = await deleteAmenity(a.id);
+      if (!res.ok) setAmenityError(res.error);
+      else if (res.data) {
+        onAmenitiesChanged(res.data.items);
+        onChanged();
+      }
+    } finally {
+      setAmenityPending(false);
+    }
+  }
   const [editing, setEditing] = React.useState<Desk | null>(null);
   const [formOpen, setFormOpen] = React.useState(false);
   const [labId, setLabId] = React.useState(labs[0]?.id ?? "");
@@ -130,7 +186,7 @@ export function DesksManager({
             <div>
               <Label>Amenities at this desk</Label>
               <div className="flex flex-wrap gap-1.5">
-                {DESK_AMENITIES.map((a) => {
+                {amenityOptions.map((a) => {
                   const on = amenities.includes(a.id);
                   return (
                     <button
@@ -174,8 +230,8 @@ export function DesksManager({
                 <TR key={d.id}>
                   <TD className="font-medium">
                     {d.label}
-                    {amenitySummary(d.amenities) && (
-                      <span className="block text-[11px] font-normal text-slate-400">{amenitySummary(d.amenities)}</span>
+                    {summaryOf(d.amenities) && (
+                      <span className="block text-[11px] font-normal text-slate-400">{summaryOf(d.amenities)}</span>
                     )}
                   </TD>
                   <TD>{d.lab.name}</TD>
@@ -199,6 +255,52 @@ export function DesksManager({
               ))}
             </TBody>
           </Table>
+        )}
+        {!formOpen && canManageAmenities && (
+          <div className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-700">
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Amenities catalogue</p>
+            <p className="mt-0.5 text-xs text-slate-400">
+              The amenities desks can offer. Deleting one also removes it from every desk that lists it.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {amenityOptions.map((a) => (
+                <span
+                  key={a.id}
+                  className="inline-flex items-center gap-1 rounded-sm border border-slate-200 px-2 py-1 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300"
+                >
+                  {a.label}
+                  <button
+                    type="button"
+                    onClick={() => removeAmenity(a)}
+                    disabled={amenityPending}
+                    className="px-0.5 text-slate-400 transition-colors hover:text-red-600"
+                    aria-label={`Delete ${a.label}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              {amenityOptions.length === 0 && <span className="text-xs text-slate-400">None defined yet.</span>}
+            </div>
+            <div className="mt-3 flex items-start gap-2">
+              <Input
+                value={newAmenity}
+                onChange={(e) => setNewAmenity(e.target.value)}
+                placeholder="New amenity, e.g. Whiteboard"
+                className="max-w-xs"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addAmenity();
+                  }
+                }}
+              />
+              <Button size="sm" onClick={addAmenity} disabled={amenityPending || !newAmenity.trim()}>
+                Add amenity
+              </Button>
+            </div>
+            <FieldError message={amenityError ?? undefined} />
+          </div>
         )}
       </div>
     </Dialog>

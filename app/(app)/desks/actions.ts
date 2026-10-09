@@ -6,7 +6,57 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-helpers";
 import { can, scopeFilter, type PermissionKey } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
-import { sanitizeAmenities } from "@/lib/amenities";
+import { resolveAmenityLabels, type AmenityOption } from "@/lib/amenities";
+
+/** The admin-managed amenity catalogue. */
+export async function listAmenities(): Promise<AmenityOption[]> {
+  await requireUser();
+  const rows = await prisma.deskAmenity.findMany({ orderBy: { label: "asc" } });
+  return rows.map((r) => ({ id: r.id, label: r.label }));
+}
+
+async function amenityCatalogue(): Promise<AmenityOption[]> {
+  const rows = await prisma.deskAmenity.findMany({ select: { id: true, label: true } });
+  return rows;
+}
+
+/** Keep only ids that exist in the catalogue. */
+async function validAmenityIds(ids: string[] | undefined | null): Promise<string[]> {
+  if (!ids || ids.length === 0) return [];
+  const valid = new Set((await amenityCatalogue()).map((a) => a.id));
+  return ids.filter((id) => valid.has(id));
+}
+
+export async function createAmenity(label: string): Promise<ActionResult<{ items: AmenityOption[] }>> {
+  const actor = await requireUser();
+  if (!can(actor, "org.manage")) return deny("org.manage");
+  const clean = label.trim().replace(/\s+/g, " ");
+  if (!clean || clean.length > 40) return { ok: false, error: "Amenity name must be 1–40 characters." };
+  const dup = await prisma.deskAmenity.findUnique({ where: { label: clean } });
+  if (dup) return { ok: false, error: `"${clean}" already exists.` };
+  await prisma.deskAmenity.create({ data: { label: clean } });
+  await logAudit(actor.id, "desk.amenity_created", "DeskAmenity", clean, { label: clean });
+  revalidatePath("/desks");
+  return { ok: true, data: { items: await listAmenities() } };
+}
+
+export async function deleteAmenity(id: string): Promise<ActionResult<{ items: AmenityOption[] }>> {
+  const actor = await requireUser();
+  if (!can(actor, "org.manage")) return deny("org.manage");
+  const amenity = await prisma.deskAmenity.findUnique({ where: { id } });
+  if (!amenity) return { ok: false, error: "Amenity not found." };
+  // Remove the amenity and scrub it from every desk that lists it.
+  const affected = await prisma.desk.findMany({ where: { amenities: { has: id } }, select: { id: true, amenities: true } });
+  await prisma.$transaction([
+    ...affected.map((d) =>
+      prisma.desk.update({ where: { id: d.id }, data: { amenities: d.amenities.filter((a) => a !== id) } })
+    ),
+    prisma.deskAmenity.delete({ where: { id } }),
+  ]);
+  await logAudit(actor.id, "desk.amenity_deleted", "DeskAmenity", id, { label: amenity.label, desksScrubbed: affected.length });
+  revalidatePath("/desks");
+  return { ok: true, data: { items: await listAmenities() } };
+}
 import {
   createBooking,
   todayPKT,
@@ -60,7 +110,7 @@ export async function createDesk(input: z.infer<typeof deskSchema>): Promise<Act
       labId: parsed.data.labId,
       label: parsed.data.label,
       notes: parsed.data.notes ?? null,
-      amenities: sanitizeAmenities(parsed.data.amenities),
+      amenities: await validAmenityIds(parsed.data.amenities),
     },
   });
   await logAudit(actor.id, "desk.created", "Desk", desk.id, { label: desk.label, labId: desk.labId });
@@ -86,7 +136,7 @@ export async function updateDesk(
       label: parsed.data.label,
       notes: parsed.data.notes ?? null,
       ...(parsed.data.markerShape ? { markerShape: parsed.data.markerShape } : {}),
-      ...(parsed.data.amenities ? { amenities: sanitizeAmenities(parsed.data.amenities) } : {}),
+      ...(parsed.data.amenities ? { amenities: await validAmenityIds(parsed.data.amenities) } : {}),
     },
   });
   await logAudit(actor.id, "desk.updated", "Desk", id, { label: parsed.data.label });
@@ -277,7 +327,7 @@ export async function listOccurrences({ from, to, labId }: OccurrenceRange) {
   const labIds = scopeFilter(actor);
   const fromDate = new Date(from + "T00:00:00Z");
   const toDate = new Date(to + "T00:00:00Z");
-  return prisma.bookingOccurrence.findMany({
+  const rows = await prisma.bookingOccurrence.findMany({
     where: {
       date: { gte: fromDate, lte: toDate },
       status: "SCHEDULED",
@@ -300,6 +350,12 @@ export async function listOccurrences({ from, to, labId }: OccurrenceRange) {
     },
     orderBy: [{ date: "asc" }, { startsAt: "asc" }],
   });
+  // Resolve desk amenity ids to labels for tooltips.
+  const catalogue = await amenityCatalogue();
+  return rows.map((o) => ({
+    ...o,
+    desk: o.desk ? { ...o.desk, amenities: resolveAmenityLabels(o.desk.amenities, catalogue) } : null,
+  }));
 }
 
 /** The signed-in user's own upcoming bookings (read-only view). */
@@ -484,18 +540,22 @@ const shapesSchema = z.object({
   labId: z.string().min(1),
   shapes: z.array(
     z.object({
-      kind: z.enum(["WALL", "ZONE", "RECTANGLE", "CIRCLE", "POLYGON"]),
+      kind: z.enum(["WALL", "ZONE", "RECTANGLE", "CIRCLE", "POLYGON", "TEXT"]),
       xPct: z.number().min(0).max(100),
       yPct: z.number().min(0).max(100),
       wPct: z.number().min(0.5).max(100),
       hPct: z.number().min(0.5).max(100),
-      label: z.string().max(60).nullable().optional(),
+      label: z.string().max(200).nullable().optional(),
       color: z.string().max(20).nullable().optional(),
       points: z
         .array(z.object({ x: z.number().min(0).max(100), y: z.number().min(0).max(100) }))
         .nullable()
         .optional(),
       filled: z.boolean().optional(),
+      fontSize: z.number().min(0.5).max(10).nullable().optional(),
+      fontFamily: z.string().max(20).nullable().optional(),
+      bold: z.boolean().optional(),
+      italic: z.boolean().optional(),
     })
   ),
 });
@@ -521,6 +581,10 @@ export async function saveFloorplanShapes(input: z.infer<typeof shapesSchema>): 
           color: sh.color || null,
           points: sh.points ?? undefined,
           filled: sh.filled ?? true,
+          fontSize: sh.fontSize ?? null,
+          fontFamily: sh.fontFamily ?? null,
+          bold: sh.bold ?? false,
+          italic: sh.italic ?? false,
         })),
       });
     }
@@ -546,10 +610,11 @@ export async function getFloorplan(labId: string) {
     }),
     prisma.floorplanShape.findMany({ where: { labId } }),
   ]);
+  const catalogue = await amenityCatalogue();
   return {
     hasImage: !!img,
     imageUrl: img ? `/api/floorplan/${labId}?v=${img.updatedAt.getTime()}` : null,
-    desks,
+    desks: desks.map((d) => ({ ...d, amenities: resolveAmenityLabels(d.amenities, catalogue) })),
     shapes: shapes.map((sh) => ({
       id: sh.id,
       kind: sh.kind,
@@ -561,6 +626,10 @@ export async function getFloorplan(labId: string) {
       color: sh.color,
       points: (sh.points as { x: number; y: number }[] | null) ?? null,
       filled: sh.filled,
+      fontSize: sh.fontSize,
+      fontFamily: sh.fontFamily,
+      bold: sh.bold,
+      italic: sh.italic,
     })),
   };
 }

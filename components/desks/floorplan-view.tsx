@@ -4,7 +4,8 @@ import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
 import { Tooltip } from "@/components/ui/tooltip";
-import { amenitySummary } from "@/lib/amenities";
+import { textShapeStyle } from "@/lib/floorplan-text";
+import { AmenityChips } from "./amenity-chips";
 import { getFloorplan, layoutOccupancy } from "@/app/(app)/desks/actions";
 import { BookingDrawer } from "./booking-drawer";
 
@@ -29,6 +30,10 @@ interface Shape {
   color: string | null;
   points: { x: number; y: number }[] | null;
   filled: boolean;
+  fontSize?: number | null;
+  fontFamily?: string | null;
+  bold?: boolean;
+  italic?: boolean;
 }
 
 function markerRadius(m: DeskPos["markerShape"]): string {
@@ -156,15 +161,24 @@ export function FloorplanView({
 
       <Card>
         <CardContent className="!p-3">
-          <div className="relative w-full select-none overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800" style={{ aspectRatio: "16 / 10" }}>
+          <div className="relative w-full select-none overflow-hidden rounded-xl border border-slate-200 bg-slate-50 [container-type:inline-size] dark:border-slate-700 dark:bg-slate-800" style={{ aspectRatio: "16 / 10" }}>
             {imageUrl && <img src={imageUrl} alt={`${labName} floorplan`} className="absolute inset-0 h-full w-full object-contain" draggable={false} />}
-            {shapes.filter((s) => s.kind !== "POLYGON").map((s) => (
+            {shapes.filter((s) => s.kind !== "POLYGON" && s.kind !== "TEXT").map((s) => (
               <div key={s.id} className="pointer-events-none absolute" style={shapeDivStyle(s)}>
                 {(s.kind === "ZONE" || s.kind === "RECTANGLE") && s.label && (
                   <span className="absolute left-1 top-1 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                     {s.label}
                   </span>
                 )}
+              </div>
+            ))}
+            {shapes.filter((s) => s.kind === "TEXT").map((s) => (
+              <div
+                key={s.id}
+                className="pointer-events-none absolute max-w-[45%] whitespace-pre-wrap px-1 py-0.5"
+                style={textShapeStyle(s)}
+              >
+                {s.label}
               </div>
             ))}
             <svg
@@ -204,8 +218,10 @@ export function FloorplanView({
                       <p className="font-bold text-slate-800 dark:text-slate-100">
                         {d.label} <span className="ml-1 font-medium text-slate-400">{statusText}</span>
                       </p>
-                      {amenitySummary(d.amenities) && (
-                        <p className="mt-0.5 text-slate-500 dark:text-slate-400">{amenitySummary(d.amenities)}</p>
+                      {d.amenities.length > 0 && (
+                        <div className="mt-1.5">
+                          <AmenityChips labels={d.amenities} />
+                        </div>
                       )}
                       {list.length > 0 ? (
                         <ul className="mt-1 space-y-0.5 text-slate-600 dark:text-slate-300">
@@ -264,10 +280,12 @@ export function FloorplanView({
                 <span className="ml-2 text-xs font-normal text-slate-400">
                   {statusOf(selDesk) === "occupied" ? "Occupied now" : statusOf(selDesk) === "upcoming" ? "Booked later today" : statusOf(selDesk) === "maintenance" ? "Under maintenance" : "Free"}
                 </span>
-                {amenitySummary(selDesk.amenities) && (
-                  <span className="ml-2 text-xs font-normal text-slate-400">· {amenitySummary(selDesk.amenities)}</span>
-                )}
               </p>
+              {selDesk.amenities.length > 0 && (
+                <div className="mt-1.5">
+                  <AmenityChips labels={selDesk.amenities} />
+                </div>
+              )}
             </div>
             {selOccs.length > 0 ? (
               <ul className="mt-1 space-y-1 text-sm text-slate-600 dark:text-slate-300">
