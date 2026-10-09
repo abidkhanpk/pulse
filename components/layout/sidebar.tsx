@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, animate, useMotionValue, useMotionValueEvent } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/brand-logo";
 import type { PermissionKey, ActorRole } from "@/lib/permissions";
@@ -76,6 +76,25 @@ export function Sidebar({
   const leaveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const expanded = pinned || hovered;
 
+  // Width is driven by a motion value, and text visibility is DERIVED from
+  // the actual rendered width — labels only exist once the sidebar is
+  // physically wide enough to fit them (past 150px), and vanish the moment
+  // it narrows below that. No timers or delays: a clipped label is
+  // impossible regardless of animation speed or machine load.
+  const widthMV = useMotionValue(COLLAPSED_W);
+  const [showText, setShowText] = React.useState(false);
+  React.useEffect(() => {
+    const controls = animate(widthMV, expanded ? EXPANDED_W : COLLAPSED_W, {
+      type: "spring",
+      stiffness: 380,
+      damping: 36,
+    });
+    return () => controls.stop();
+  }, [expanded, widthMV]);
+  useMotionValueEvent(widthMV, "change", (w) => {
+    setShowText(w > 150);
+  });
+
   const items = NAV.filter((n) => canSee(actor, n));
 
   function onEnter() {
@@ -93,9 +112,7 @@ export function Sidebar({
 
   return (
     <motion.aside
-      initial={false}
-      animate={{ width: expanded ? EXPANDED_W : COLLAPSED_W }}
-      transition={{ type: "spring", stiffness: 380, damping: 36 }}
+      style={{ width: widthMV }}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       className="fixed bottom-0 left-0 top-0 z-40 hidden flex-col overflow-hidden border-r border-slate-200/70 bg-white shadow-[4px_0_24px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#0a0a0e] dark:shadow-[4px_0_24px_rgba(0,0,0,0.5)] md:flex"
@@ -109,13 +126,11 @@ export function Sidebar({
           >
             <BrandLogo className="h-9 w-9" />
           </motion.span>
-          {expanded && (
+          {showText && (
             <motion.span
-              initial={{ opacity: 0, x: -6 }}
-              animate={{ opacity: 1, x: 0 }}
-              // Delay until the width spring has opened far enough to fit the
-              // word — otherwise a clipped first-letter sliver shows mid-animation.
-              transition={{ duration: 0.18, delay: 0.13 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.15 }}
               className="whitespace-nowrap text-xl font-extrabold tracking-tight text-accent-700 dark:text-accent-400"
             >
               {appName}
@@ -135,11 +150,11 @@ export function Sidebar({
             lastSection = item.section;
             return (
               <React.Fragment key={item.href}>
-                {sectionHeader && expanded && (
+                {sectionHeader && showText && (
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.18, delay: 0.13 }}
+                    transition={{ duration: 0.15 }}
                     className="whitespace-nowrap px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500"
                   >
                     {sectionHeader}
@@ -173,21 +188,20 @@ export function Sidebar({
                   >
                     <Icon className="h-[18px] w-[18px]" />
                   </span>
-                  {expanded && (
+                  {showText && (
                     <motion.span
-                      initial={{ opacity: 0, x: -6 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.18, delay: 0.13 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.15 }}
                       className="relative z-10 truncate whitespace-nowrap"
                     >
                       {item.label}
                     </motion.span>
                   )}
-                  {expanded && active && (
+                  {showText && active && (
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      transition={{ delay: 0.13 }}
                       className="relative z-10 ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-white"
                     />
                   )}
@@ -200,11 +214,11 @@ export function Sidebar({
 
       {/* Profile + pin */}
       <div className="space-y-2 border-t border-slate-100 p-3 dark:border-white/10">
-        {expanded && (
+        {showText && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.18, delay: 0.13 }}
+            transition={{ duration: 0.15 }}
             className="flex items-center gap-2.5 rounded-sm bg-accent-50 p-2.5 ring-1 ring-accent-100 dark:bg-white/5 dark:ring-white/10"
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-accent-600 text-xs font-bold text-white">
@@ -228,11 +242,11 @@ export function Sidebar({
           )}
         >
           {pinned ? <PinOff className="h-[18px] w-[18px] shrink-0" /> : <Pin className="h-[18px] w-[18px] shrink-0" />}
-          {expanded && (
+          {showText && (
             <motion.span
-              initial={{ opacity: 0, x: -6 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.18, delay: 0.13 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.15 }}
               className="whitespace-nowrap"
             >
               {pinned ? "Unpin" : "Pin open"}
