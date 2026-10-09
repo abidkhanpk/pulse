@@ -215,9 +215,9 @@ function Stat({
   );
 }
 
-function ChartCard({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+function ChartCard({ title, action, children, tipBound }: { title: string; action?: React.ReactNode; children: React.ReactNode; tipBound?: boolean }) {
   return (
-    <Card>
+    <Card {...(tipBound ? { "data-tip-bound": true } : {})}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {action}
@@ -491,6 +491,7 @@ export function DashboardClient({ d }: { d: DashboardData }) {
       {d.attendanceEnabled && (
         <FadeIn delay={0.4}>
           <ChartCard
+            tipBound
             title={d.attendanceTrendTitle}
             action={
               <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
