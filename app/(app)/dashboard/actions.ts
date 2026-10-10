@@ -27,6 +27,10 @@ export interface DashboardData {
   todayBookings: { id: string; personName: string; deskLabel: string | null; timeStart: string; timeEnd: string; title: string | null }[];
   canSeeBookings: boolean;
   canViewReports: boolean;
+  // Per-lab desk occupation states for today (full mode only): how many
+  // desks are still bookable all day, partly booked, fully booked, or
+  // under maintenance — the admin/incharge planning glance.
+  deskLabs: { labId: string; labName: string; total: number; freeAllDay: number; partlyBooked: number; fullyBooked: number; maintenance: number }[];
   // team mode only
   teamCheckedInToday: number;
   teamSize: number;
@@ -212,6 +216,7 @@ export async function dashboardData(): Promise<DashboardData> {
       canViewReports: false,
       teamCheckedInToday: 0,
       teamSize: 0,
+      deskLabs: [],
       attendanceTrend: buildTrend(today, trendRecords),
       attendanceTrendTitle: "My attendance — last 14 days",
       projectProgress: toProgress(projects),
@@ -267,6 +272,7 @@ export async function dashboardData(): Promise<DashboardData> {
       canViewReports: hasPermission(actor, "attendance.view_reports"),
       teamCheckedInToday: teamCheckedIn,
       teamSize: team.length,
+      deskLabs: [],
       attendanceTrend: buildTrend(today, trendRecords),
       attendanceTrendTitle: "Team attendance — last 14 days",
       projectProgress: toProgress(projects),
@@ -352,6 +358,56 @@ export async function dashboardData(): Promise<DashboardData> {
       }),
     ]);
 
+  // Per-lab desk occupation states for today (interval-merged booked
+  // minutes per desk): 0 = free all day, >= 8h booked = fully booked.
+  const deskLabs = await (async () => {
+    const [labs, desks, occs] = await Promise.all([
+      prisma.lab.findMany({
+        where: { ...(labFilter ? { id: labFilter } : {}) },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }),
+      prisma.desk.findMany({
+        where: { ...(labFilter ? { labId: labFilter } : {}) },
+        select: { id: true, labId: true, status: true },
+      }),
+      prisma.bookingOccurrence.findMany({
+        where: { date: today, status: "SCHEDULED", deskId: { not: null }, ...(labFilter ? { desk: { labId: labFilter } } : {}) },
+        select: { deskId: true, startsAt: true, endsAt: true },
+      }),
+    ]);
+    const minutes = new Map<string, number>();
+    const byDesk = new Map<string, { s: number; e: number }[]>();
+    for (const o of occs) {
+      if (!o.deskId) continue;
+      const arr = byDesk.get(o.deskId) ?? [];
+      arr.push({ s: o.startsAt.getTime(), e: o.endsAt.getTime() });
+      byDesk.set(o.deskId, arr);
+    }
+    for (const [deskId, ivs] of byDesk) {
+      ivs.sort((a, b) => a.s - b.s);
+      let total = 0, curS = -1, curE = -1;
+      for (const iv of ivs) {
+        if (iv.s > curE) { if (curE > curS) total += curE - curS; curS = iv.s; curE = iv.e; }
+        else if (iv.e > curE) curE = iv.e;
+      }
+      if (curE > curS) total += curE - curS;
+      minutes.set(deskId, Math.round(total / 60000));
+    }
+    return labs.map((lab) => {
+      const mine = desks.filter((d) => d.labId === lab.id);
+      let freeAllDay = 0, partlyBooked = 0, fullyBooked = 0, maintenance = 0;
+      for (const d of mine) {
+        if (d.status === "MAINTENANCE") { maintenance++; continue; }
+        const m = minutes.get(d.id) ?? 0;
+        if (m === 0) freeAllDay++;
+        else if (m >= 480) fullyBooked++;
+        else partlyBooked++;
+      }
+      return { labId: lab.id, labName: lab.name, total: mine.length, freeAllDay, partlyBooked, fullyBooked, maintenance };
+    }).filter((l) => l.total > 0);
+  })();
+
   return {
     mode,
     myTodos: todoView,
@@ -375,6 +431,7 @@ export async function dashboardData(): Promise<DashboardData> {
     })),
     canSeeBookings: hasPermission(actor, "bookings.view_all"),
     canViewReports: hasPermission(actor, "attendance.view_reports"),
+    deskLabs,
     teamCheckedInToday: 0,
     teamSize: 0,
     attendanceTrend: buildTrend(today, trendRecords),

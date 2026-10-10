@@ -355,6 +355,40 @@ export function DashboardClient({ d }: { d: DashboardData }) {
         )}
       </Stagger>
 
+      {/* ── desks today: per-lab occupation states (admin / incharge) ── */}
+      {d.mode === "full" && d.deskLabs.length > 0 && (
+        <FadeIn delay={0.15}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Armchair className="h-4 w-4 text-accent-600" /> Desks today
+                <span className="text-xs font-normal text-slate-400">free all day · partly booked · fully booked · maintenance</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {d.deskLabs.map((lab) => (
+                <Link
+                  key={lab.labId}
+                  href={`/desks?lab=${lab.labId}`}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-sm border border-slate-200 px-3 py-2 transition-colors hover:border-accent-300 hover:bg-accent-50/50 dark:border-slate-800 dark:hover:bg-slate-800/50"
+                >
+                  <span className="min-w-32 text-sm font-medium text-slate-800 dark:text-slate-100">{lab.labName}</span>
+                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{lab.freeAllDay} free all day</span>
+                  <span className="text-xs text-slate-400">of {lab.total} desks</span>
+                  <span className="ml-auto flex items-center gap-2 text-xs">
+                    <span className="rounded-sm bg-amber-100 px-1.5 py-0.5 font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">{lab.partlyBooked} partly</span>
+                    <span className="rounded-sm bg-red-100 px-1.5 py-0.5 font-medium text-red-700 dark:bg-red-950 dark:text-red-300">{lab.fullyBooked} full</span>
+                    {lab.maintenance > 0 && (
+                      <span className="rounded-sm bg-slate-200 px-1.5 py-0.5 font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">{lab.maintenance} maint.</span>
+                    )}
+                  </span>
+                </Link>
+              ))}
+            </CardContent>
+          </Card>
+        </FadeIn>
+      )}
+
       {/* ── two stacked columns: cards pack tightly, no cross-column gaps ── */}
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-4">
