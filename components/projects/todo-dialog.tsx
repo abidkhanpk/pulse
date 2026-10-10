@@ -7,7 +7,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { createTodo, updateTodo, deleteTodo, todoDependencyCandidates, setTodoDependencies } from "@/app/(app)/projects/actions";
 import { DependencyPicker, type DependencyCandidate } from "./dependency-picker";
-import type { KanbanTodo, TodoPriority } from "./kanban";
+import type { KanbanTodo, Priority } from "./kanban";
 
 interface TodoWithDeps extends KanbanTodo {
   description: string | null;
@@ -35,7 +35,7 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [status, setStatus] = React.useState<KanbanTodo["status"]>("TODO");
-  const [priority, setPriority] = React.useState<TodoPriority>("MEDIUM");
+  const [priority, setPriority] = React.useState<Priority>("NORMAL");
   const [milestoneId, setMilestoneId] = React.useState("");
   const [assigneeId, setAssigneeId] = React.useState("");
   const [startDate, setStartDate] = React.useState("");
@@ -52,7 +52,7 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
       setTitle(todo?.title ?? "");
       setDescription(todo?.description ?? "");
       setStatus(todo?.status ?? defaultStatus);
-      setPriority(todo?.priority ?? "MEDIUM");
+      setPriority(todo?.priority ?? "NORMAL");
       setMilestoneId(todo?.milestoneId ?? defaultMilestoneId ?? "");
       setAssigneeId(todo?.assignee?.id ?? "");
       setStartDate(todo?.startDate ? todo.startDate.slice(0, 10) : "");
@@ -165,8 +165,9 @@ export function TodoDialog({ open, onClose, onSaved, projectId, todo, defaultSta
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="td-priority">Priority</Label>
-              <Select id="td-priority" value={priority} onChange={(e) => setPriority(e.target.value as TodoPriority)} disabled={!canManage}>
+              <Select id="td-priority" value={priority} onChange={(e) => setPriority(e.target.value as Priority)} disabled={!canManage}>
                 <option value="LOW">Low</option>
+                <option value="NORMAL">Normal</option>
                 <option value="MEDIUM">Medium</option>
                 <option value="HIGH">High</option>
               </Select>

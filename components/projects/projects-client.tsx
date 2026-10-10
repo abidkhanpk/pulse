@@ -9,12 +9,14 @@ import { Dialog, DialogTitle } from "@/components/ui/overlay";
 import { Card, CardHeader, CardTitle, CardContent, Badge } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
 import { createProject, updateProject } from "@/app/(app)/projects/actions";
+import { PriorityPill, type Priority } from "./kanban";
 
 interface Project {
   id: string;
   name: string;
   description: string | null;
   status: string;
+  priority: Priority;
   startDate: string | null;
   endDate: string | null;
   lab: { id: string; name: string };
@@ -34,10 +36,13 @@ export function ProjectsClient({
   projects,
   labs,
   canManage,
+  priorityLabIds,
 }: {
   projects: Project[];
   labs: { id: string; name: string }[];
   canManage: boolean;
+  /** Labs whose project priorities this user may set (admin / incharge). */
+  priorityLabIds: string[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -48,6 +53,7 @@ export function ProjectsClient({
   const [description, setDescription] = React.useState("");
   const [labId, setLabId] = React.useState("");
   const [status, setStatus] = React.useState("ACTIVE");
+  const [priority, setPriority] = React.useState<Priority>("NORMAL");
   const [startDate, setStartDate] = React.useState("");
   const [endDate, setEndDate] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
@@ -55,6 +61,7 @@ export function ProjectsClient({
 
   function startCreate() {
     setEditing(null);
+    setPriority("NORMAL");
     setName(""); setDescription("");
     setLabId(labs[0]?.id ?? "");
     setStatus("ACTIVE"); setStartDate(""); setEndDate("");
@@ -64,6 +71,7 @@ export function ProjectsClient({
 
   function startEdit(p: Project) {
     setEditing(p);
+    setPriority(p.priority);
     setName(p.name); setDescription(p.description ?? "");
     setLabId(p.lab.id);
     setStatus(p.status);
@@ -84,6 +92,7 @@ export function ProjectsClient({
         description: description.trim() || null,
         labId,
         status: status as "ACTIVE" | "ON_HOLD" | "COMPLETED" | "ARCHIVED",
+        priority,
         leadId: null,
         startDate: startDate || null,
         endDate: endDate || null,
@@ -148,6 +157,7 @@ export function ProjectsClient({
                     <CardTitle className="truncate">{p.name}</CardTitle>
                   </Link>
                   <Badge color={STATUS_COLORS[p.status] ?? "default"}>{p.status.replace("_", "")}</Badge>
+                  {p.priority !== "NORMAL" && <PriorityPill priority={p.priority} />}
                 </div>
                 <p className="text-xs text-slate-400">{p.lab.name}</p>
               </CardHeader>
@@ -204,6 +214,18 @@ export function ProjectsClient({
               </Select>
             </div>
           </div>
+          {priorityLabIds.includes(labId) && (
+            <div>
+              <Label htmlFor="pr-priority">Priority</Label>
+              <Select id="pr-priority" value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
+                <option value="LOW">Low</option>
+                <option value="NORMAL">Normal</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+              </Select>
+              <p className="mt-1 text-xs text-slate-400">Used when planning desk allocation. Only admins and lab incharges can set this.</p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="pr-start">Start date (optional)</Label>

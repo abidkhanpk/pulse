@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { requireUser } from "@/lib/auth-helpers";
-import { hasPermission } from "@/lib/permissions";
+import { can, hasPermission } from "@/lib/permissions";
 import { listProjects, projectLabOverview } from "./actions";
 import { myLabs } from "../labs/actions";
 import { ProjectsClient } from "@/components/projects/projects-client";
@@ -51,6 +51,11 @@ export default async function ProjectsPage({
         }))}
         labs={labs}
         canManage={hasPermission(actor, "projects.manage")}
+        priorityLabIds={
+          can(actor, "org.manage")
+            ? labs.map((l) => l.id)
+            : actor.inchargeOf.map((l) => l.labId)
+        }
       />
     </div>
   );

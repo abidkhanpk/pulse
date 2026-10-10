@@ -85,7 +85,14 @@ const projectSchema = z.object({
   leadId: z.string().min(1).nullable().optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  priority: z.enum(["LOW", "NORMAL", "MEDIUM", "HIGH"]).optional(),
 });
+
+/** Project priority may only be set by admins and the lab's incharges
+ *  (user decision 2026-10-10) — everyone else's value is ignored. */
+function canSetProjectPriority(actor: Awaited<ReturnType<typeof requireUser>>, labId: string): boolean {
+  return can(actor, "org.manage") || actor.inchargeOf.some((l) => l.labId === labId);
+}
 
 export async function createProject(input: z.infer<typeof projectSchema>): Promise<ActionResult<{ id: string }>> {
   const actor = await requireUser();
@@ -98,6 +105,9 @@ export async function createProject(input: z.infer<typeof projectSchema>): Promi
       description: parsed.data.description || null,
       labId: parsed.data.labId,
       status: parsed.data.status,
+      ...(parsed.data.priority && canSetProjectPriority(actor, parsed.data.labId)
+        ? { priority: parsed.data.priority }
+        : {}),
       leadId: parsed.data.leadId || null,
       startDate: parsed.data.startDate ? new Date(parsed.data.startDate) : null,
       endDate: parsed.data.endDate ? new Date(parsed.data.endDate) : null,
@@ -127,12 +137,18 @@ export async function updateProject(id: string, input: z.infer<typeof projectSch
       description: parsed.data.description || null,
       labId: parsed.data.labId,
       status: parsed.data.status,
+      ...(parsed.data.priority && canSetProjectPriority(actor, parsed.data.labId)
+        ? { priority: parsed.data.priority }
+        : {}),
       leadId: parsed.data.leadId || null,
       startDate: parsed.data.startDate ? new Date(parsed.data.startDate) : null,
       endDate: parsed.data.endDate ? new Date(parsed.data.endDate) : null,
     },
   });
-  await logAudit(actor.id, "project.updated", "Project", id, { name: parsed.data.name });
+  await logAudit(actor.id, "project.updated", "Project", id, {
+    name: parsed.data.name,
+    ...(parsed.data.priority ? { priority: parsed.data.priority } : {}),
+  });
   revalidatePath("/projects");
   revalidatePath(`/projects/${id}`);
   return { ok: true };
@@ -302,7 +318,7 @@ const todoSchema = z.object({
   title: z.string().trim().min(1).max(300),
   description: z.string().trim().max(2000).optional().nullable(),
   status: z.enum(["TODO", "IN_PROGRESS", "IN_REVIEW", "DONE"]),
-  priority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
+  priority: z.enum(["LOW", "NORMAL", "MEDIUM", "HIGH"]).optional(),
   assigneeId: z.string().min(1).nullable().optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),

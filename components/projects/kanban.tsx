@@ -23,13 +23,13 @@ import { fmtDayMonth } from "@/lib/dates";
 import { moveTodo, initKanbanOrder, deleteTodo } from "@/app/(app)/projects/actions";
 import { GripVertical, Calendar, Trash2 } from "lucide-react";
 
-export type TodoPriority = "LOW" | "MEDIUM" | "HIGH";
+export type Priority = "LOW" | "NORMAL" | "MEDIUM" | "HIGH";
 
 export interface KanbanTodo {
   id: string;
   title: string;
   description?: string | null;
-  priority?: TodoPriority;
+  priority?: Priority;
   status: "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE";
   sortOrder: number;
   startDate: string | null;
@@ -39,14 +39,16 @@ export interface KanbanTodo {
   prerequisites: { dependsOn: { id: string; title: string; status: string } }[];
 }
 
-/** Reference-style priority pill: High solid red, Medium solid amber, Low grey. */
-export function PriorityPill({ priority }: { priority: TodoPriority }) {
-  const styles: Record<TodoPriority, string> = {
+/** Shared priority pill (todos + projects): High red, Medium amber,
+ *  Normal slate, Low pale grey. */
+export function PriorityPill({ priority }: { priority: Priority }) {
+  const styles: Record<Priority, string> = {
     HIGH: "bg-red-600 text-white",
     MEDIUM: "bg-amber-500 text-slate-900",
+    NORMAL: "bg-slate-500 text-white dark:bg-slate-600",
     LOW: "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
   };
-  const labels: Record<TodoPriority, string> = { HIGH: "High", MEDIUM: "Medium", LOW: "Low" };
+  const labels: Record<Priority, string> = { HIGH: "High", MEDIUM: "Medium", NORMAL: "Normal", LOW: "Low" };
   return (
     <span className={`rounded-sm px-2 py-0.5 text-[11px] font-semibold ${styles[priority]}`}>{labels[priority]}</span>
   );

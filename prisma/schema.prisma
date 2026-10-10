@@ -432,6 +432,8 @@ model Project {
   labId       String
   lab         Lab           @relation(fields: [labId], references: [id])
   status      ProjectStatus @default(PLANNING)
+  // Resource-planning priority; set by admins and the lab's incharges.
+  priority    Priority      @default(NORMAL)
   leadId      String?
   lead        User?         @relation("LedProjects", fields: [leadId], references: [id])
   startDate   DateTime?     @db.Date
@@ -474,8 +476,9 @@ model Milestone {
   dependents    MilestoneDependency[] @relation("MilestonePrerequisites")
 }
 
-enum TodoPriority {
+enum Priority {
   LOW
+  NORMAL
   MEDIUM
   HIGH
 }
@@ -490,7 +493,7 @@ model Todo {
   description String?    @db.Text
   status      TodoStatus @default(TODO)
   // Only surfaced in UI when the project's lab enables todo priority.
-  priority    TodoPriority @default(MEDIUM)
+  priority    Priority @default(NORMAL)
   assigneeId  String?
   assignee    User?      @relation("AssignedTodos", fields: [assigneeId], references: [id], onDelete: SetNull)
   startDate   DateTime?  @db.Date
