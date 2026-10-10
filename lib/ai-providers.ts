@@ -4,13 +4,14 @@
  * used server-side only and never logged or returned to clients.
  */
 
-export type AiProviderId = "GEMINI" | "ANTHROPIC" | "OPENAI" | "XAI";
+export type AiProviderId = "GEMINI" | "ANTHROPIC" | "OPENAI" | "XAI" | "GROQ";
 
 export const AI_PROVIDERS: { id: AiProviderId; label: string; defaultModel: string }[] = [
   { id: "GEMINI", label: "Google Gemini", defaultModel: "gemini-2.5-flash" },
   { id: "ANTHROPIC", label: "Anthropic Claude", defaultModel: "claude-sonnet-4-5" },
   { id: "OPENAI", label: "OpenAI", defaultModel: "gpt-4o-mini" },
   { id: "XAI", label: "xAI Grok", defaultModel: "grok-4" },
+  { id: "GROQ", label: "Groq", defaultModel: "llama-3.3-70b-versatile" },
 ];
 
 export function defaultModelFor(provider: string): string {
@@ -90,9 +91,14 @@ export async function callAi(
       return text ? { ok: true, text } : { ok: false, error: "Claude returned an empty answer." };
     }
 
-    if (provider === "OPENAI" || provider === "XAI") {
-      const base = provider === "OPENAI" ? "https://api.openai.com/v1" : "https://api.x.ai/v1";
-      const label = provider === "OPENAI" ? "OpenAI" : "Grok";
+    if (provider === "OPENAI" || provider === "XAI" || provider === "GROQ") {
+      const base =
+        provider === "OPENAI"
+          ? "https://api.openai.com/v1"
+          : provider === "XAI"
+            ? "https://api.x.ai/v1"
+            : "https://api.groq.com/openai/v1";
+      const label = provider === "OPENAI" ? "OpenAI" : provider === "XAI" ? "Grok" : "Groq";
       const { status, json, raw } = await postJson(
         `${base}/chat/completions`,
         { authorization: `Bearer ${apiKey}` },

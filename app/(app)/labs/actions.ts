@@ -354,7 +354,7 @@ export async function labMarkerCandidates(labId: string) {
 }
 
 const aiConfigSchema = z.object({
-  provider: z.enum(["GEMINI", "ANTHROPIC", "OPENAI", "XAI"]).nullable(),
+  provider: z.enum(["GEMINI", "ANTHROPIC", "OPENAI", "XAI", "GROQ"]).nullable(),
   model: z.string().trim().max(120).nullable().optional(),
   /** Omit or send empty to keep the stored key; send a value to replace it. */
   apiKey: z.string().trim().max(500).optional(),
