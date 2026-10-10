@@ -89,6 +89,7 @@ export default async function DesksPage({
       canManageDesks={hasPermission(actor, "desks.manage")}
       amenityOptions={amenityOptions}
       canManageAmenities={hasPermission(actor, "org.manage")}
+      canPlan={isAdmin || actor.inchargeOf.some((l) => l.labId === labId)}
     />
     </div>
   );

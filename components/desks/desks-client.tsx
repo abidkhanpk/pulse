@@ -9,6 +9,7 @@ import { WeekGrid, type Occurrence } from "./week-grid";
 import { DayTimeline } from "./day-timeline";
 import { MonthGrid } from "./month-grid";
 import { FloorplanView } from "./floorplan-view";
+import { AvailabilityFinder } from "./availability-finder";
 import { FloorplanEditor } from "./floorplan-editor";
 import { DesksManager } from "./desks-manager";
 
@@ -33,6 +34,7 @@ export function DesksClient({
   canManageDesks,
   amenityOptions,
   canManageAmenities,
+  canPlan,
 }: {
   labs: { id: string; name: string }[];
   desks: Desk[];
@@ -45,6 +47,8 @@ export function DesksClient({
   canManageDesks: boolean;
   amenityOptions: { id: string; label: string }[];
   canManageAmenities: boolean;
+  /** Admin / lab incharge: sees the Availability finder tab. */
+  canPlan: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -101,6 +105,7 @@ export function DesksClient({
             { id: "month", label: "Month view" },
             { id: "day", label: "Day timeline" },
             { id: "layout", label: "Layout" },
+            ...(canPlan ? [{ id: "availability", label: "Availability" }] : []),
           ]}
           active={view}
           onChange={setView}
@@ -159,6 +164,17 @@ export function DesksClient({
             Pick a lab above to see its floorplan layout.
           </p>
         )
+      ) : view === "availability" && labId ? (
+        <AvailabilityFinder
+          key={`avail-${labId}`}
+          labId={labId}
+          today={today}
+          amenityOptions={amenities}
+          people={people}
+          desks={desks}
+          projects={projects}
+          canBook={canManage}
+        />
       ) : (
         <DayTimeline
           desks={desks}

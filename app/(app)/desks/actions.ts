@@ -687,3 +687,223 @@ export async function layoutOccupancy(labId: string) {
     };
   });
 }
+
+/* ───────────────────────── Availability finder ─────────────────────────
+ * Answers "which desks are free for this whole pattern" exactly, from
+ * materialized occurrences. A day counts as available when the desk is
+ * continuously free from some start time inside [windowStart,
+ * windowStart + tolerance] until windowEnd (user decision 2026-10-10:
+ * a desk free from 9:00 against an 8:00 request with 1h tolerance IS
+ * available, reported with its actual start). Admins and the lab's
+ * incharges only. */
+
+export interface AvailabilityInput {
+  labId: string;
+  from: string; // YYYY-MM-DD
+  to: string;
+  weekdays: number[] | null; // null = every day in range
+  startTime: string; // "HH:MM" (PKT)
+  endTime: string;
+  toleranceMin: number;
+  amenityIds: string[];
+  horizonMonths: number; // how far ahead "next available" may look
+}
+
+export interface AvailabilityBlockerDay {
+  date: string;
+  bookings: { person: string; title: string | null; startMin: number; endMin: number }[];
+}
+
+export interface AvailabilityDesk {
+  id: string;
+  label: string;
+  layoutLabel: string | null;
+  amenities: { id: string; label: string }[];
+  /** Full matches: latest actual free-from minute when later than the
+   *  requested window start on some days; null = free from window start. */
+  lateFromMin: number | null;
+  blockedDays: AvailabilityBlockerDay[];
+}
+
+export interface AvailabilityResult {
+  requestedDays: number;
+  full: AvailabilityDesk[];
+  near: AvailabilityDesk[];
+  next: { desk: AvailabilityDesk; fromDate: string; toDate: string }[];
+}
+
+function parseISODate(s: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return null;
+  return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+}
+function isoOf(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+function addDaysISO(iso: string, days: number): string {
+  const d = parseISODate(iso)!;
+  d.setUTCDate(d.getUTCDate() + days);
+  return isoOf(d);
+}
+function addMonthsISO(iso: string, months: number): string {
+  const d = parseISODate(iso)!;
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return isoOf(d);
+}
+function parseTimeMin(s: string): number | null {
+  const m = /^(\d{2}):(\d{2})$/.exec(s);
+  if (!m) return null;
+  const v = +m[1] * 60 + +m[2];
+  return v >= 0 && v < 1440 ? v : null;
+}
+/** PKT wall-clock minutes of a timestamp (PKT is a fixed UTC+5). */
+function pktMinutes(ts: Date): number {
+  const shifted = new Date(ts.getTime() + 5 * 3600_000);
+  return shifted.getUTCHours() * 60 + shifted.getUTCMinutes();
+}
+
+export async function findAvailability(
+  input: AvailabilityInput
+): Promise<{ ok: true; data: AvailabilityResult } | { ok: false; error: string }> {
+  const actor = await requireUser();
+  const allowed = can(actor, "org.manage") || actor.inchargeOf.some((l) => l.labId === input.labId);
+  if (!allowed) return { ok: false, error: "Only admins and the lab incharge can search availability." };
+
+  const from = parseISODate(input.from);
+  const to = parseISODate(input.to);
+  const winStart = parseTimeMin(input.startTime);
+  const winEnd = parseTimeMin(input.endTime);
+  if (!from || !to || to < from) return { ok: false, error: "Pick a valid date range." };
+  if (winStart === null || winEnd === null || winEnd <= winStart)
+    return { ok: false, error: "Pick a valid time window (end after start)." };
+  const tolerance = Math.max(0, Math.min(600, Math.round(input.toleranceMin || 0)));
+  const horizonMonths = [1, 3, 6, 12].includes(input.horizonMonths) ? input.horizonMonths : 6;
+
+  const matchesPattern = (iso: string): boolean => {
+    if (!input.weekdays || input.weekdays.length === 0) return true;
+    return input.weekdays.includes(parseISODate(iso)!.getUTCDay());
+  };
+  const requested: string[] = [];
+  for (let d = input.from; d <= input.to; d = addDaysISO(d, 1)) {
+    if (matchesPattern(d)) requested.push(d);
+  }
+  if (requested.length === 0)
+    return { ok: false, error: "No days in that range match the selected pattern." };
+  const spanDays = Math.round((to.getTime() - from.getTime()) / 86400000) + 1;
+
+  const catalogue = await amenityCatalogue();
+  const labelOf = new Map(catalogue.map((a) => [a.id, a.label]));
+  const required = await validAmenityIds(input.amenityIds);
+
+  const desks = await prisma.desk.findMany({
+    where: { labId: input.labId, status: "ACTIVE" },
+    select: { id: true, label: true, layoutLabel: true, amenities: true },
+    orderBy: { label: "asc" },
+  });
+  const candidates = desks.filter((d) => required.every((id) => d.amenities.includes(id)));
+  if (candidates.length === 0) {
+    return { ok: true, data: { requestedDays: requested.length, full: [], near: [], next: [] } };
+  }
+
+  const todayIso = isoOf(new Date(Date.now() + 5 * 3600_000));
+  const scanStart = input.from < todayIso ? todayIso : input.from;
+  const horizonEnd = addMonthsISO(scanStart, horizonMonths);
+  const fetchEnd = input.to > horizonEnd ? input.to : horizonEnd;
+
+  const occs = await prisma.bookingOccurrence.findMany({
+    where: {
+      deskId: { in: candidates.map((d) => d.id) },
+      status: "SCHEDULED",
+      date: { gte: from, lte: parseISODate(fetchEnd)! },
+    },
+    select: {
+      deskId: true,
+      date: true,
+      startsAt: true,
+      endsAt: true,
+      booking: { select: { title: true, user: { select: { name: true } } } },
+    },
+  });
+  type Iv = { s: number; e: number; person: string; title: string | null };
+  const byKey = new Map<string, Iv[]>();
+  for (const o of occs) {
+    if (!o.deskId) continue;
+    const key = `${o.deskId}|${isoOf(o.date)}`;
+    const s = pktMinutes(o.startsAt);
+    let e = pktMinutes(o.endsAt);
+    if (e <= s) e = 1440; // defensive: booking crossing midnight
+    const arr = byKey.get(key) ?? [];
+    arr.push({ s, e, person: o.booking.user.name, title: o.booking.title });
+    byKey.set(key, arr);
+  }
+  for (const arr of byKey.values()) arr.sort((a, b) => a.s - b.s);
+
+  /** Earliest minute the desk becomes continuously free until winEnd. */
+  function freeFrom(deskId: string, iso: string): number {
+    const ivs = byKey.get(`${deskId}|${iso}`) ?? [];
+    let free = winStart!;
+    for (const iv of ivs) {
+      if (iv.e <= free) continue;
+      if (iv.s >= winEnd!) break;
+      free = Math.max(free, iv.e);
+      if (free >= winEnd!) break;
+    }
+    return free;
+  }
+  const dayOk = (deskId: string, iso: string): { ok: boolean; from: number } => {
+    const f = freeFrom(deskId, iso);
+    return { ok: f < winEnd! && f <= winStart! + tolerance, from: f };
+  };
+
+  const toDesk = (d: (typeof candidates)[number], lateFromMin: number | null, blockedDays: AvailabilityBlockerDay[]): AvailabilityDesk => ({
+    id: d.id,
+    label: d.label,
+    layoutLabel: d.layoutLabel,
+    amenities: d.amenities.map((id) => ({ id, label: labelOf.get(id) ?? id })),
+    lateFromMin,
+    blockedDays,
+  });
+
+  const full: AvailabilityDesk[] = [];
+  const near: AvailabilityDesk[] = [];
+  const next: { desk: AvailabilityDesk; fromDate: string; toDate: string }[] = [];
+
+  for (const d of candidates) {
+    let late: number | null = null;
+    const blocked: AvailabilityBlockerDay[] = [];
+    for (const iso of requested) {
+      const r = dayOk(d.id, iso);
+      if (r.ok) {
+        if (r.from > winStart!) late = late === null ? r.from : Math.max(late, r.from);
+      } else {
+        const ivs = (byKey.get(`${d.id}|${iso}`) ?? []).filter((iv) => iv.e > winStart! && iv.s < winEnd!);
+        blocked.push({
+          date: iso,
+          bookings: ivs.map((iv) => ({ person: iv.person, title: iv.title, startMin: iv.s, endMin: iv.e })),
+        });
+      }
+    }
+    if (blocked.length === 0) {
+      full.push(toDesk(d, late, []));
+      continue;
+    }
+    if (blocked.length <= 3) near.push(toDesk(d, null, blocked));
+
+    // Next available: first start date whose whole shifted window passes.
+    const lastStart = addDaysISO(horizonEnd, -(spanDays - 1));
+    for (let start = scanStart; start <= lastStart; start = addDaysISO(start, 1)) {
+      let okAll = true;
+      for (let i = 0; i < spanDays; i++) {
+        const iso = addDaysISO(start, i);
+        if (!matchesPattern(iso)) continue;
+        if (!dayOk(d.id, iso).ok) { okAll = false; break; }
+      }
+      if (okAll) {
+        next.push({ desk: toDesk(d, null, []), fromDate: start, toDate: addDaysISO(start, spanDays - 1) });
+        break;
+      }
+    }
+  }
+
+  return { ok: true, data: { requestedDays: requested.length, full, near, next } };
+}
