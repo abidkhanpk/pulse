@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth-helpers";
 import { can, scopeFilter, type PermissionKey } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { resolveAmenityLabels, type AmenityOption } from "@/lib/amenities";
+import { callAi, defaultModelFor } from "@/lib/ai-providers";
 
 /** The admin-managed amenity catalogue. */
 export async function listAmenities(): Promise<AmenityOption[]> {
@@ -906,4 +907,183 @@ export async function findAvailability(
   }
 
   return { ok: true, data: { requestedDays: requested.length, full, near, next } };
+}
+
+/* ───────────────────────── AI planning (incharge-only) ─────────────────────────
+ * Sends an ANONYMIZED snapshot of the lab's desks/bookings to the lab's
+ * own AI provider (configured by the incharge in Labs → AI planning):
+ * people, projects, desks and the lab itself are replaced by tokens
+ * (PERSON_1, PROJECT_1, DESK_1); booking titles — free text that could
+ * contain names — are never sent. The answer is de-anonymized before it
+ * is returned, so the incharge reads real names. Suggestions only: this
+ * never creates, moves, or cancels a booking. */
+
+export interface AiAskInput extends AvailabilityInput {
+  planIfUnavailable: boolean;
+  keepExistingPriority: boolean;
+  newProjectPriority: "LOW" | "NORMAL" | "MEDIUM" | "HIGH";
+}
+
+function hhmm(min: number): string {
+  return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+}
+const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+export async function askAiPlanner(
+  input: AiAskInput
+): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  const actor = await requireUser();
+  if (!actor.inchargeOf.some((l) => l.labId === input.labId)) {
+    return { ok: false, error: "Only the lab incharge can use AI planning." };
+  }
+  const lab = await prisma.lab.findUnique({
+    where: { id: input.labId },
+    select: { aiProvider: true, aiApiKey: true, aiModel: true },
+  });
+  if (!lab?.aiProvider || !lab.aiApiKey) {
+    return { ok: false, error: "AI is not configured for this lab. Add a provider and API key in Labs → AI planning." };
+  }
+
+  const found = await findAvailability(input);
+  if (!found.ok) return found;
+  const result = found.data;
+
+  const from = parseISODate(input.from)!;
+  const to = parseISODate(input.to)!;
+  const [desks, projects, occs, members] = await Promise.all([
+    prisma.desk.findMany({
+      where: { labId: input.labId, status: "ACTIVE" },
+      select: { id: true, label: true, amenities: true },
+      orderBy: { label: "asc" },
+    }),
+    prisma.project.findMany({
+      where: { labId: input.labId },
+      select: { id: true, name: true, priority: true, status: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.bookingOccurrence.findMany({
+      where: { status: "SCHEDULED", date: { gte: from, lte: to }, desk: { labId: input.labId } },
+      select: {
+        date: true,
+        startsAt: true,
+        endsAt: true,
+        deskId: true,
+        booking: { select: { userId: true, projectId: true, user: { select: { name: true } } } },
+      },
+      orderBy: [{ date: "asc" }, { startsAt: "asc" }],
+      take: 800,
+    }),
+    prisma.projectMember.findMany({
+      where: { project: { labId: input.labId } },
+      select: { userId: true, projectId: true, user: { select: { name: true } } },
+    }),
+  ]);
+
+  // ── anonymization maps ──
+  const deskToken = new Map<string, string>();
+  const projectToken = new Map<string, string>();
+  const personToken = new Map<string, string>();
+  const realName = new Map<string, string>(); // token -> real label (swap-back)
+  desks.forEach((d, i) => {
+    const t = `DESK_${i + 1}`;
+    deskToken.set(d.id, t);
+    realName.set(t, d.label);
+  });
+  projects.forEach((p, i) => {
+    const t = `PROJECT_${i + 1}`;
+    projectToken.set(p.id, t);
+    realName.set(t, p.name);
+  });
+  const personName = new Map<string, string>();
+  for (const o of occs) personName.set(o.booking.userId, o.booking.user.name);
+  for (const m of members) personName.set(m.userId, m.user.name);
+  [...personName.entries()]
+    .sort((a, b) => a[1].localeCompare(b[1]))
+    .forEach(([userId, name], i) => {
+      const t = `PERSON_${i + 1}`;
+      personToken.set(userId, t);
+      realName.set(t, name);
+    });
+
+  const catalogue = await amenityCatalogue();
+  const amenityLabel = new Map(catalogue.map((a) => [a.id, a.label]));
+  const personProjects = new Map<string, Set<string>>();
+  const linkPersonProject = (userId: string, projectId: string | null) => {
+    if (!projectId) return;
+    const pt = personToken.get(userId);
+    const pj = projectToken.get(projectId);
+    if (!pt || !pj) return;
+    const set = personProjects.get(pt) ?? new Set<string>();
+    set.add(pj);
+    personProjects.set(pt, set);
+  };
+  for (const m of members) linkPersonProject(m.userId, m.projectId);
+  for (const o of occs) linkPersonProject(o.booking.userId, o.booking.projectId);
+
+  const patternText =
+    input.weekdays && input.weekdays.length > 0
+      ? `only on ${input.weekdays.map((d) => WEEKDAY_NAMES[d]).join(", ")}`
+      : "every day";
+  const requiredAmenities = (await validAmenityIds(input.amenityIds)).map((id) => amenityLabel.get(id) ?? id);
+
+  const lines: string[] = [];
+  lines.push(`You are a planning assistant for a laboratory's desk bookings. All names are anonymized tokens — use them EXACTLY as written (e.g. DESK_2, PERSON_5, PROJECT_1) and never invent other names.`);
+  lines.push(``);
+  lines.push(`REQUEST: A new team needs ONE desk in the lab, ${patternText}, from ${input.from} to ${input.to}, each day from ${input.startTime} to ${input.endTime} (local time). A desk that becomes free up to ${input.toleranceMin} minutes after the start time still counts. Required amenities: ${requiredAmenities.length ? requiredAmenities.join(", ") : "none"}. The new team's project priority is ${input.newProjectPriority} (scale: LOW < NORMAL < MEDIUM < HIGH).`);
+  lines.push(``);
+  lines.push(`DESKS (amenities in brackets):`);
+  for (const d of desks) {
+    lines.push(`- ${deskToken.get(d.id)}: [${d.amenities.map((a) => amenityLabel.get(a) ?? a).join(", ") || "no amenities"}]`);
+  }
+  lines.push(``);
+  lines.push(`PROJECTS (priority, status):`);
+  for (const p of projects) lines.push(`- ${projectToken.get(p.id)}: priority ${p.priority}, status ${p.status}`);
+  lines.push(``);
+  lines.push(`PEOPLE (projects they work on):`);
+  for (const [userId, token] of [...personToken.entries()].sort((a, b) => a[1].localeCompare(b[1], undefined, { numeric: true }))) {
+    const projs = [...(personProjects.get(token) ?? [])];
+    lines.push(`- ${token}: ${projs.length ? projs.join(", ") : "no project recorded"}`);
+  }
+  lines.push(``);
+  lines.push(`EXISTING DESK BOOKINGS in the requested period (date, desk, time, person, project):`);
+  if (occs.length === 0) lines.push(`- none`);
+  for (const o of occs) {
+    const s = pktMinutes(o.startsAt);
+    let e = pktMinutes(o.endsAt);
+    if (e <= s) e = 1440;
+    lines.push(
+      `- ${isoOf(o.date)} (${WEEKDAY_NAMES[parseISODate(isoOf(o.date))!.getUTCDay()]}), ${o.deskId ? deskToken.get(o.deskId) : "REMOTE"}, ${hhmm(s)}-${hhmm(e)}, ${personToken.get(o.booking.userId)}, ${o.booking.projectId ? projectToken.get(o.booking.projectId) ?? "no project" : "no project"}`
+    );
+  }
+  lines.push(``);
+  lines.push(`EXACT AVAILABILITY RESULT (computed by the booking system, trust this):`);
+  lines.push(`- Fully available desks: ${result.full.length ? result.full.map((d) => deskToken.get(d.id)).join(", ") : "none"}`);
+  for (const d of result.full) {
+    if (d.lateFromMin !== null) lines.push(`  - ${deskToken.get(d.id)} becomes free at ${hhmm(d.lateFromMin)} on some days (within tolerance).`);
+  }
+  lines.push(`- Nearly available (blocked on at most 3 days): ${result.near.length ? result.near.map((d) => `${deskToken.get(d.id)} (blocked ${d.blockedDays.map((b) => b.date).join(", ")})`).join("; ") : "none"}`);
+  lines.push(`- Next available windows: ${result.next.length ? result.next.map((n) => `${deskToken.get(n.desk.id)} from ${n.fromDate} to ${n.toDate}`).join("; ") : "none within the horizon"}`);
+  lines.push(``);
+  lines.push(`PRIORITY RULE: ${input.keepExistingPriority ? "Existing teams keep priority (first come, first served). Do NOT propose moving or cancelling any existing booking; only suggest options that leave every existing booking untouched, or waiting for a next-available window." : "Priority decides: a higher-priority project may displace a lower-priority one. The new team's priority is given in the request; you may propose moving an existing booking to another desk or day ONLY when its project priority is lower than the new team's, and you must say exactly who moves where and when, keeping every moved person on a desk that meets their current setup as closely as possible."}`);
+  lines.push(``);
+  if (result.full.length > 0) {
+    lines.push(`TASK: Confirm which desk(s) fully satisfy the request, recommend the best one, and say why in 2-3 sentences. Keep it short.`);
+  } else if (input.planIfUnavailable) {
+    lines.push(`TASK: No desk fully satisfies the request. Propose up to 3 concrete accommodation plans, best first. Each plan: a one-line summary, then the exact steps (tokens, desks, dates, times). Also mention the earliest next-available window if no plan works. Be concrete and brief.`);
+  } else {
+    lines.push(`TASK: No desk fully satisfies the request and planning is off. State that plainly, name the closest options (nearly available desks and what blocks them, next available windows), in a few lines.`);
+  }
+
+  const answer = await callAi(lab.aiProvider, lab.aiApiKey, lab.aiModel || defaultModelFor(lab.aiProvider), lines.join("\n"));
+  if (!answer.ok) return answer;
+
+  // ── de-anonymize: longest tokens first so DESK_10 wins over DESK_1 ──
+  let text = answer.text;
+  const swaps = [...realName.entries()].sort((a, b) => b[0].length - a[0].length);
+  for (const [token, real] of swaps) {
+    text = text.replace(new RegExp(`\\b${token}\\b`, "gi"), () => real);
+  }
+
+  await logAudit(actor.id, "lab.ai_plan", "Lab", input.labId, { provider: lab.aiProvider });
+  return { ok: true, text };
 }

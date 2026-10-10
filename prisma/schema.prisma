@@ -196,6 +196,12 @@ model Lab {
   attendanceMode     AttendanceMode @default(SELF)
   // Per-lab feature toggle: todo priorities on kanban + in the todo form.
   todoPriorityEnabled Boolean      @default(false)
+  // AI planning (availability finder): configured BY the lab's incharge
+  // with their own provider + key; only incharges can view or use it.
+  // The key is server-only — never returned to any client.
+  aiProvider String?
+  aiApiKey   String?
+  aiModel    String?
   attendanceMarkerId String?
   attendanceMarker   User?          @relation("LabAttendanceMarker", fields: [attendanceMarkerId], references: [id], onDelete: SetNull)
 

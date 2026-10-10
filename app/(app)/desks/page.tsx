@@ -6,6 +6,8 @@ import { hasPermission } from "@/lib/permissions";
 import { listDesks, listOccurrences, bookablePeopleAll, bookableProjects, deskLabOverview, listAmenities } from "./actions";
 import { myLabs } from "../labs/actions";
 import { DesksClient } from "@/components/desks/desks-client";
+import { prisma } from "@/lib/prisma";
+import { AI_PROVIDERS } from "@/lib/ai-providers";
 import { DesksOverview } from "@/components/overview/desks-overview";
 import { todayPKT, toISODate } from "@/lib/bookings";
 
@@ -90,6 +92,19 @@ export default async function DesksPage({
       amenityOptions={amenityOptions}
       canManageAmenities={hasPermission(actor, "org.manage")}
       canPlan={isAdmin || actor.inchargeOf.some((l) => l.labId === labId)}
+      ai={await (async () => {
+        const isIncharge = actor.inchargeOf.some((l) => l.labId === labId);
+        if (!isIncharge || !labId) return { isIncharge: false, configured: false, providerLabel: null };
+        const lab = await prisma.lab.findUnique({
+          where: { id: labId },
+          select: { aiProvider: true, aiApiKey: true },
+        });
+        return {
+          isIncharge: true,
+          configured: !!(lab?.aiProvider && lab?.aiApiKey),
+          providerLabel: AI_PROVIDERS.find((p) => p.id === lab?.aiProvider)?.label ?? null,
+        };
+      })()}
     />
     </div>
   );

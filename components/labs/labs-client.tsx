@@ -21,6 +21,7 @@ import {
 } from "@/app/(app)/labs/actions";
 import { LabAttendanceSettings } from "./lab-attendance-settings";
 import { LabPrioritySettings } from "./lab-priority-settings";
+import { LabAiSettings } from "./lab-ai-settings";
 import type { AttendanceMode } from "@prisma/client";
 
 interface Lab {
@@ -29,6 +30,9 @@ interface Lab {
   description: string | null;
   attendanceMode: AttendanceMode;
   todoPriorityEnabled: boolean;
+  aiProvider: string | null;
+  aiModel: string | null;
+  aiKeySet: boolean;
   attendanceMarker: { id: string; name: string } | null;
   _count: { desks: number; projects: number };
   incharges: { user: { id: string; name: string; email: string } }[];
@@ -251,6 +255,14 @@ export function LabsClient({
                     />
                     <LabPrioritySettings labId={lab.id} initialEnabled={lab.todoPriorityEnabled} />
                   </>
+                )}
+                {inchargeLabIds.includes(lab.id) && (
+                  <LabAiSettings
+                    labId={lab.id}
+                    initialProvider={lab.aiProvider}
+                    initialModel={lab.aiModel}
+                    initialKeySet={lab.aiKeySet}
+                  />
                 )}
               </CardContent>
             </Card>

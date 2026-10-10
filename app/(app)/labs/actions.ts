@@ -37,10 +37,17 @@ export async function updateOrganization(input: z.infer<typeof orgSchema>): Prom
 
 // ─── Labs ───
 
+/** The lab AI key is server-only: strip it from anything a client can
+ *  receive and expose only whether one is set. */
+function stripAiKey<T extends { aiApiKey?: string | null }>(lab: T) {
+  const { aiApiKey, ...rest } = lab;
+  return { ...rest, aiKeySet: !!aiApiKey };
+}
+
 export async function listLabs() {
   const actor = await requireUser();
   const labIds = scopeFilter(actor);
-  return prisma.lab.findMany({
+  const labs = await prisma.lab.findMany({
     where: labIds ? { id: { in: labIds } } : undefined,
     include: {
       _count: { select: { desks: true, projects: true } },
@@ -49,16 +56,18 @@ export async function listLabs() {
     },
     orderBy: { name: "asc" },
   });
+  return labs.map(stripAiKey);
 }
 
 /** Labs the current user is incharge of (for filters). */
 export async function myLabs() {
   const actor = await requireUser();
   const labIds = scopeFilter(actor);
-  return prisma.lab.findMany({
+  const labs = await prisma.lab.findMany({
     where: labIds ? { id: { in: labIds } } : undefined,
     orderBy: { name: "asc" },
   });
+  return labs.map(stripAiKey);
 }
 
 const labSchema = z.object({
@@ -342,4 +351,48 @@ export async function labMarkerCandidates(labId: string) {
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
+}
+
+const aiConfigSchema = z.object({
+  provider: z.enum(["GEMINI", "ANTHROPIC", "OPENAI", "XAI"]).nullable(),
+  model: z.string().trim().max(120).nullable().optional(),
+  /** Omit or send empty to keep the stored key; send a value to replace it. */
+  apiKey: z.string().trim().max(500).optional(),
+  clearKey: z.boolean().optional(),
+});
+
+/**
+ * AI planning configuration for a lab. Owned by the lab's incharges
+ * (user decision 2026-10-10): only an incharge can view or change it —
+ * not even admins — and only incharges can use it. The key is stored
+ * server-side and never returned to a client.
+ */
+export async function updateLabAiConfig(
+  labId: string,
+  input: z.infer<typeof aiConfigSchema>
+): Promise<ActionResult> {
+  const actor = await requireUser();
+  if (!actor.inchargeOf.some((l) => l.labId === labId)) {
+    return { ok: false, error: "Only the lab incharge can manage this lab's AI settings." };
+  }
+  const parsed = aiConfigSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid AI settings." };
+  const lab = await prisma.lab.findUnique({ where: { id: labId }, select: { id: true } });
+  if (!lab) return { ok: false, error: "Lab not found." };
+  const { provider, model, apiKey, clearKey } = parsed.data;
+  await prisma.lab.update({
+    where: { id: labId },
+    data: {
+      aiProvider: provider,
+      aiModel: model?.trim() ? model.trim() : null,
+      ...(clearKey ? { aiApiKey: null } : apiKey ? { aiApiKey: apiKey } : {}),
+    },
+  });
+  await logAudit(actor.id, "lab.ai_config", "Lab", labId, {
+    provider,
+    keyChanged: !!apiKey || !!clearKey,
+  });
+  revalidatePath("/labs");
+  revalidatePath("/desks");
+  return { ok: true };
 }

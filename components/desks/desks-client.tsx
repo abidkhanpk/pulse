@@ -10,6 +10,7 @@ import { DayTimeline } from "./day-timeline";
 import { MonthGrid } from "./month-grid";
 import { FloorplanView } from "./floorplan-view";
 import { AvailabilityFinder } from "./availability-finder";
+import { AiPlannerPanel } from "./ai-planner-panel";
 import { FloorplanEditor } from "./floorplan-editor";
 import { DesksManager } from "./desks-manager";
 
@@ -35,6 +36,7 @@ export function DesksClient({
   amenityOptions,
   canManageAmenities,
   canPlan,
+  ai,
 }: {
   labs: { id: string; name: string }[];
   desks: Desk[];
@@ -49,6 +51,8 @@ export function DesksClient({
   canManageAmenities: boolean;
   /** Admin / lab incharge: sees the Availability finder tab. */
   canPlan: boolean;
+  /** AI planning: incharges only (their own provider + key per lab). */
+  ai: { isIncharge: boolean; configured: boolean; providerLabel: string | null };
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -174,6 +178,18 @@ export function DesksClient({
           desks={desks}
           projects={projects}
           canBook={canManage}
+          aiPanel={
+            ai.isIncharge
+              ? (ctx) => (
+                  <AiPlannerPanel
+                    labId={labId}
+                    configured={ai.configured}
+                    providerLabel={ai.providerLabel}
+                    ctx={ctx}
+                  />
+                )
+              : undefined
+          }
         />
       ) : (
         <DayTimeline
